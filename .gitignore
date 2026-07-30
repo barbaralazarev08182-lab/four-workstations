@@ -1,0 +1,20 @@
+# Local environment files
+.env*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.next/
+.pnpm-store/
+.vercel/
+*.tsbuildinfo
+*.log
+
+# Local QA artifacts
+outputs/
+work/*
+!work/deps/
+!work/deps/*.tgz
+
+# Supabase CLI local state
+supabase/.temp/

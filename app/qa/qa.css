@@ -1,0 +1,26 @@
+.qa-board {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  color: white;
+  background: #202320;
+}
+
+.qa-board figure {
+  margin: 0;
+  padding: 8px;
+  background: #111411;
+}
+
+.qa-board figcaption {
+  padding: 2px 0 9px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.qa-board img {
+  width: 100%;
+  height: auto;
+}
