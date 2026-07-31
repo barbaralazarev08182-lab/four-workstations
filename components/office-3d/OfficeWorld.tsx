@@ -96,23 +96,68 @@ function RoomShell({ isNight }: { isNight: boolean }) {
         <boxGeometry args={MEETING_CARPET_SIZE} />
         <meshStandardMaterial color={isNight ? "#4a4a52" : "#b8a890"} roughness={1} transparent opacity={0.5} />
       </mesh>
-      <group position={WINDOW_POSITION}>
-        <mesh>
-          <boxGeometry args={WINDOW_SIZE} />
-          <meshStandardMaterial color={isNight ? "#3a4a55" : "#c8d4d8"} roughness={0.95} />
+      {/* Exterior sky backdrop behind the window (soft flat color, no shadows) */}
+      <mesh position={[WINDOW_POSITION[0], 3.4, -9.5]}>
+        <planeGeometry args={[26, 16]} />
+        <meshBasicMaterial color={isNight ? "#24303c" : "#adc0cd"} />
+      </mesh>
+
+      {/* Back wall split into 4 segments around a real window opening */}
+      {/* Opening: x [0.9, 4.1], y [1.7, 3.5] */}
+      <mesh receiveShadow castShadow position={[-3.4, 2.25, -6.1]}>
+        <boxGeometry args={[8.6, 4.5, 0.24]} />
+        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+      </mesh>
+      <mesh receiveShadow castShadow position={[5.9, 2.25, -6.1]}>
+        <boxGeometry args={[3.6, 4.5, 0.24]} />
+        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+      </mesh>
+      <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 4.0, -6.1]}>
+        <boxGeometry args={[WINDOW_SIZE[0], 1.0, 0.24]} />
+        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+      </mesh>
+      <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 0.85, -6.1]}>
+        <boxGeometry args={[WINDOW_SIZE[0], 1.7, 0.24]} />
+        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+      </mesh>
+
+      {/* Window frame (warm white, real thickness, protrudes slightly inward) */}
+      <group>
+        <mesh castShadow receiveShadow position={[0.9, WINDOW_POSITION[1], -5.99]}>
+          <boxGeometry args={[0.12, WINDOW_SIZE[1], 0.22]} />
+          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
         </mesh>
-        <mesh position={[0, 0, 0.06]}>
-          <boxGeometry args={[WINDOW_SIZE[0] + 0.16, WINDOW_SIZE[1] + 0.16, 0.06]} />
-          <meshStandardMaterial color={isNight ? "#3c4241" : "#e5d7bf"} roughness={0.9} />
+        <mesh castShadow receiveShadow position={[4.1, WINDOW_POSITION[1], -5.99]}>
+          <boxGeometry args={[0.12, WINDOW_SIZE[1], 0.22]} />
+          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
         </mesh>
-        <mesh position={[0, 0, 0.1]}>
-          <boxGeometry args={[0.08, WINDOW_SIZE[1], 0.04]} />
-          <meshStandardMaterial color={isNight ? "#3c4241" : "#e5d7bf"} roughness={0.9} />
+        <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], 3.5, -5.99]}>
+          <boxGeometry args={[WINDOW_SIZE[0], 0.12, 0.22]} />
+          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+        </mesh>
+        {/* Windowsill — wider and protrudes further into the room */}
+        <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], 1.7, -5.89]}>
+          <boxGeometry args={[WINDOW_SIZE[0] + 0.24, 0.14, 0.42]} />
+          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+        </mesh>
+        {/* Slim middle vertical muntin */}
+        <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], WINDOW_POSITION[1], -5.99]}>
+          <boxGeometry args={[0.07, WINDOW_SIZE[1], 0.16]} />
+          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
         </mesh>
       </group>
-      <mesh receiveShadow castShadow position={[0, 2.25, -6.1]}>
-        <boxGeometry args={[15.4, 4.5, 0.24]} />
-        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+
+      {/* Glass — thin, restrained gray-blue, sits inside wall thickness behind the frame */}
+      <mesh receiveShadow position={[WINDOW_POSITION[0], WINDOW_POSITION[1], -6.16]}>
+        <boxGeometry args={[WINDOW_SIZE[0], WINDOW_SIZE[1], 0.02]} />
+        <meshStandardMaterial
+          color={isNight ? "#3a4a55" : "#c2d0d6"}
+          roughness={0.15}
+          metalness={0}
+          transparent
+          opacity={isNight ? 0.28 : 0.22}
+          depthWrite={false}
+        />
       </mesh>
       <mesh receiveShadow castShadow position={[-7.58, 2.25, 0]}>
         <boxGeometry args={[0.24, 4.5, 12.2]} />
