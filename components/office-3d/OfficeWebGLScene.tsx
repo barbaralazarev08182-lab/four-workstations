@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { SRGBColorSpace } from "three";
 import { OfficeWorld } from "@/components/office-3d/OfficeWorld";
 import type { CharacterDebugAction, CharacterDebugCommand } from "@/components/office-3d/character-actions";
-import { OFFICE_CAMERA } from "@/components/office-3d/scene-config";
+import { OFFICE_CAMERA, type CameraZoneKey } from "@/components/office-3d/scene-config";
 import { buildDeskSlots, createSceneDebugUsers } from "@/lib/office/desk-slots";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
 import type { OfficeDataMode } from "@/hooks/useCurrentStatusSync";
@@ -14,6 +14,7 @@ interface OfficeWebGLSceneProps {
   users: OfficeUser[];
   isNight: boolean;
   dataMode: OfficeDataMode;
+  cameraZone?: CameraZoneKey;
   interactionEffects: Record<string, CharacterInteractionEffect>;
   coffeeGifts: InteractionEvent[];
   onClaimCoffee: (interactionId: string) => void;
@@ -164,7 +165,7 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
             setRuntimeDiagnostics({
               canvasWidth: Math.round(size.width),
               canvasHeight: Math.round(size.height),
-              cameraPosition: [camera.position.x, camera.position.y, camera.position.z],
+              cameraPosition: OFFICE_CAMERA.position,
               sceneChildren: scene.children.length,
               rendererStatus: gl.getContext().isContextLost() ? "context-lost" : "ready",
               hasNaNTransform: false,
@@ -172,7 +173,7 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
           }}
         >
           <Suspense fallback={null}>
-            <OfficeWorld {...props} users={sceneUsers} onFpsChange={setFps} debugCommand={debugCommand} speedMultiplier={speedMultiplier} />
+            <OfficeWorld {...props} cameraZone={props.cameraZone ?? "auto"} users={sceneUsers} onFpsChange={setFps} debugCommand={debugCommand} speedMultiplier={speedMultiplier} />
             <SceneRuntimeProbe onUpdate={setRuntimeDiagnostics} />
           </Suspense>
         </Canvas>

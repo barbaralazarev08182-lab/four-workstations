@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ObjectKind, OfficeUser, StatusKey } from "@/lib/types";
+import type { CameraZoneKey } from "@/components/office-3d/scene-config";
 
 const OfficeWebGLScene = dynamic(
   () => import("@/components/office-3d/OfficeWebGLScene").then((module) => module.OfficeWebGLScene),
@@ -28,12 +29,22 @@ const PRESETS: Record<PresetKey, { label: string; statuses: Record<string, Statu
   mixed: { label: "四人不同", statuses: { ming: "working", hong: "eating", jie: "slacking", qixi: "meeting" } },
 };
 
+const CAMERA_ZONES: { key: CameraZoneKey; label: string }[] = [
+  { key: "auto", label: "Auto responsive" },
+  { key: "desktop", label: "Desktop fit" },
+  { key: "workstations", label: "Mobile 工位" },
+  { key: "living", label: "Mobile 生活" },
+  { key: "amenities", label: "Mobile 设施" },
+  { key: "overview", label: "Mobile 全览" },
+];
+
 const noop = () => {};
 
 export function QASceneViewer() {
   const [preset, setPreset] = useState<PresetKey>("allWorking");
   const [isNight, setIsNight] = useState(false);
   const [grayscale, setGrayscale] = useState(false);
+  const [cameraZone, setCameraZone] = useState<CameraZoneKey>("auto");
   const [statusSince, setStatusSince] = useState(() => new Date().toISOString());
 
   const applyPreset = useCallback((key: PresetKey) => {
@@ -51,12 +62,13 @@ export function QASceneViewer() {
   }, [preset, statusSince]);
 
   return (
-    <div style={{ width: "100vw", height: "100vh", position: "relative", filter: grayscale ? "grayscale(1)" : "none" }}>
+    <div style={{ position: "fixed", inset: 0, overflow: "hidden", filter: grayscale ? "grayscale(1)" : "none" }}>
       <div style={{ width: "100%", height: "100%" }}>
         <OfficeWebGLScene
           users={users}
           isNight={isNight}
           dataMode="local"
+          cameraZone={cameraZone}
           interactionEffects={{}}
           coffeeGifts={[]}
           onClaimCoffee={noop}
@@ -97,7 +109,23 @@ export function QASceneViewer() {
             {grayscale ? "灰度 ✓" : "灰度"}
           </button>
         </div>
-        <span style={{ fontSize: 11, color: "#999" }}>当前：{PRESETS[preset].label}{isNight ? " · 夜间" : ""}{grayscale ? " · 灰度" : ""}</span>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, borderTop: "1px solid #444", paddingTop: 6 }}>
+          <span style={{ fontSize: 11, color: "#999", width: "100%" }}>镜头预设</span>
+          {CAMERA_ZONES.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setCameraZone(key)}
+              style={{
+                padding: "3px 8px", borderRadius: 6, border: "1px solid #555", cursor: "pointer",
+                background: cameraZone === key ? "#77906e" : "#333", color: "#eee", fontSize: 11,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <span style={{ fontSize: 11, color: "#999" }}>当前：{PRESETS[preset].label}{isNight ? " · 夜间" : ""}{grayscale ? " · 灰度" : ""} · {CAMERA_ZONES.find((z) => z.key === cameraZone)?.label}</span>
       </div>
     </div>
   );

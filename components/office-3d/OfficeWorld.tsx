@@ -3,17 +3,20 @@
 import { useEffect, useMemo, useRef } from "react";
 import { ContactShadows, Html, MapControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
+import type { MapControls as MapControlsImpl } from "three-stdlib";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
+import { CameraController } from "@/components/office-3d/CameraController";
 import { CharacterController } from "@/components/office-3d/CharacterController";
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT } from "@/components/office-3d/scene-config";
+import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 interface OfficeWorldProps {
   users: OfficeUser[];
   isNight: boolean;
+  cameraZone: CameraZoneKey;
   onCharacterClick: (user: OfficeUser) => void;
   onObjectClick: (kind: ObjectKind, ownerId?: string) => void;
   onFpsChange: (fps: number) => void;
@@ -147,8 +150,9 @@ function RoomShell({ isNight }: { isNight: boolean }) {
   );
 }
 
-export function OfficeWorld({ users, isNight, onCharacterClick, onObjectClick, onFpsChange, debugCommand, speedMultiplier, interactionEffects, coffeeGifts, onClaimCoffee }: OfficeWorldProps) {
+export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onObjectClick, onFpsChange, debugCommand, speedMultiplier, interactionEffects, coffeeGifts, onClaimCoffee }: OfficeWorldProps) {
   const { slots, invalidMembers } = useMemo(() => buildDeskSlots(users), [users]);
+  const controlsRef = useRef<MapControlsImpl | null>(null);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" && invalidMembers.length > 0) {
@@ -214,7 +218,8 @@ export function OfficeWorld({ users, isNight, onCharacterClick, onObjectClick, o
       })}
 
       <ContactShadows position={[0, 0.01, 0]} opacity={isNight ? 0.24 : 0.31} scale={16} blur={2.8} far={7} resolution={256} color="#5f4b3c" frames={Infinity} />
-      <MapControls makeDefault enableRotate={false} enableDamping dampingFactor={0.08} screenSpacePanning minZoom={28} maxZoom={68} maxPolarAngle={Math.PI / 2.4} target={[0, 0.8, 0]} />
+      <CameraController zone={cameraZone} controlsRef={controlsRef} />
+      <MapControls ref={controlsRef} makeDefault enableRotate={false} enableDamping dampingFactor={0.08} screenSpacePanning minZoom={12} maxZoom={120} maxPolarAngle={Math.PI / 2.4} target={[0, 0.8, 0]} />
       <PerformanceReporter onFpsChange={onFpsChange} />
     </>
   );
