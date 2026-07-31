@@ -155,7 +155,7 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
           orthographic
           camera={{ position: OFFICE_CAMERA.position, zoom: OFFICE_CAMERA.zoom, near: OFFICE_CAMERA.near, far: OFFICE_CAMERA.far }}
           dpr={[1, 1.5]}
-          shadows="basic"
+          shadows="percentage"
           frameloop="always"
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
           onCreated={({ gl, camera, scene, size }) => {

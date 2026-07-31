@@ -179,3 +179,40 @@ export const FURNITURE_POSITIONS = {
   restroomDoor: [-5.5, 0, -6.1] as Vector3Tuple,
   entrance: [-7.58, 0, 3.5] as Vector3Tuple,
 };
+
+export interface LightPreset {
+  background: string;
+  ambient: { intensity: number; color: string };
+  hemisphere: { intensity: number; sky: string; ground: string };
+  key: { intensity: number; color: string; position: Vector3Tuple };
+  fill: { intensity: number; color: string };
+  windowLight: { intensity: number; color: string; width: number; height: number };
+  contactShadow: { opacity: number; blur: number };
+}
+
+// Grouped by condition so future weather variants (dayOvercast / rainy / nightRain)
+// can be added alongside these without restructuring the scene lights.
+// A low directional key keeps gentle window-direction shading + soft shadows,
+// while the RectAreaLight at the window provides the soft sky diffusion.
+// Future rainy direction: lower key, cooler/softer windowLight, slightly lower
+// ambient, softer shadows, interior stays warm and visible.
+export const LIGHT_PRESETS: Record<"day" | "night", LightPreset> = {
+  day: {
+    background: "#eae3d3",
+    ambient: { intensity: 0.55, color: "#fdf8ef" },
+    hemisphere: { intensity: 0.65, sky: "#fdf9f0", ground: "#c9a884" },
+    key: { intensity: 1.3, color: "#fff4df", position: [2.5, 8.5, -5.5] },
+    fill: { intensity: 0.3, color: "#e6ebf0" },
+    windowLight: { intensity: 1.8, color: "#fff3df", width: 3.0, height: 1.7 },
+    contactShadow: { opacity: 0.27, blur: 3.2 },
+  },
+  night: {
+    background: "#263036",
+    ambient: { intensity: 0.3, color: "#93a3b8" },
+    hemisphere: { intensity: 0.32, sky: "#7280a0", ground: "#3a3430" },
+    key: { intensity: 0.28, color: "#9db2d4", position: [2.5, 8.5, -5.5] },
+    fill: { intensity: 0.2, color: "#5f6f8a" },
+    windowLight: { intensity: 0.4, color: "#a8b8cc", width: 3.0, height: 1.7 },
+    contactShadow: { opacity: 0.2, blur: 3.4 },
+  },
+};

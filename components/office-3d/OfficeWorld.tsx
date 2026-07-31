@@ -3,15 +3,18 @@
 import { useEffect, useMemo, useRef } from "react";
 import { ContactShadows, Html, MapControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import type { MapControls as MapControlsImpl } from "three-stdlib";
+import { RectAreaLightUniformsLib, type MapControls as MapControlsImpl } from "three-stdlib";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
 import { CameraController } from "@/components/office-3d/CameraController";
 import { CharacterController } from "@/components/office-3d/CharacterController";
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
+import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, LIGHT_PRESETS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
+
+// RectAreaLight needs its LTC lookup textures initialized once before use.
+RectAreaLightUniformsLib.init();
 
 interface OfficeWorldProps {
   users: OfficeUser[];
@@ -198,6 +201,7 @@ function RoomShell({ isNight }: { isNight: boolean }) {
 export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onObjectClick, onFpsChange, debugCommand, speedMultiplier, interactionEffects, coffeeGifts, onClaimCoffee }: OfficeWorldProps) {
   const { slots, invalidMembers } = useMemo(() => buildDeskSlots(users), [users]);
   const controlsRef = useRef<MapControlsImpl | null>(null);
+  const light = isNight ? LIGHT_PRESETS.night : LIGHT_PRESETS.day;
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" && invalidMembers.length > 0) {
@@ -207,22 +211,39 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
 
   return (
     <>
-      <color attach="background" args={[isNight ? "#263036" : "#e8dbc5"]} />
-      <ambientLight intensity={isNight ? 0.42 : 1.05} color={isNight ? "#7e8fa7" : "#fff5df"} />
-      <hemisphereLight intensity={isNight ? 0.4 : 0.85} color={isNight ? "#6d7894" : "#fff7e6"} groundColor={isNight ? "#2f2926" : "#b88e63"} />
+      <color attach="background" args={[light.background]} />
+      <ambientLight intensity={light.ambient.intensity} color={light.ambient.color} />
+      <hemisphereLight intensity={light.hemisphere.intensity} color={light.hemisphere.sky} groundColor={light.hemisphere.ground} />
+      {/* Low directional key from the window direction — gentle shading + soft shadows,
+          no harsh sun patch (the wall no longer punches a hard light shape through) */}
       <directionalLight
         castShadow
-        position={[-6, 11, 7]}
-        intensity={isNight ? 0.55 : 2.15}
-        color={isNight ? "#91a7ca" : "#fff0d2"}
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        position={light.key.position}
+        intensity={light.key.intensity}
+        color={light.key.color}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-camera-near={1}
-        shadow-camera-far={30}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        shadow-camera-far={40}
+        shadow-camera-left={-12}
+        shadow-camera-right={12}
+        shadow-camera-top={12}
+        shadow-camera-bottom={-12}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.03}
+        shadow-radius={6}
+      />
+      {/* Soft frontal fill so the space away from the window stays gentle, not black */}
+      <directionalLight position={[-4, 7, 11]} intensity={light.fill.intensity} color={light.fill.color} />
+      {/* Soft sky diffusion from the window (no shadow, no emissive) — brightens the
+          window side and falls off toward the back of the room */}
+      <rectAreaLight
+        position={[WINDOW_POSITION[0], 2.8, -5.7]}
+        rotation={[0, Math.PI, 0]}
+        width={light.windowLight.width}
+        height={light.windowLight.height}
+        intensity={light.windowLight.intensity}
+        color={light.windowLight.color}
       />
       <RoomShell isNight={isNight} />
       <OfficeAmenities onObjectClick={onObjectClick} />
@@ -262,7 +283,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
         );
       })}
 
-      <ContactShadows position={[0, 0.01, 0]} opacity={isNight ? 0.24 : 0.31} scale={16} blur={2.8} far={7} resolution={256} color="#5f4b3c" frames={Infinity} />
+      <ContactShadows position={[0, 0.01, 0]} opacity={light.contactShadow.opacity} scale={16} blur={light.contactShadow.blur} far={7} resolution={512} color="#5f4b3c" frames={Infinity} />
       <CameraController zone={cameraZone} controlsRef={controlsRef} />
       <MapControls ref={controlsRef} makeDefault enableRotate={false} enableDamping dampingFactor={0.08} screenSpacePanning minZoom={12} maxZoom={120} maxPolarAngle={Math.PI / 2.4} target={[0, 0.8, 0]} />
       <PerformanceReporter onFpsChange={onFpsChange} />
