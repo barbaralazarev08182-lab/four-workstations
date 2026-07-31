@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useCursor } from "@react-three/drei";
+import { RoundedBox, useCursor } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { DoubleSide } from "three";
 import type { InteractionEvent, OfficeUser } from "@/lib/types";
-import { ACCENT_COLORS, DECORATION_COLORS, type Vector3Tuple } from "@/components/office-3d/scene-config";
+import { ACCENT_COLORS, DECORATION_COLORS, MAT, matColor, type Vector3Tuple } from "@/components/office-3d/scene-config";
 
 interface LowPolyWorkstationProps {
   user: OfficeUser;
@@ -39,25 +39,26 @@ function DeskLamp({ color, isOn }: { color: string; isOn: boolean }) {
   );
 }
 
-function Chair() {
+function Chair({ isNight }: { isNight: boolean }) {
   return (
     <group position={[0, 0, 1.25]}>
-      <mesh castShadow position={[0, 0.55, 0]}>
-        <boxGeometry args={[0.95, 0.18, 0.9]} />
-        <meshStandardMaterial color="#768078" roughness={0.9} />
-      </mesh>
-      <mesh castShadow position={[0, 1.03, 0.4]} rotation={[-0.1, 0, 0]}>
-        <boxGeometry args={[0.95, 0.9, 0.15]} />
-        <meshStandardMaterial color="#7f8981" roughness={0.9} />
-      </mesh>
+      {/* Seat cushion — fabric, distinct from the wood desk */}
+      <RoundedBox args={[0.95, 0.2, 0.9]} radius={0.05} smoothness={3} castShadow position={[0, 0.55, 0]}>
+        <meshStandardMaterial color={matColor(MAT.fabric, isNight)} roughness={MAT.fabric.roughness} />
+      </RoundedBox>
+      {/* Backrest — slightly lighter fabric, gentle thickness + rounding */}
+      <RoundedBox args={[0.95, 0.92, 0.16]} radius={0.05} smoothness={3} castShadow position={[0, 1.04, 0.4]} rotation={[-0.1, 0, 0]}>
+        <meshStandardMaterial color={matColor(MAT.fabricSoft, isNight)} roughness={MAT.fabricSoft.roughness} />
+      </RoundedBox>
+      {/* Base column + star base — muted plastic */}
       <mesh castShadow position={[0, 0.25, 0]}>
         <cylinderGeometry args={[0.08, 0.1, 0.58, 8]} />
-        <meshStandardMaterial color="#50544f" roughness={0.8} />
+        <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} />
       </mesh>
       {[0, 1, 2, 3, 4].map((arm) => (
         <mesh key={arm} castShadow position={[Math.sin(arm * 1.256) * 0.34, 0.06, Math.cos(arm * 1.256) * 0.34]} rotation={[0, arm * 1.256, Math.PI / 2]}>
           <cylinderGeometry args={[0.035, 0.045, 0.6, 6]} />
-          <meshStandardMaterial color="#50544f" roughness={0.8} />
+          <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} />
         </mesh>
       ))}
     </group>
@@ -78,14 +79,15 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
 
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh receiveShadow castShadow position={[0, 0.82, 0]}>
-        <boxGeometry args={[3.05, 0.24, 1.35]} />
-        <meshStandardMaterial color="#cfa574" roughness={0.82} />
-      </mesh>
+      {/* Desk top — warm wood, gently rounded, credible thickness */}
+      <RoundedBox args={[3.05, 0.26, 1.35]} radius={0.05} smoothness={3} receiveShadow castShadow position={[0, 0.82, 0]}>
+        <meshStandardMaterial color={matColor(MAT.woodTop, isNight)} roughness={MAT.woodTop.roughness} />
+      </RoundedBox>
+      {/* Legs — slightly deeper wood */}
       {[-1.25, 1.25].flatMap((x) => [-0.48, 0.48].map((z) => (
         <mesh key={`${x}-${z}`} castShadow position={[x, 0.4, z]}>
           <boxGeometry args={[0.14, 0.82, 0.14]} />
-          <meshStandardMaterial color="#9e7858" roughness={0.88} />
+          <meshStandardMaterial color={matColor(MAT.woodLeg, isNight)} roughness={MAT.woodLeg.roughness} />
         </mesh>
       )))}
 
@@ -96,21 +98,23 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
         onClick={handleComputerClick}
         scale={hovered ? 1.035 : 1}
       >
-        <mesh castShadow position={[0, 0.25, 0]}>
-          <boxGeometry args={[1.35, 0.82, 0.12]} />
-          <meshStandardMaterial color="#424b49" roughness={0.62} emissive={hovered ? accent : "#000000"} emissiveIntensity={hovered ? 0.28 : 0} />
-        </mesh>
+        {/* Bezel — dark plastic */}
+        <RoundedBox args={[1.35, 0.82, 0.12]} radius={0.03} smoothness={3} castShadow position={[0, 0.25, 0]}>
+          <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} emissive={hovered ? accent : "#000000"} emissiveIntensity={hovered ? 0.22 : 0} />
+        </RoundedBox>
+        {/* Screen — dark gray-black, low roughness, no emissive glow */}
         <mesh position={[0, 0.25, -0.066]}>
           <planeGeometry args={[1.16, 0.64]} />
-          <meshStandardMaterial color={isNight ? "#7da5b1" : "#b9d7d3"} emissive={isNight ? "#517a86" : "#7aa29d"} emissiveIntensity={isNight ? 0.65 : 0.18} />
+          <meshStandardMaterial color={matColor(MAT.screen, isNight)} roughness={MAT.screen.roughness} metalness={0} />
         </mesh>
+        {/* Stand neck + foot — muted plastic */}
         <mesh castShadow position={[0, -0.28, 0]}>
           <boxGeometry args={[0.12, 0.3, 0.12]} />
-          <meshStandardMaterial color="#505957" roughness={0.7} />
+          <meshStandardMaterial color={matColor(MAT.plasticLight, isNight)} roughness={MAT.plasticLight.roughness} />
         </mesh>
         <mesh castShadow position={[0, -0.43, 0.04]}>
           <boxGeometry args={[0.58, 0.08, 0.34]} />
-          <meshStandardMaterial color="#505957" roughness={0.7} />
+          <meshStandardMaterial color={matColor(MAT.plasticLight, isNight)} roughness={MAT.plasticLight.roughness} />
         </mesh>
       </group>
 
@@ -150,7 +154,7 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
         </group>
       ) : null}
       <DeskLamp color={accent} isOn={lampOn} />
-      <Chair />
+      <Chair isNight={isNight} />
       <mesh receiveShadow position={[0, 0.018, 0.05]}>
         <boxGeometry args={[3.5, 0.035, 2.8]} />
         <meshStandardMaterial color={accent} transparent opacity={0.12} roughness={1} />

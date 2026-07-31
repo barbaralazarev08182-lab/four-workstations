@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Html, useCursor } from "@react-three/drei";
+import { Html, RoundedBox, useCursor } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { ObjectKind } from "@/lib/types";
-import { FURNITURE_POSITIONS, type Vector3Tuple } from "@/components/office-3d/scene-config";
+import { FURNITURE_POSITIONS, MAT, matColor, type Vector3Tuple } from "@/components/office-3d/scene-config";
 
 interface InteractiveFurnitureProps {
   kind: ObjectKind;
@@ -45,17 +45,17 @@ function InteractiveFurniture({ kind, label, position, rotation = 0, labelPositi
   );
 }
 
-function MeetingTable() {
+function MeetingTable({ isNight }: { isNight: boolean }) {
   return (
     <group>
-      <mesh castShadow receiveShadow position={[0, 0.72, 0]}>
-        <boxGeometry args={[3.7, 0.18, 1.55]} />
-        <meshStandardMaterial color="#b98963" roughness={0.86} />
-      </mesh>
+      {/* Table top — warm wood, gently rounded */}
+      <RoundedBox args={[3.7, 0.2, 1.55]} radius={0.05} smoothness={3} castShadow receiveShadow position={[0, 0.72, 0]}>
+        <meshStandardMaterial color={matColor(MAT.woodTop, isNight)} roughness={MAT.woodTop.roughness} />
+      </RoundedBox>
       {[-1.45, 1.45].flatMap((x) => [-0.52, 0.52].map((z) => (
         <mesh key={`${x}-${z}`} castShadow position={[x, 0.34, z]}>
           <boxGeometry args={[0.12, 0.72, 0.12]} />
-          <meshStandardMaterial color="#725e4e" roughness={0.9} />
+          <meshStandardMaterial color={matColor(MAT.woodLeg, isNight)} roughness={MAT.woodLeg.roughness} />
         </mesh>
       )))}
       <mesh castShadow position={[-0.75, 0.84, 0.1]} rotation={[0, 0.18, 0]}>
@@ -64,11 +64,11 @@ function MeetingTable() {
       </mesh>
       <mesh castShadow position={[0.6, 0.86, -0.04]}>
         <boxGeometry args={[0.7, 0.08, 0.48]} />
-        <meshStandardMaterial color="#64726f" roughness={0.78} />
+        <meshStandardMaterial color={matColor(MAT.plasticLight, isNight)} roughness={MAT.plasticLight.roughness} />
       </mesh>
       <mesh castShadow position={[0.6, 1.17, -0.25]} rotation={[-0.22, 0, 0]}>
         <boxGeometry args={[0.7, 0.48, 0.05]} />
-        <meshStandardMaterial color="#6f8e92" emissive="#5d858b" emissiveIntensity={0.18} roughness={0.72} />
+        <meshStandardMaterial color={matColor(MAT.screen, isNight)} roughness={MAT.screen.roughness} metalness={0} />
       </mesh>
       <mesh castShadow position={[0, 1.55, -0.85]}>
         <boxGeometry args={[1.5, 0.85, 0.06]} />
@@ -90,16 +90,17 @@ function MeetingTable() {
   );
 }
 
-function DiningTable() {
+function DiningTable({ isNight }: { isNight: boolean }) {
   return (
     <group>
+      {/* Round top — warm wood */}
       <mesh castShadow receiveShadow position={[0, 0.72, 0]}>
-        <cylinderGeometry args={[1.25, 1.25, 0.18, 18]} />
-        <meshStandardMaterial color="#d2a36f" roughness={0.88} />
+        <cylinderGeometry args={[1.25, 1.25, 0.2, 20]} />
+        <meshStandardMaterial color={matColor(MAT.woodTop, isNight)} roughness={MAT.woodTop.roughness} />
       </mesh>
       <mesh castShadow position={[0, 0.34, 0]}>
         <cylinderGeometry args={[0.18, 0.28, 0.72, 12]} />
-        <meshStandardMaterial color="#81654f" roughness={0.9} />
+        <meshStandardMaterial color={matColor(MAT.woodLeg, isNight)} roughness={MAT.woodLeg.roughness} />
       </mesh>
       {[[-0.52, -0.25], [0.44, 0.28], [0.12, -0.5]].map(([x, z], index) => (
         <group key={index} position={[x, 0.85, z]}>
@@ -121,46 +122,50 @@ function DiningTable() {
   );
 }
 
-function Sofa() {
+function Sofa({ isNight }: { isNight: boolean }) {
   return (
     <group>
-      <mesh castShadow receiveShadow position={[0, 0.5, 0]}>
-        <boxGeometry args={[1.35, 0.45, 3.05]} />
-        <meshStandardMaterial color="#879b87" roughness={0.96} />
-      </mesh>
-      <mesh castShadow position={[0.52, 1.12, 0]}>
-        <boxGeometry args={[0.3, 1.1, 3.05]} />
-        <meshStandardMaterial color="#788d7a" roughness={0.96} />
-      </mesh>
+      {/* Body — fabric base */}
+      <RoundedBox args={[1.35, 0.45, 3.05]} radius={0.07} smoothness={3} castShadow receiveShadow position={[0, 0.5, 0]}>
+        <meshStandardMaterial color={matColor(MAT.fabric, isNight)} roughness={MAT.fabric.roughness} />
+      </RoundedBox>
+      {/* Backrest — fabric */}
+      <RoundedBox args={[0.3, 1.1, 3.05]} radius={0.07} smoothness={3} castShadow position={[0.52, 1.12, 0]}>
+        <meshStandardMaterial color={matColor(MAT.fabric, isNight)} roughness={MAT.fabric.roughness} />
+      </RoundedBox>
+      {/* Seat cushions — slightly lighter, gently rounded */}
       {[-1.02, 0, 1.02].map((z) => (
-        <mesh key={z} castShadow position={[-0.08, 0.78, z]}>
-          <boxGeometry args={[0.84, 0.18, 0.86]} />
-          <meshStandardMaterial color={z === 0 ? "#91a58f" : "#9cad98"} roughness={0.98} />
-        </mesh>
+        <RoundedBox key={z} args={[0.84, 0.2, 0.86]} radius={0.06} smoothness={3} castShadow position={[-0.08, 0.78, z]}>
+          <meshStandardMaterial color={matColor(MAT.fabricSoft, isNight)} roughness={MAT.fabricSoft.roughness} />
+        </RoundedBox>
       ))}
+      {/* Side table — wood */}
       <mesh castShadow position={[-0.95, 0.38, 0]}>
         <cylinderGeometry args={[0.55, 0.55, 0.12, 16]} />
-        <meshStandardMaterial color="#c49a6e" roughness={0.88} />
+        <meshStandardMaterial color={matColor(MAT.woodTop, isNight)} roughness={MAT.woodTop.roughness} />
       </mesh>
     </group>
   );
 }
 
-function CoffeeMachine() {
+function CoffeeMachine({ isNight }: { isNight: boolean }) {
   return (
     <group>
-      <mesh castShadow position={[0, 0.8, 0]}>
-        <boxGeometry args={[1.45, 1.6, 0.75]} />
-        <meshStandardMaterial color="#68746f" roughness={0.72} />
-      </mesh>
+      {/* Body — machine plastic */}
+      <RoundedBox args={[1.45, 1.6, 0.75]} radius={0.05} smoothness={3} castShadow position={[0, 0.8, 0]}>
+        <meshStandardMaterial color={matColor(MAT.machine, isNight)} roughness={MAT.machine.roughness} />
+      </RoundedBox>
+      {/* Display panel — dark, no glow */}
       <mesh castShadow position={[0, 1.23, 0.4]}>
         <boxGeometry args={[1.1, 0.42, 0.08]} />
-        <meshStandardMaterial color="#293c3e" emissive="#537f7d" emissiveIntensity={0.22} roughness={0.62} />
+        <meshStandardMaterial color={matColor(MAT.screen, isNight)} roughness={MAT.screen.roughness} metalness={0} />
       </mesh>
+      {/* Dispense area — darker plastic */}
       <mesh castShadow position={[0, 0.72, 0.44]}>
         <boxGeometry args={[0.8, 0.46, 0.08]} />
-        <meshStandardMaterial color="#404a47" roughness={0.72} />
+        <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} />
       </mesh>
+      {/* Cup — ceramic */}
       <mesh castShadow position={[0, 0.38, 0.52]}>
         <cylinderGeometry args={[0.16, 0.13, 0.3, 12]} />
         <meshStandardMaterial color="#f1e8d7" roughness={0.86} />
@@ -188,20 +193,20 @@ function Door({ restroom = false }: { restroom?: boolean }) {
   );
 }
 
-export function OfficeAmenities({ onObjectClick }: { onObjectClick: (kind: ObjectKind) => void }) {
+export function OfficeAmenities({ onObjectClick, isNight }: { onObjectClick: (kind: ObjectKind) => void; isNight: boolean }) {
   return (
     <>
       <InteractiveFurniture kind="meeting" label="会议桌" position={FURNITURE_POSITIONS.meetingTable} labelPosition={[0, 2.45, 0]} onClick={onObjectClick}>
-        <MeetingTable />
+        <MeetingTable isNight={isNight} />
       </InteractiveFurniture>
       <InteractiveFurniture kind="dining" label="餐桌" position={FURNITURE_POSITIONS.diningTable} labelPosition={[0, 2.05, 0]} onClick={onObjectClick}>
-        <DiningTable />
+        <DiningTable isNight={isNight} />
       </InteractiveFurniture>
       <InteractiveFurniture kind="sofa" label="沙发休息区" position={FURNITURE_POSITIONS.sofa} rotation={Math.PI} labelPosition={[0, 2.1, 0]} onClick={onObjectClick}>
-        <Sofa />
+        <Sofa isNight={isNight} />
       </InteractiveFurniture>
       <InteractiveFurniture kind="coffee" label="咖啡机" position={FURNITURE_POSITIONS.coffeeMachine} labelPosition={[0, 2.2, 0]} onClick={onObjectClick}>
-        <CoffeeMachine />
+        <CoffeeMachine isNight={isNight} />
       </InteractiveFurniture>
       <InteractiveFurniture kind="restroom" label="卫生间" position={FURNITURE_POSITIONS.restroomDoor} labelPosition={[0, 3.05, 0]} onClick={onObjectClick}>
         <Door restroom />

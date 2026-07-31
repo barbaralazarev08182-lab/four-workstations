@@ -180,6 +180,38 @@ export const FURNITURE_POSITIONS = {
   entrance: [-7.58, 0, 3.5] as Vector3Tuple,
 };
 
+export interface MaterialDef {
+  day: string;
+  night: string;
+  roughness: number;
+  metalness?: number;
+}
+
+// Restrained material palette — warm toy-house / architectural-model feel.
+// Structural surfaces (wall/floor) use day/night variants; furniture keeps its
+// day color and relies on the lighting presets for the night mood.
+export const MAT: Record<string, MaterialDef> = {
+  wall: { day: "#efe7d7", night: "#474c4b", roughness: 0.96 },
+  floor: { day: "#d6b78c", night: "#574c42", roughness: 0.9 },
+  floorPlankA: { day: "#d6b78c", night: "#574c42", roughness: 0.9 },
+  floorPlankB: { day: "#d0b083", night: "#52473e", roughness: 0.92 },
+  floorPlankC: { day: "#dabf97", night: "#5c5046", roughness: 0.9 },
+  floorSeam: { day: "#c09e6f", night: "#453c35", roughness: 1 },
+  woodTop: { day: "#c9a173", night: "#6e5a45", roughness: 0.78 },
+  woodLeg: { day: "#9c7856", night: "#5c4838", roughness: 0.85 },
+  fabric: { day: "#8a9d8a", night: "#4c574a", roughness: 0.98 },
+  fabricSoft: { day: "#9aad98", night: "#556052", roughness: 0.98 },
+  plastic: { day: "#4a514f", night: "#3b413f", roughness: 0.55 },
+  plasticLight: { day: "#5c6361", night: "#474e4c", roughness: 0.6 },
+  screen: { day: "#2e3436", night: "#2a3236", roughness: 0.35 },
+  metal: { day: "#b3a586", night: "#7d7362", roughness: 0.5, metalness: 0.35 },
+  machine: { day: "#6d7772", night: "#4b5350", roughness: 0.6 },
+};
+
+export function matColor(mat: MaterialDef, isNight: boolean): string {
+  return isNight ? mat.night : mat.day;
+}
+
 export interface LightPreset {
   background: string;
   ambient: { intensity: number; color: string };

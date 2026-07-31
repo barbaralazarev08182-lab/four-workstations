@@ -10,7 +10,7 @@ import { CharacterController } from "@/components/office-3d/CharacterController"
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, LIGHT_PRESETS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
+import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, LIGHT_PRESETS, MAT, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, matColor, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 // RectAreaLight needs its LTC lookup textures initialized once before use.
@@ -59,14 +59,21 @@ function RoomShell({ isNight }: { isNight: boolean }) {
         <boxGeometry args={[16.2, 0.18, 13.2]} />
         <meshStandardMaterial color={isNight ? "#2e2a26" : "#b09070"} roughness={0.95} />
       </mesh>
-      <mesh receiveShadow position={[0, -0.12, 0]}>
-        <boxGeometry args={[15.4, 0.24, 12.4]} />
-        <meshStandardMaterial color={isNight ? "#544a41" : "#d8bd92"} roughness={0.96} />
-      </mesh>
-      {Array.from({ length: 10 }, (_, index) => (
-        <mesh key={`floor-line-${index}`} position={[-6.75 + index * 1.5, 0.012, 0]} receiveShadow>
-          <boxGeometry args={[0.018, 0.012, 12]} />
-          <meshStandardMaterial color={isNight ? "#443c36" : "#c4a375"} roughness={1} />
+      {/* Floor planks — warm wood with a very subtle 3-tone cycle */}
+      {Array.from({ length: 10 }, (_, index) => {
+        const plank = [MAT.floorPlankA, MAT.floorPlankB, MAT.floorPlankC][index % 3];
+        return (
+          <mesh key={`plank-${index}`} receiveShadow position={[-6.93 + index * 1.54, -0.12, 0]}>
+            <boxGeometry args={[1.54, 0.24, 12.4]} />
+            <meshStandardMaterial color={matColor(plank, isNight)} roughness={plank.roughness} />
+          </mesh>
+        );
+      })}
+      {/* Plank seams */}
+      {Array.from({ length: 9 }, (_, index) => (
+        <mesh key={`floor-seam-${index}`} position={[-6.16 + index * 1.54, 0.012, 0]} receiveShadow>
+          <boxGeometry args={[0.02, 0.012, 12]} />
+          <meshStandardMaterial color={matColor(MAT.floorSeam, isNight)} roughness={MAT.floorSeam.roughness} />
         </mesh>
       ))}
       <mesh receiveShadow position={[CAT_ZONE_CENTER[0], 0.02, CAT_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -109,19 +116,19 @@ function RoomShell({ isNight }: { isNight: boolean }) {
       {/* Opening: x [0.9, 4.1], y [1.7, 3.5] */}
       <mesh receiveShadow castShadow position={[-3.4, 2.25, -6.1]}>
         <boxGeometry args={[8.6, 4.5, 0.24]} />
-        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
       </mesh>
       <mesh receiveShadow castShadow position={[5.9, 2.25, -6.1]}>
         <boxGeometry args={[3.6, 4.5, 0.24]} />
-        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
       </mesh>
       <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 4.0, -6.1]}>
         <boxGeometry args={[WINDOW_SIZE[0], 1.0, 0.24]} />
-        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
       </mesh>
       <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 0.85, -6.1]}>
         <boxGeometry args={[WINDOW_SIZE[0], 1.7, 0.24]} />
-        <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
+        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
       </mesh>
 
       {/* Window frame (warm white, real thickness, protrudes slightly inward) */}
@@ -246,7 +253,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
         color={light.windowLight.color}
       />
       <RoomShell isNight={isNight} />
-      <OfficeAmenities onObjectClick={onObjectClick} />
+      <OfficeAmenities onObjectClick={onObjectClick} isNight={isNight} />
 
       {slots.map(({ deskKey, index, member, workstationUser }) => {
         const layout = WORKSTATION_LAYOUT[index];
