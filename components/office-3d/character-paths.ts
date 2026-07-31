@@ -5,6 +5,7 @@ import {
   CENTRAL_AISLE_POINT,
   CHARACTER_POSITIONS,
   FRONT_AISLE_POINT,
+  FURNITURE_POSITIONS,
   LEFT_AISLE_POINT,
   RIGHT_AISLE_POINT,
   type CharacterPositionSet,
@@ -18,7 +19,7 @@ export interface CharacterDestination {
   rotation: number;
 }
 
-type PathNodeId = "center" | "left" | "right" | "back" | "front" | "dining" | "sofa" | "restroom" | "entrance";
+type PathNodeId = "center" | "left" | "right" | "back" | "front" | "dining" | "meeting" | "sofa" | "restroom" | "entrance";
 
 const PATH_NODES: Record<PathNodeId, Vector3Tuple> = {
   center: CENTRAL_AISLE_POINT,
@@ -26,10 +27,11 @@ const PATH_NODES: Record<PathNodeId, Vector3Tuple> = {
   right: RIGHT_AISLE_POINT,
   back: BACK_AISLE_POINT,
   front: FRONT_AISLE_POINT,
-  dining: [5.25, 0, -2.85],
-  sofa: [5.25, 0, 2.05],
-  restroom: [5.25, 0, -4.35],
-  entrance: [-6.2, 0, 3.15],
+  dining: [4.0, 0, -3.5],
+  meeting: [3.3, 0, 3.0],
+  sofa: [-3.5, 0, 4.5],
+  restroom: [-4.5, 0, -4.2],
+  entrance: [-6.2, 0, 3.5],
 };
 
 const PATH_EDGES: Array<[PathNodeId, PathNodeId]> = [
@@ -37,11 +39,12 @@ const PATH_EDGES: Array<[PathNodeId, PathNodeId]> = [
   ["center", "right"],
   ["center", "back"],
   ["center", "front"],
+  ["center", "meeting"],
   ["left", "entrance"],
+  ["left", "restroom"],
   ["right", "dining"],
-  ["right", "sofa"],
-  ["right", "restroom"],
   ["back", "restroom"],
+  ["front", "sofa"],
 ];
 
 function rotationToward(from: Vector3Tuple, to: Vector3Tuple) {
@@ -60,7 +63,7 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
       key,
       position: positions.meetingSeatPosition,
       approach: positions.meetingApproachPosition,
-      rotation: rotationToward(positions.meetingSeatPosition, [0, 0, 4.65]),
+      rotation: rotationToward(positions.meetingSeatPosition, FURNITURE_POSITIONS.meetingTable),
     };
   }
   if (key === "dining") {
@@ -68,7 +71,7 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
       key,
       position: positions.diningSeatPosition,
       approach: positions.diningApproachPosition,
-      rotation: rotationToward(positions.diningSeatPosition, [5.65, 0, -1.7]),
+      rotation: rotationToward(positions.diningSeatPosition, FURNITURE_POSITIONS.diningTable),
     };
   }
   if (key === "sofa") {
@@ -76,7 +79,7 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
       key,
       position: positions.sofaPosition,
       approach: positions.sofaApproachPosition,
-      rotation: -Math.PI / 2,
+      rotation: Math.PI / 2,
     };
   }
   if (key === "coffee") {
@@ -91,7 +94,7 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
     return {
       key,
       position: positions.restroomPosition,
-      approach: [4.65, 0, -4.35],
+      approach: [-4.5, 0, -4.2],
       rotation: Math.PI,
     };
   }
@@ -99,20 +102,21 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
     return {
       key,
       position: positions.entrancePosition,
-      approach: [-6.2, 0, 3.15],
+      approach: [-6.2, 0, 3.5],
       rotation: -Math.PI / 2,
     };
   }
 
-  const deskCenter = positions.deskSeatPosition[2] < 0
-    ? [positions.deskSeatPosition[0], 0, positions.deskSeatPosition[2] - 1.2] as Vector3Tuple
-    : [positions.deskSeatPosition[0], 0, positions.deskSeatPosition[2] + 1.2] as Vector3Tuple;
+  const isLeftDesk = positions.deskSeatPosition[0] < 0;
+  const deskFacing: Vector3Tuple = isLeftDesk
+    ? [positions.deskSeatPosition[0] + 2, 0, positions.deskSeatPosition[2]]
+    : [positions.deskSeatPosition[0] - 2, 0, positions.deskSeatPosition[2]];
 
   return {
     key: "desk",
     position: positions.deskSeatPosition,
     approach: positions.deskApproachPosition,
-    rotation: rotationToward(positions.deskSeatPosition, deskCenter),
+    rotation: rotationToward(positions.deskSeatPosition, deskFacing),
   };
 }
 
@@ -122,14 +126,14 @@ function getSourceExit(userId: string, destinationKey: CharacterDestinationKey):
   if (destinationKey === "dining") return positions.diningApproachPosition;
   if (destinationKey === "sofa") return positions.sofaApproachPosition;
   if (destinationKey === "coffee") return BACK_AISLE_POINT;
-  if (destinationKey === "restroom") return [4.65, 0, -4.35];
-  if (destinationKey === "entrance") return [-6.2, 0, 3.15];
+  if (destinationKey === "restroom") return [-4.5, 0, -4.2];
+  if (destinationKey === "entrance") return [-6.2, 0, 3.5];
   return positions.deskApproachPosition;
 }
 
 function getHubId(userId: string, destinationKey: CharacterDestinationKey): PathNodeId {
   if (destinationKey === "desk") return getPositions(userId).deskSeatPosition[0] < 0 ? "left" : "right";
-  if (destinationKey === "meeting") return "front";
+  if (destinationKey === "meeting") return "meeting";
   if (destinationKey === "dining") return "dining";
   if (destinationKey === "sofa") return "sofa";
   if (destinationKey === "coffee") return "back";

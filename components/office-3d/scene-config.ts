@@ -21,19 +21,28 @@ export const WORKSTATION_LAYOUT: Array<{
   position: Vector3Tuple;
   rotation: number;
 }> = [
-  { position: [-3.2, 0, -2.25], rotation: 0 },
-  { position: [3.2, 0, -2.25], rotation: 0 },
-  { position: [-3.2, 0, 2.35], rotation: Math.PI },
-  { position: [3.2, 0, 2.35], rotation: Math.PI },
+  { position: [-4.5, 0, -1.8], rotation: Math.PI / 2 },
+  { position: [4.5, 0, 2.5], rotation: -Math.PI / 2 },
+  { position: [-4.5, 0, 2.5], rotation: Math.PI / 2 },
+  { position: [4.5, 0, -1.8], rotation: -Math.PI / 2 },
 ];
 
 export const DECORATION_COLORS = ["#eab96d", "#94a889", "#d98c76", "#839db5"];
 
-export const CENTRAL_AISLE_POINT: Vector3Tuple = [0, 0, 0];
-export const LEFT_AISLE_POINT: Vector3Tuple = [-5.35, 0, 0];
-export const RIGHT_AISLE_POINT: Vector3Tuple = [5.25, 0, 0];
-export const BACK_AISLE_POINT: Vector3Tuple = [0, 0, -4.3];
-export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.35];
+export const CENTRAL_AISLE_POINT: Vector3Tuple = [0, 0, 0.3];
+export const LEFT_AISLE_POINT: Vector3Tuple = [-6.2, 0, 0.3];
+export const RIGHT_AISLE_POINT: Vector3Tuple = [6.8, 0, -0.5];
+export const BACK_AISLE_POINT: Vector3Tuple = [0, 0, -4.2];
+export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 4.8];
+
+export const CAT_ZONE_CENTER: Vector3Tuple = [1.5, 0, 4.5];
+export const CAT_ZONE_RADIUS = 1.4;
+
+export const WINDOW_POSITION: Vector3Tuple = [2.5, 2.6, -6.22];
+export const WINDOW_SIZE: Vector3Tuple = [3.2, 1.8, 0.1];
+
+export const MEETING_CARPET_CENTER: Vector3Tuple = [5.2, 0.015, 4.5];
+export const MEETING_CARPET_SIZE: Vector3Tuple = [3.0, 0.03, 1.8];
 
 export interface CharacterPositionSet {
   deskApproachPosition: Vector3Tuple;
@@ -53,26 +62,32 @@ const USER_IDS = ["ming", "hong", "jie", "qixi"] as const;
 
 function buildPositionSet(index: number): CharacterPositionSet {
   const desk = WORKSTATION_LAYOUT[index];
-  const side = index % 2 === 0 ? -1 : 1;
-  const backRow = index < 2;
-  const deskSeatZ = desk.position[2] + (backRow ? 1.25 : -1.25);
-  const meetingX = index % 2 === 0 ? -1.35 : 1.35;
-  const meetingZ = index < 2 ? 3.75 : 5.55;
-  const diningX = index < 2 ? 4.65 : 6.65;
-  const diningZ = index % 2 === 0 ? -2.45 : -0.95;
+  const isLeft = desk.position[0] < 0;
+  const seatX = desk.position[0] + (isLeft ? 0.95 : -0.95);
+  const approachX = isLeft ? -2.2 : 2.2;
+
+  const meetingSeats: Vector3Tuple[] = [
+    [4.35, 0, 3.7], [6.05, 0, 3.7], [4.35, 0, 4.9], [6.05, 0, 4.9],
+  ];
+  const diningSeats: Vector3Tuple[] = [
+    [4.9, 0, -3.5], [5.8, 0, -2.6], [6.7, 0, -3.5], [5.8, 0, -4.4],
+  ];
+  const sofaSeats: Vector3Tuple[] = [
+    [-4.5, 0, 3.5], [-4.5, 0, 4.2], [-4.5, 0, 4.9], [-4.5, 0, 5.5],
+  ];
 
   return {
-    deskApproachPosition: [side * 5.05, 0, deskSeatZ],
-    deskSeatPosition: [desk.position[0], 0, deskSeatZ],
-    meetingApproachPosition: [meetingX, 0, index < 2 ? 3.32 : 5.92],
-    meetingSeatPosition: [meetingX, 0, meetingZ],
-    diningApproachPosition: [index < 2 ? 4.25 : 7.05, 0, diningZ],
-    diningSeatPosition: [diningX, 0, diningZ],
-    sofaApproachPosition: [5.15, 0, 2.25 + index * 0.58],
-    sofaPosition: [6.05, 0, 2.25 + index * 0.58],
-    coffeePosition: [-1.05 + index * 0.7, 0, -5.05],
-    restroomPosition: [4.15 + index * 0.42, 0, -5.35],
-    entrancePosition: [-6.85, 0, 3.25 + index * 0.38],
+    deskApproachPosition: [approachX, 0, desk.position[2]],
+    deskSeatPosition: [seatX, 0, desk.position[2]],
+    meetingApproachPosition: [3.3, 0, index < 2 ? 3.2 : 4.6],
+    meetingSeatPosition: meetingSeats[index],
+    diningApproachPosition: [4.2, 0, diningSeats[index][2]],
+    diningSeatPosition: diningSeats[index],
+    sofaApproachPosition: [-3.2, 0, sofaSeats[index][2]],
+    sofaPosition: sofaSeats[index],
+    coffeePosition: [-0.9 + index * 0.6, 0, -4.5],
+    restroomPosition: [-5.5 + index * 0.4, 0, -5.2],
+    entrancePosition: [-6.5, 0, 2.8 + index * 0.45],
   };
 }
 
@@ -81,10 +96,10 @@ export const CHARACTER_POSITIONS: Record<string, CharacterPositionSet> = Object.
 );
 
 export const FURNITURE_POSITIONS = {
-  meetingTable: [0, 0, 4.65] as Vector3Tuple,
-  diningTable: [5.65, 0, -1.7] as Vector3Tuple,
-  sofa: [6.58, 0, 3.18] as Vector3Tuple,
-  coffeeMachine: [0, 0, -5.72] as Vector3Tuple,
-  restroomDoor: [4.9, 0, -6.15] as Vector3Tuple,
-  entrance: [-7.62, 0, 3.9] as Vector3Tuple,
+  meetingTable: [5.2, 0, 4.3] as Vector3Tuple,
+  diningTable: [5.8, 0, -3.5] as Vector3Tuple,
+  sofa: [-5.5, 0, 4.5] as Vector3Tuple,
+  coffeeMachine: [0, 0, -5.5] as Vector3Tuple,
+  restroomDoor: [-5.5, 0, -6.1] as Vector3Tuple,
+  entrance: [-7.58, 0, 3.5] as Vector3Tuple,
 };

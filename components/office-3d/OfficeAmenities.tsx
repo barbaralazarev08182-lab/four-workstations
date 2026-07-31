@@ -70,9 +70,21 @@ function MeetingTable() {
         <boxGeometry args={[0.7, 0.48, 0.05]} />
         <meshStandardMaterial color="#6f8e92" emissive="#5d858b" emissiveIntensity={0.18} roughness={0.72} />
       </mesh>
-      <mesh castShadow position={[0, 1.72, 0.72]}>
-        <boxGeometry args={[2.1, 1.05, 0.08]} />
-        <meshStandardMaterial color="#e9e5d9" roughness={0.95} />
+      <mesh castShadow position={[0, 1.55, -0.85]}>
+        <boxGeometry args={[1.5, 0.85, 0.06]} />
+        <meshStandardMaterial color="#e2ddd0" roughness={0.95} />
+      </mesh>
+      <mesh position={[-0.35, 1.68, -0.81]}>
+        <boxGeometry args={[0.6, 0.05, 0.02]} />
+        <meshStandardMaterial color="#7396b8" roughness={0.9} />
+      </mesh>
+      <mesh position={[0.15, 1.55, -0.81]}>
+        <boxGeometry args={[0.7, 0.05, 0.02]} />
+        <meshStandardMaterial color="#9aa4b0" roughness={0.9} />
+      </mesh>
+      <mesh position={[-0.1, 1.42, -0.81]}>
+        <boxGeometry args={[0.5, 0.05, 0.02]} />
+        <meshStandardMaterial color="#9aa4b0" roughness={0.9} />
       </mesh>
     </group>
   );
@@ -185,7 +197,7 @@ export function OfficeAmenities({ onObjectClick }: { onObjectClick: (kind: Objec
       <InteractiveFurniture kind="dining" label="餐桌" position={FURNITURE_POSITIONS.diningTable} labelPosition={[0, 2.05, 0]} onClick={onObjectClick}>
         <DiningTable />
       </InteractiveFurniture>
-      <InteractiveFurniture kind="sofa" label="沙发休息区" position={FURNITURE_POSITIONS.sofa} labelPosition={[0, 2.1, 0]} onClick={onObjectClick}>
+      <InteractiveFurniture kind="sofa" label="沙发休息区" position={FURNITURE_POSITIONS.sofa} rotation={Math.PI} labelPosition={[0, 2.1, 0]} onClick={onObjectClick}>
         <Sofa />
       </InteractiveFurniture>
       <InteractiveFurniture kind="coffee" label="咖啡机" position={FURNITURE_POSITIONS.coffeeMachine} labelPosition={[0, 2.2, 0]} onClick={onObjectClick}>

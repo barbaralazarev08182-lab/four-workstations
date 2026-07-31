@@ -8,7 +8,7 @@ import { CharacterController } from "@/components/office-3d/CharacterController"
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { WORKSTATION_LAYOUT } from "@/components/office-3d/scene-config";
+import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 interface OfficeWorldProps {
@@ -49,6 +49,10 @@ function PerformanceReporter({ onFpsChange }: { onFpsChange: (fps: number) => vo
 function RoomShell({ isNight }: { isNight: boolean }) {
   return (
     <group>
+      <mesh receiveShadow position={[0, -0.32, 0]}>
+        <boxGeometry args={[16.2, 0.18, 13.2]} />
+        <meshStandardMaterial color={isNight ? "#2e2a26" : "#b09070"} roughness={0.95} />
+      </mesh>
       <mesh receiveShadow position={[0, -0.12, 0]}>
         <boxGeometry args={[15.4, 0.24, 12.4]} />
         <meshStandardMaterial color={isNight ? "#544a41" : "#d8bd92"} roughness={0.96} />
@@ -59,6 +63,50 @@ function RoomShell({ isNight }: { isNight: boolean }) {
           <meshStandardMaterial color={isNight ? "#443c36" : "#c4a375"} roughness={1} />
         </mesh>
       ))}
+      <mesh receiveShadow position={[CAT_ZONE_CENTER[0], 0.02, CAT_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[CAT_ZONE_RADIUS, 24]} />
+        <meshStandardMaterial color={isNight ? "#4a5568" : "#a8b8c8"} roughness={1} transparent opacity={0.35} />
+      </mesh>
+      <group position={[CAT_ZONE_CENTER[0], 0, CAT_ZONE_CENTER[2]]}>
+        <mesh castShadow position={[-0.55, 0.16, -0.35]}>
+          <cylinderGeometry args={[0.42, 0.48, 0.3, 14]} />
+          <meshStandardMaterial color={isNight ? "#5a6572" : "#8b95a0"} roughness={1} />
+        </mesh>
+        <mesh position={[-0.55, 0.32, -0.35]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.04, 14]} />
+          <meshStandardMaterial color={isNight ? "#4a5560" : "#7a8490"} roughness={1} />
+        </mesh>
+        <mesh castShadow position={[0.5, 0.08, 0.45]}>
+          <cylinderGeometry args={[0.2, 0.16, 0.14, 12]} />
+          <meshStandardMaterial color={isNight ? "#6a7480" : "#9aa4b0"} roughness={0.9} />
+        </mesh>
+        <mesh castShadow position={[0.15, 0.42, -0.6]}>
+          <cylinderGeometry args={[0.09, 0.11, 0.82, 10]} />
+          <meshStandardMaterial color={isNight ? "#5a6068" : "#8a9098"} roughness={1} />
+        </mesh>
+        <mesh castShadow position={[0.15, 0.86, -0.6]}>
+          <sphereGeometry args={[0.14, 10, 8]} />
+          <meshStandardMaterial color={isNight ? "#6a7480" : "#9aa4b0"} roughness={1} />
+        </mesh>
+      </group>
+      <mesh receiveShadow position={MEETING_CARPET_CENTER}>
+        <boxGeometry args={MEETING_CARPET_SIZE} />
+        <meshStandardMaterial color={isNight ? "#4a4a52" : "#b8a890"} roughness={1} transparent opacity={0.5} />
+      </mesh>
+      <group position={WINDOW_POSITION}>
+        <mesh>
+          <boxGeometry args={WINDOW_SIZE} />
+          <meshStandardMaterial color={isNight ? "#3a4a55" : "#c8d4d8"} roughness={0.95} />
+        </mesh>
+        <mesh position={[0, 0, 0.06]}>
+          <boxGeometry args={[WINDOW_SIZE[0] + 0.16, WINDOW_SIZE[1] + 0.16, 0.06]} />
+          <meshStandardMaterial color={isNight ? "#3c4241" : "#e5d7bf"} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 0, 0.1]}>
+          <boxGeometry args={[0.08, WINDOW_SIZE[1], 0.04]} />
+          <meshStandardMaterial color={isNight ? "#3c4241" : "#e5d7bf"} roughness={0.9} />
+        </mesh>
+      </group>
       <mesh receiveShadow castShadow position={[0, 2.25, -6.1]}>
         <boxGeometry args={[15.4, 4.5, 0.24]} />
         <meshStandardMaterial color={isNight ? "#434847" : "#eee4d2"} roughness={0.95} />
