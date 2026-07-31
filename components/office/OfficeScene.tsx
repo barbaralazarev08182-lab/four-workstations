@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
+import type { InteractionAnchor } from "@/components/office-3d/scene-config";
 import type { OfficeDataMode } from "@/hooks/useCurrentStatusSync";
 
 const OfficeWebGLScene = dynamic(
@@ -26,7 +27,7 @@ interface OfficeSceneProps {
   interactionEffects: Record<string, CharacterInteractionEffect>;
   coffeeGifts: InteractionEvent[];
   onClaimCoffee: (interactionId: string) => void;
-  onCharacterClick: (user: OfficeUser) => void;
+  onCharacterClick: (user: OfficeUser, anchor?: InteractionAnchor) => void;
   onObjectClick: (kind: ObjectKind, ownerId?: string) => void;
 }
 

@@ -6,6 +6,7 @@ import type { Group } from "three";
 import { ProceduralCharacter, type CharacterRigRefs } from "@/components/office-3d/ProceduralCharacter";
 import { applyCharacterAnimation } from "@/components/office-3d/character-animation";
 import type { CharacterActionState } from "@/components/office-3d/character-actions";
+import type { InteractionAnchor } from "@/components/office-3d/scene-config";
 import type { CharacterInteractionEffect, OfficeUser } from "@/lib/types";
 
 export type CharacterRendererKind = "procedural" | "glb";
@@ -17,7 +18,7 @@ interface CharacterRendererProps {
   characterRootRef: RefObject<Group | null>;
   actionState: CharacterActionState;
   isMoving: boolean;
-  onClick: () => void;
+  onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
 }
 

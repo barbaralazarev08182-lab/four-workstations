@@ -2,6 +2,11 @@ import type { AccentKey } from "@/lib/types";
 
 export type Vector3Tuple = [number, number, number];
 
+export interface InteractionAnchor {
+  x: number;
+  y: number;
+}
+
 export const OFFICE_CAMERA = {
   position: [10.8, 11.8, 14.5] as Vector3Tuple,
   target: [0, 0.8, 0] as Vector3Tuple,
@@ -25,7 +30,7 @@ export const MOBILE_BREAKPOINT = 760;
 
 export const SAFE_AREA = {
   portrait: { top: 64, bottom: 160, left: 16, right: 16 },
-  landscape: { top: 24, bottom: 24, left: 24, right: 24 },
+  landscape: { top: 48, bottom: 44, left: 24, right: 24 },
   desktop: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
@@ -67,6 +72,13 @@ export const CAMERA_ZONES: Record<Exclude<CameraZoneKey, "auto">, CameraZonePres
 
 export function isMobileViewport(width: number, height: number): boolean {
   return Math.min(width, height) < MOBILE_BREAKPOINT;
+}
+
+export type SafeAreaInsets = { top: number; bottom: number; left: number; right: number };
+
+export function getSafeArea(width: number, height: number): SafeAreaInsets {
+  if (!isMobileViewport(width, height)) return SAFE_AREA.desktop;
+  return height > width ? SAFE_AREA.portrait : SAFE_AREA.landscape;
 }
 
 export function resolveAutoZone(width: number, height: number): Exclude<CameraZoneKey, "auto"> {

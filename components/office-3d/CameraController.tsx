@@ -8,8 +8,7 @@ import {
   CAMERA_OFFSET,
   CAMERA_ZONES,
   OFFICE_CAMERA,
-  SAFE_AREA,
-  isMobileViewport,
+  getSafeArea,
   resolveAutoZone,
   type CameraZoneKey,
   type CameraZonePreset,
@@ -57,11 +56,6 @@ function projectBounds(
   }
 
   return { width: maxR - minR, height: maxU - minU };
-}
-
-function getSafeArea(width: number, height: number) {
-  if (!isMobileViewport(width, height)) return SAFE_AREA.desktop;
-  return height > width ? SAFE_AREA.portrait : SAFE_AREA.landscape;
 }
 
 function calculateFitZoom(

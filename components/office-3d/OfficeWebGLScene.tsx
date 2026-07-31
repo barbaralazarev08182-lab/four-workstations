@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { SRGBColorSpace } from "three";
 import { OfficeWorld } from "@/components/office-3d/OfficeWorld";
 import type { CharacterDebugAction, CharacterDebugCommand } from "@/components/office-3d/character-actions";
-import { OFFICE_CAMERA, type CameraZoneKey } from "@/components/office-3d/scene-config";
+import { OFFICE_CAMERA, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { buildDeskSlots, createSceneDebugUsers } from "@/lib/office/desk-slots";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
 import type { OfficeDataMode } from "@/hooks/useCurrentStatusSync";
@@ -18,7 +18,7 @@ interface OfficeWebGLSceneProps {
   interactionEffects: Record<string, CharacterInteractionEffect>;
   coffeeGifts: InteractionEvent[];
   onClaimCoffee: (interactionId: string) => void;
-  onCharacterClick: (user: OfficeUser) => void;
+  onCharacterClick: (user: OfficeUser, anchor?: InteractionAnchor) => void;
   onObjectClick: (kind: ObjectKind, ownerId?: string) => void;
 }
 

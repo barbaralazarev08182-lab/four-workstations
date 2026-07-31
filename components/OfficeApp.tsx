@@ -1,21 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { Buildings, CalendarBlank, DotsThree, Info, MoonStars, SignOut, Sun, UserCircle } from "@phosphor-icons/react";
-import { Avatar } from "@/components/Avatar";
 import { OfficeScene } from "@/components/office/OfficeScene";
 import { ActivityFeed } from "@/components/panels/ActivityFeed";
 import { CheckInPanel } from "@/components/panels/CheckInPanel";
-import { InteractionPanel } from "@/components/panels/InteractionPanel";
 import { RoomInfoPanel } from "@/components/panels/RoomInfoPanel";
 import { QuickActionDock } from "@/components/navigation/QuickActionDock";
 import { GroupEventToast } from "@/components/feedback/GroupEventToast";
 import { AuthStatusScreen } from "@/components/auth/AuthStatusScreen";
+import { HudTopbar } from "@/components/hud/HudTopbar";
+import { ContextInteractionMenu, type InteractionAnchor } from "@/components/hud/ContextInteractionMenu";
+import { useHudSafeArea } from "@/components/hud/useHudSafeArea";
 import { useOfficeState } from "@/hooks/useOfficeState";
 import { useInteractionsSync } from "@/hooks/useInteractionsSync";
 import { useOfficeManagement } from "@/hooks/useOfficeManagement";
-import { ACTIVE_STATUSES, OBJECT_STATUSES, STATUS_DEFINITIONS } from "@/lib/status";
+import { ACTIVE_STATUSES, OBJECT_STATUSES } from "@/lib/status";
 import type { CharacterInteractionEffect, InteractionEvent, InteractionKind, InteractionReactionKey, ObjectKind, OfficeUser, StatusKey } from "@/lib/types";
 
 const CONNECTING_USER: OfficeUser = {
@@ -38,18 +37,50 @@ interface OfficeAppProps {
   onMembershipChanged?: () => void | Promise<void>;
 }
 
+type ActiveOverlay = "none" | "diary" | "status" | "settings" | "interaction";
+
 export function OfficeApp({ onSignOut, onMembershipChanged }: OfficeAppProps = {}) {
   const { state, hydrated, toast, setToast, updateStatus, reactToActivity, toggleNight, dataMode, officeId, currentUserId } = useOfficeState({ onMembershipRemoved: onMembershipChanged });
+  useHudSafeArea();
   const [selectedUser, setSelectedUser] = useState<OfficeUser | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [suggestedStatuses, setSuggestedStatuses] = useState<StatusKey[]>([]);
-  const [feedCollapsed, setFeedCollapsed] = useState(false);
-  const [mobileFeedOpen, setMobileFeedOpen] = useState(false);
+  const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay>("none");
+  const [interactionAnchor, setInteractionAnchor] = useState<InteractionAnchor | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [interactionEffects, setInteractionEffects] = useState<Record<string, CharacterInteractionEffect>>({});
   const [roomInfoOpen, setRoomInfoOpen] = useState(false);
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const effectTimers = useRef(new Map<string, number>());
+  const sceneRootRef = useRef<HTMLDivElement>(null);
+
+  const openOverlay = useCallback((overlay: ActiveOverlay) => {
+    setActiveOverlay(overlay);
+    setMoreOpen(false);
+    setPanelOpen(false);
+    setRoomInfoOpen(false);
+  }, []);
+  const closeOverlay = useCallback(() => {
+    setActiveOverlay("none");
+    setPanelOpen(false);
+    setRoomInfoOpen(false);
+    setMoreOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const viewport = window.visualViewport;
+    const onViewportResize = () => {
+      if (!viewport) return;
+      document.documentElement.style.setProperty("--hud-viewport-height", `${viewport.height}px`);
+    };
+    onViewportResize();
+    viewport?.addEventListener("resize", onViewportResize);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      viewport?.removeEventListener("resize", onViewportResize);
+    };
+  }, []);
 
   const currentUser = state.users.find((user) => user.isCurrentUser) ?? state.users[0] ?? CONNECTING_USER;
   const onlineCount = state.users.filter((user) => ACTIVE_STATUSES.has(user.status)).length;
@@ -64,13 +95,21 @@ export function OfficeApp({ onSignOut, onMembershipChanged }: OfficeAppProps = {
     setSuggestedStatuses(statuses);
     setPanelOpen(true);
     setMoreOpen(false);
+    setActiveOverlay("status");
   }, [currentUser]);
 
-  const handleCharacterClick = useCallback((user: OfficeUser) => {
+  const handleCharacterClick = useCallback((user: OfficeUser, anchor?: InteractionAnchor) => {
     if (user.isPlaceholder) return;
     setSelectedUser(user);
     setSuggestedStatuses([]);
+    if (user.isCurrentUser) {
+      setPanelOpen(true);
+      setActiveOverlay("status");
+      return;
+    }
+    setInteractionAnchor(anchor ?? { x: window.innerWidth / 2, y: window.innerHeight / 2 });
     setPanelOpen(true);
+    setActiveOverlay("interaction");
   }, []);
 
   const handleObjectClick = useCallback((kind: ObjectKind, ownerId?: string) => {
@@ -148,12 +187,12 @@ export function OfficeApp({ onSignOut, onMembershipChanged }: OfficeAppProps = {
   }, [interactions, setToast, state.users]);
 
   const openRoomInfo = useCallback(() => {
-    setMobileProfileOpen(false);
     if (dataMode === "local") {
       setToast("本地演示模式没有真实房间码");
       return;
     }
     setRoomInfoOpen(true);
+    setActiveOverlay("settings");
     void roomManagement.refresh();
   }, [dataMode, roomManagement, setToast]);
 
@@ -162,37 +201,8 @@ export function OfficeApp({ onSignOut, onMembershipChanged }: OfficeAppProps = {
   }
 
   return (
-    <main className={`office-app ${state.isNight ? "theme-night" : "theme-day"}`}>
-      <header className="topbar">
-        <div className="brand-lockup">
-          <motion.span whileHover={{ rotate: -5, scale: 1.06 }}><Buildings size={28} weight="duotone" /></motion.span>
-          <div><h1>四人工位</h1><small>四个人，一间云办公室</small></div>
-        </div>
-        <div className="topbar-meta">
-          <span><CalendarBlank size={18} />7月29日 周三</span>
-          <span className="office-presence"><i />{officeStatus}</span>
-          <button type="button" onClick={toggleNight} className="theme-toggle" aria-label={state.isNight ? "切换为日间模式" : "切换为夜间模式"}>
-            {state.isNight ? <MoonStars size={18} weight="fill" /> : <Sun size={19} weight="fill" />}
-            {state.isNight ? "夜间模式" : "日光模式"}
-          </button>
-        </div>
-        <button className="room-info-button" type="button" data-testid="open-room-info" onClick={openRoomInfo}><Info size={18} weight="duotone" /><span>房间信息</span></button>
-        <button className="profile-button" type="button" data-testid="profile-checkin" onClick={() => handleCharacterClick(currentUser)}>
-          <Avatar user={currentUser} className={`profile-avatar avatar-${currentUser.accent}`} />
-          <span><strong>我的工位</strong><small>{STATUS_DEFINITIONS[currentUser.status].label}</small></span>
-        </button>
-        <button className="mobile-profile-menu-button" type="button" aria-label="打开个人菜单" aria-expanded={mobileProfileOpen} onClick={() => setMobileProfileOpen((value) => !value)}><DotsThree size={21} weight="bold" /></button>
-      </header>
-
-      {mobileProfileOpen ? (
-        <div className="mobile-profile-menu" role="menu">
-          <button type="button" role="menuitem" onClick={() => { setMobileProfileOpen(false); handleCharacterClick(currentUser); }}><UserCircle size={17} />更新我的状态</button>
-          <button type="button" role="menuitem" onClick={openRoomInfo}><Info size={17} />房间信息</button>
-          {onSignOut ? <button type="button" role="menuitem" onClick={() => { setMobileProfileOpen(false); void onSignOut(); }}><SignOut size={17} />退出登录</button> : null}
-        </div>
-      ) : null}
-
-      <div className={`app-content ${feedCollapsed ? "feed-is-collapsed" : ""}`}>
+    <main className={`office-app office-app-hud ${state.isNight ? "theme-night" : "theme-day"}`} data-active-overlay={activeOverlay}>
+      <div className="office-stage" ref={sceneRootRef} tabIndex={-1} role="region" aria-label="办公室3D场景">
         <OfficeScene
           users={state.users}
           isNight={state.isNight}
@@ -204,51 +214,66 @@ export function OfficeApp({ onSignOut, onMembershipChanged }: OfficeAppProps = {
           onCharacterClick={handleCharacterClick}
           onObjectClick={handleObjectClick}
         />
-        <ActivityFeed
-          activities={state.activities}
-          users={state.users}
-          collapsed={feedCollapsed}
-          mobileOpen={mobileFeedOpen}
-          onToggle={() => setFeedCollapsed((value) => !value)}
-          onMobileToggle={() => setMobileFeedOpen((value) => !value)}
-          onReact={reactToActivity}
-          onUserClick={handleCharacterClick}
-          interactions={interactions.events}
-        />
       </div>
+
+      <HudTopbar
+        officeName="四人工位"
+        onlineLabel={officeStatus}
+        isNight={state.isNight}
+        diaryOpen={activeOverlay === "diary"}
+        settingsOpen={roomInfoOpen}
+        currentUser={currentUser}
+        onToggleNight={toggleNight}
+        onToggleDiary={() => (activeOverlay === "diary" ? closeOverlay() : openOverlay("diary"))}
+        onOpenSettings={openRoomInfo}
+        onProfileClick={() => handleCharacterClick(currentUser)}
+      />
+
+      <ActivityFeed
+        activities={state.activities}
+        users={state.users}
+        open={activeOverlay === "diary"}
+        onClose={closeOverlay}
+        onReact={reactToActivity}
+        onUserClick={handleCharacterClick}
+        interactions={interactions.events}
+      />
 
       <QuickActionDock currentStatus={currentUser.status} moreOpen={moreOpen} onMoreToggle={() => setMoreOpen((value) => !value)} onStatus={handleQuickStatus} />
 
       {selectedUser?.isCurrentUser ? (
         <CheckInPanel
           key={`${selectedUser.id}-${suggestedStatuses.join("-")}-${panelOpen ? "open" : "closed"}`}
-          open={panelOpen}
+          open={panelOpen && activeOverlay === "status"}
           user={selectedUser}
           suggestedStatuses={suggestedStatuses}
-          onClose={() => setPanelOpen(false)}
+          onClose={() => { setPanelOpen(false); closeOverlay(); }}
           onSubmit={(status, note, mood) => updateStatus(currentUser.id, status, note, mood)}
           onSignOut={onSignOut}
+          fallbackFocusRef={sceneRootRef}
         />
       ) : (
-        <InteractionPanel
+        <ContextInteractionMenu
           key={`${selectedUser?.id ?? "none"}-${panelOpen ? "open" : "closed"}`}
-          open={panelOpen}
+          open={panelOpen && activeOverlay === "interaction"}
           user={selectedUser}
           currentUserId={currentUserId ?? currentUser.id}
           events={interactions.events}
-          onClose={() => setPanelOpen(false)}
+          anchor={interactionAnchor}
+          onClose={() => { setPanelOpen(false); closeOverlay(); }}
           onSend={sendInteraction}
+          fallbackFocusRef={sceneRootRef}
         />
       )}
 
       <RoomInfoPanel
-        open={roomInfoOpen}
+        open={roomInfoOpen && activeOverlay === "settings"}
         info={roomManagement.info}
         users={state.users}
         loading={roomManagement.loading}
         busyAction={roomManagement.busyAction}
         errorMessage={roomManagement.errorMessage}
-        onClose={() => setRoomInfoOpen(false)}
+        onClose={() => { setRoomInfoOpen(false); closeOverlay(); }}
         onRefresh={roomManagement.refresh}
         onLeave={roomManagement.leaveOffice}
         onDelete={roomManagement.deleteOffice}

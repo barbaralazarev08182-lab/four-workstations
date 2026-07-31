@@ -10,14 +10,14 @@ import { CharacterController } from "@/components/office-3d/CharacterController"
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey } from "@/components/office-3d/scene-config";
+import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 interface OfficeWorldProps {
   users: OfficeUser[];
   isNight: boolean;
   cameraZone: CameraZoneKey;
-  onCharacterClick: (user: OfficeUser) => void;
+  onCharacterClick: (user: OfficeUser, anchor?: InteractionAnchor) => void;
   onObjectClick: (kind: ObjectKind, ownerId?: string) => void;
   onFpsChange: (fps: number) => void;
   debugCommand: CharacterDebugCommand | null;
@@ -206,7 +206,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
                 speedMultiplier={speedMultiplier}
                 debugCommand={debugCommand}
                 interactionEffect={interactionEffects[member.id]}
-                onClick={() => onCharacterClick(member)}
+                onClick={(anchor) => onCharacterClick(member, anchor)}
               />
             ) : (
               <Html position={[layout.position[0], 2.38, layout.position[2]]} center zIndexRange={[14, 6]}>
