@@ -27,11 +27,11 @@ const PATH_NODES: Record<PathNodeId, Vector3Tuple> = {
   right: RIGHT_AISLE_POINT,
   back: BACK_AISLE_POINT,
   front: FRONT_AISLE_POINT,
-  dining: [4.0, 0, -3.5],
-  meeting: [3.3, 0, 3.0],
-  sofa: [-3.5, 0, 4.5],
+  dining: [4.4, 0, -3.9],
+  meeting: [3.3, 0, 4.05],
+  sofa: [-3.8, 0, 4.2],
   restroom: [-4.5, 0, -4.2],
-  entrance: [-6.2, 0, 3.5],
+  entrance: [-6.4, 0, 3.5],
 };
 
 const PATH_EDGES: Array<[PathNodeId, PathNodeId]> = [
