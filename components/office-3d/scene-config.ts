@@ -10,6 +10,70 @@ export const OFFICE_CAMERA = {
   far: 100,
 };
 
+export const CAMERA_OFFSET: Vector3Tuple = [
+  OFFICE_CAMERA.position[0] - OFFICE_CAMERA.target[0],
+  OFFICE_CAMERA.position[1] - OFFICE_CAMERA.target[1],
+  OFFICE_CAMERA.position[2] - OFFICE_CAMERA.target[2],
+];
+
+export const ROOM_BOUNDS = {
+  min: [-8.1, -0.41, -6.6] as Vector3Tuple,
+  max: [8.1, 4.5, 6.6] as Vector3Tuple,
+};
+
+export const MOBILE_BREAKPOINT = 760;
+
+export const SAFE_AREA = {
+  portrait: { top: 64, bottom: 160, left: 16, right: 16 },
+  landscape: { top: 24, bottom: 24, left: 24, right: 24 },
+  desktop: { top: 0, bottom: 0, left: 0, right: 0 },
+};
+
+export type CameraZoneKey = "auto" | "desktop" | "workstations" | "living" | "amenities" | "overview";
+
+export interface CameraZonePreset {
+  target: Vector3Tuple;
+  bounds: { min: Vector3Tuple; max: Vector3Tuple };
+  margin: number;
+}
+
+export const CAMERA_ZONES: Record<Exclude<CameraZoneKey, "auto">, CameraZonePreset> = {
+  desktop: {
+    target: [0, 0.8, 0],
+    bounds: ROOM_BOUNDS,
+    margin: 0.88,
+  },
+  workstations: {
+    target: [0, 0.5, 0.3],
+    bounds: { min: [-5.5, 0, -2.8], max: [5.5, 2.0, 3.5] },
+    margin: 0.92,
+  },
+  living: {
+    target: [-0.5, 0.5, 4.5],
+    bounds: { min: [-6.5, 0, 2.8], max: [7.2, 2.2, 6.2] },
+    margin: 0.88,
+  },
+  amenities: {
+    target: [0, 0.5, -4.0],
+    bounds: { min: [-6.5, 0, -6.2], max: [7.0, 2.2, -1.5] },
+    margin: 0.90,
+  },
+  overview: {
+    target: [0, 0.8, 0],
+    bounds: ROOM_BOUNDS,
+    margin: 0.85,
+  },
+};
+
+export function isMobileViewport(width: number, height: number): boolean {
+  return Math.min(width, height) < MOBILE_BREAKPOINT;
+}
+
+export function resolveAutoZone(width: number, height: number): Exclude<CameraZoneKey, "auto"> {
+  if (!isMobileViewport(width, height)) return "desktop";
+  return height > width ? "workstations" : "overview";
+}
+
 export const ACCENT_COLORS: Record<AccentKey, string> = {
   sage: "#77906e",
   terracotta: "#d37f60",
