@@ -21,3 +21,10 @@ supabase/.temp/
 
 # Playwright MCP session artifacts
 .playwright-mcp/
+
+# Blender asset pipeline
+assets-source/downloads/
+assets-source/blender/*.blend1
+assets-source/blender/*_autosave*
+assets-source/blender/cache/
+tools/blender/__pycache__/
