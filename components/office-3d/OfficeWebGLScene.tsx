@@ -4,6 +4,7 @@ import { Component, Suspense, useCallback, useMemo, useRef, useState, type Error
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { SRGBColorSpace } from "three";
 import { OfficeWorld } from "@/components/office-3d/OfficeWorld";
+import { MaterialEnvironment } from "@/components/office-3d/MaterialEnvironment";
 import type { CharacterDebugAction, CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { OFFICE_CAMERA, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import type { CatPose } from "@/components/office-3d/ChangFenCat";
@@ -175,6 +176,7 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
           }}
         >
           <Suspense fallback={null}>
+            <MaterialEnvironment />
             <OfficeWorld {...props} cameraZone={props.cameraZone ?? "auto"} users={sceneUsers} onFpsChange={setFps} debugCommand={debugCommand} speedMultiplier={speedMultiplier} />
             <SceneRuntimeProbe onUpdate={setRuntimeDiagnostics} />
           </Suspense>

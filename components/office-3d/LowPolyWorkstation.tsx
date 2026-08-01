@@ -6,6 +6,8 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { DoubleSide } from "three";
 import type { InteractionEvent, OfficeUser } from "@/lib/types";
 import { ACCENT_COLORS, DECORATION_COLORS, MAT, matColor, type Vector3Tuple } from "@/components/office-3d/scene-config";
+import { materialProps } from "@/components/office-3d/material-presets";
+import { softFabricBump } from "@/components/office-3d/material-textures";
 
 interface LowPolyWorkstationProps {
   user: OfficeUser;
@@ -19,16 +21,16 @@ interface LowPolyWorkstationProps {
   onClaimCoffee: (interactionId: string) => void;
 }
 
-function DeskLamp({ color, isOn }: { color: string; isOn: boolean }) {
+function DeskLamp({ color, isOn, isNight }: { color: string; isOn: boolean; isNight: boolean }) {
   return (
     <group position={[1.15, 1.02, -0.12]}>
       <mesh castShadow position={[0, 0.03, 0]}>
         <cylinderGeometry args={[0.18, 0.22, 0.08, 12]} />
-        <meshStandardMaterial color="#565950" roughness={0.8} />
+        <meshPhysicalMaterial {...materialProps("metal", isNight)} color="#565950" />
       </mesh>
       <mesh castShadow position={[0, 0.42, 0]} rotation={[0, 0, -0.22]}>
         <cylinderGeometry args={[0.035, 0.035, 0.78, 8]} />
-        <meshStandardMaterial color="#666a61" roughness={0.7} />
+        <meshPhysicalMaterial {...materialProps("metal", isNight)} color="#666a61" />
       </mesh>
       <mesh castShadow position={[0.13, 0.8, 0]} rotation={[0, 0, 0.22]}>
         <coneGeometry args={[0.22, 0.35, 12, 1, true]} />
@@ -44,21 +46,21 @@ function Chair({ isNight }: { isNight: boolean }) {
     <group position={[0, 0, 1.25]}>
       {/* Seat cushion — fabric, distinct from the wood desk */}
       <RoundedBox args={[0.95, 0.2, 0.9]} radius={0.05} smoothness={3} castShadow position={[0, 0.55, 0]}>
-        <meshStandardMaterial color={matColor(MAT.fabric, isNight)} roughness={MAT.fabric.roughness} />
+        <meshPhysicalMaterial {...materialProps("fabric", isNight)} bumpMap={softFabricBump} bumpScale={0.004} />
       </RoundedBox>
       {/* Backrest — slightly lighter fabric, gentle thickness + rounding */}
       <RoundedBox args={[0.95, 0.92, 0.16]} radius={0.05} smoothness={3} castShadow position={[0, 1.04, 0.4]} rotation={[-0.1, 0, 0]}>
-        <meshStandardMaterial color={matColor(MAT.fabricSoft, isNight)} roughness={MAT.fabricSoft.roughness} />
+        <meshPhysicalMaterial {...materialProps("fabric", isNight)} color={matColor(MAT.fabricSoft, isNight)} bumpMap={softFabricBump} bumpScale={0.004} />
       </RoundedBox>
       {/* Base column + star base — muted plastic */}
       <mesh castShadow position={[0, 0.25, 0]}>
         <cylinderGeometry args={[0.08, 0.1, 0.58, 8]} />
-        <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} />
+        <meshPhysicalMaterial {...materialProps("plastic", isNight)} />
       </mesh>
       {[0, 1, 2, 3, 4].map((arm) => (
         <mesh key={arm} castShadow position={[Math.sin(arm * 1.256) * 0.34, 0.06, Math.cos(arm * 1.256) * 0.34]} rotation={[0, arm * 1.256, Math.PI / 2]}>
           <cylinderGeometry args={[0.035, 0.045, 0.6, 6]} />
-          <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} />
+          <meshPhysicalMaterial {...materialProps("metal", isNight)} color="#50544f" />
         </mesh>
       ))}
     </group>
@@ -81,13 +83,13 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
     <group position={position} rotation={[0, rotation, 0]}>
       {/* Desk top — warm wood, gently rounded, credible thickness */}
       <RoundedBox args={[3.05, 0.26, 1.35]} radius={0.05} smoothness={3} receiveShadow castShadow position={[0, 0.82, 0]}>
-        <meshStandardMaterial color={matColor(MAT.woodTop, isNight)} roughness={MAT.woodTop.roughness} />
+        <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} />
       </RoundedBox>
       {/* Legs — slightly deeper wood */}
       {[-1.25, 1.25].flatMap((x) => [-0.48, 0.48].map((z) => (
         <mesh key={`${x}-${z}`} castShadow position={[x, 0.4, z]}>
           <boxGeometry args={[0.14, 0.82, 0.14]} />
-          <meshStandardMaterial color={matColor(MAT.woodLeg, isNight)} roughness={MAT.woodLeg.roughness} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={matColor(MAT.woodLeg, isNight)} />
         </mesh>
       )))}
 
@@ -100,21 +102,21 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
       >
         {/* Bezel — dark plastic */}
         <RoundedBox args={[1.35, 0.82, 0.12]} radius={0.03} smoothness={3} castShadow position={[0, 0.25, 0]}>
-          <meshStandardMaterial color={matColor(MAT.plastic, isNight)} roughness={MAT.plastic.roughness} emissive={hovered ? accent : "#000000"} emissiveIntensity={hovered ? 0.22 : 0} />
+          <meshPhysicalMaterial {...materialProps("plastic", isNight)} emissive={hovered ? accent : "#000000"} emissiveIntensity={hovered ? 0.22 : 0} />
         </RoundedBox>
-        {/* Screen — dark gray-black, low roughness, no emissive glow */}
+        {/* Screen — dark gray-black, low roughness, reads a little environment, no emissive */}
         <mesh position={[0, 0.25, -0.066]}>
           <planeGeometry args={[1.16, 0.64]} />
-          <meshStandardMaterial color={matColor(MAT.screen, isNight)} roughness={MAT.screen.roughness} metalness={0} />
+          <meshPhysicalMaterial {...materialProps("screen", isNight)} />
         </mesh>
         {/* Stand neck + foot — muted plastic */}
         <mesh castShadow position={[0, -0.28, 0]}>
           <boxGeometry args={[0.12, 0.3, 0.12]} />
-          <meshStandardMaterial color={matColor(MAT.plasticLight, isNight)} roughness={MAT.plasticLight.roughness} />
+          <meshPhysicalMaterial {...materialProps("plastic", isNight)} color={matColor(MAT.plasticLight, isNight)} />
         </mesh>
         <mesh castShadow position={[0, -0.43, 0.04]}>
           <boxGeometry args={[0.58, 0.08, 0.34]} />
-          <meshStandardMaterial color={matColor(MAT.plasticLight, isNight)} roughness={MAT.plasticLight.roughness} />
+          <meshPhysicalMaterial {...materialProps("plastic", isNight)} color={matColor(MAT.plasticLight, isNight)} />
         </mesh>
       </group>
 
@@ -153,7 +155,7 @@ export function LowPolyWorkstation({ user, index, position, rotation, isNight, o
           <pointLight position={[0, 0.32, 0]} intensity={0.45} distance={1.2} color="#ffc980" />
         </group>
       ) : null}
-      <DeskLamp color={accent} isOn={lampOn} />
+      <DeskLamp color={accent} isOn={lampOn} isNight={isNight} />
       <Chair isNight={isNight} />
       <mesh receiveShadow position={[0, 0.018, 0.05]}>
         <boxGeometry args={[3.5, 0.035, 2.8]} />

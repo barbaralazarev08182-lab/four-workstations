@@ -4,6 +4,8 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import { MAT, matColor } from "@/components/office-3d/scene-config";
+import { materialProps } from "@/components/office-3d/material-presets";
+import { softFabricBump } from "@/components/office-3d/material-textures";
 
 export type CatPose = "idle" | "lying" | "walking";
 
@@ -163,33 +165,33 @@ export function ChangFenCat({ isNight, forcedPose = null, restRotation = 0, onCl
         {/* Stocky body — wide, rounded */}
         <mesh castShadow receiveShadow position={[0, 0.34, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.18, 1, 1]}>
           <capsuleGeometry args={[0.3, 0.42, 5, 12]} />
-          <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
         </mesh>
         {/* Broad chest */}
         <mesh castShadow position={[0, 0.32, 0.24]} scale={[1.1, 1, 0.9]}>
           <sphereGeometry args={[0.28, 12, 10]} />
-          <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
         </mesh>
 
         {/* Head — large, wider than tall */}
         <group ref={head} position={[0, 0.42, 0.42]}>
           <mesh castShadow receiveShadow scale={[1.22, 1.0, 1.05]}>
             <sphereGeometry args={[0.3, 14, 12]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           {/* Thick cheeks */}
           <mesh castShadow position={[-0.2, -0.06, 0.14]}>
             <sphereGeometry args={[0.16, 10, 8]} />
-            <meshStandardMaterial color={light} roughness={MAT.catLight.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={light} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           <mesh castShadow position={[0.2, -0.06, 0.14]}>
             <sphereGeometry args={[0.16, 10, 8]} />
-            <meshStandardMaterial color={light} roughness={MAT.catLight.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={light} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           {/* Short flat muzzle */}
           <mesh position={[0, -0.07, 0.26]} scale={[1.2, 0.8, 0.8]}>
             <sphereGeometry args={[0.12, 10, 8]} />
-            <meshStandardMaterial color={light} roughness={MAT.catLight.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={light} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           {/* Nose */}
           <mesh position={[0, -0.03, 0.35]} scale={[1.3, 0.9, 0.7]}>
@@ -220,19 +222,19 @@ export function ChangFenCat({ isNight, forcedPose = null, restRotation = 0, onCl
           {/* Small wide-set ears + inner */}
           <mesh castShadow position={[-0.19, 0.26, 0.02]} rotation={[0, 0, 0.28]}>
             <coneGeometry args={[0.09, 0.16, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           <mesh position={[-0.19, 0.25, 0.05]} rotation={[0, 0, 0.28]}>
             <coneGeometry args={[0.05, 0.1, 8]} />
-            <meshStandardMaterial color={earInner} roughness={MAT.catEarInner.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={earInner} />
           </mesh>
           <mesh castShadow position={[0.19, 0.26, 0.02]} rotation={[0, 0, -0.28]}>
             <coneGeometry args={[0.09, 0.16, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           <mesh position={[0.19, 0.25, 0.05]} rotation={[0, 0, -0.28]}>
             <coneGeometry args={[0.05, 0.1, 8]} />
-            <meshStandardMaterial color={earInner} roughness={MAT.catEarInner.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={earInner} />
           </mesh>
         </group>
 
@@ -240,25 +242,25 @@ export function ChangFenCat({ isNight, forcedPose = null, restRotation = 0, onCl
         <group ref={legFL} position={[-0.17, 0.16, 0.22]}>
           <mesh castShadow position={[0, -0.08, 0]}>
             <cylinderGeometry args={[0.085, 0.095, 0.2, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
         </group>
         <group ref={legFR} position={[0.17, 0.16, 0.22]}>
           <mesh castShadow position={[0, -0.08, 0]}>
             <cylinderGeometry args={[0.085, 0.095, 0.2, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
         </group>
         <group ref={legBL} position={[-0.17, 0.16, -0.22]}>
           <mesh castShadow position={[0, -0.08, 0]}>
             <cylinderGeometry args={[0.085, 0.095, 0.2, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
         </group>
         <group ref={legBR} position={[0.17, 0.16, -0.22]}>
           <mesh castShadow position={[0, -0.08, 0]}>
             <cylinderGeometry args={[0.085, 0.095, 0.2, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
         </group>
 
@@ -266,11 +268,11 @@ export function ChangFenCat({ isNight, forcedPose = null, restRotation = 0, onCl
         <group ref={tail} position={[0, 0.34, -0.34]}>
           <mesh castShadow position={[0, 0.12, -0.06]} rotation={[0.7, 0, 0]}>
             <capsuleGeometry args={[0.075, 0.26, 4, 8]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
           <mesh position={[0, 0.28, -0.16]}>
             <sphereGeometry args={[0.09, 8, 6]} />
-            <meshStandardMaterial color={body} roughness={MAT.catBody.roughness} metalness={0} />
+            <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={body} bumpMap={softFabricBump} bumpScale={0.003} />
           </mesh>
         </group>
       </group>

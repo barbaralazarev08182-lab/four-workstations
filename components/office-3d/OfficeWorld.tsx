@@ -8,6 +8,8 @@ import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUs
 import { CameraController } from "@/components/office-3d/CameraController";
 import { CharacterController } from "@/components/office-3d/CharacterController";
 import { ChangFenCat, type CatPose } from "@/components/office-3d/ChangFenCat";
+import { materialProps } from "@/components/office-3d/material-presets";
+import { softFabricBump, wallBump, woodRoughness } from "@/components/office-3d/material-textures";
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
@@ -70,7 +72,7 @@ function RoomShell({ isNight, catPose }: { isNight: boolean; catPose?: CatPose |
         return (
           <mesh key={`plank-${index}`} receiveShadow position={[-6.93 + index * 1.54, -0.12, 0]}>
             <boxGeometry args={[1.54, 0.24, 12.4]} />
-            <meshStandardMaterial color={matColor(plank, isNight)} roughness={plank.roughness} />
+            <meshPhysicalMaterial {...materialProps("floorWood", isNight)} color={matColor(plank, isNight)} roughnessMap={woodRoughness} />
           </mesh>
         );
       })}
@@ -86,18 +88,18 @@ function RoomShell({ isNight, catPose }: { isNight: boolean; catPose?: CatPose |
         <meshStandardMaterial color={isNight ? "#4a5568" : "#a8b8c8"} roughness={1} transparent opacity={0.35} />
       </mesh>
       <group position={[CAT_ZONE_CENTER[0], 0, CAT_ZONE_CENTER[2]]}>
-        {/* Soft round cat bed — base + rim + inner cushion */}
+        {/* Soft round cat bed — base + rim + inner cushion (plush) */}
         <mesh castShadow receiveShadow position={[-0.55, 0.08, -0.35]}>
           <cylinderGeometry args={[0.44, 0.48, 0.16, 16]} />
-          <meshStandardMaterial color={matColor(MAT.catBed, isNight)} roughness={MAT.catBed.roughness} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={matColor(MAT.catBed, isNight)} bumpMap={softFabricBump} bumpScale={0.004} />
         </mesh>
         <mesh castShadow position={[-0.55, 0.2, -0.35]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.4, 0.12, 8, 16]} />
-          <meshStandardMaterial color={matColor(MAT.catBed, isNight)} roughness={MAT.catBed.roughness} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={matColor(MAT.catBed, isNight)} bumpMap={softFabricBump} bumpScale={0.004} />
         </mesh>
         <mesh position={[-0.55, 0.18, -0.35]}>
           <cylinderGeometry args={[0.32, 0.32, 0.06, 16]} />
-          <meshStandardMaterial color={matColor(MAT.catBedInner, isNight)} roughness={MAT.catBedInner.roughness} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={matColor(MAT.catBedInner, isNight)} bumpMap={softFabricBump} bumpScale={0.005} />
         </mesh>
         {/* Food bowl — outer bowl + inner food */}
         <mesh castShadow position={[0.5, 0.07, 0.45]}>
@@ -127,7 +129,7 @@ function RoomShell({ isNight, catPose }: { isNight: boolean; catPose?: CatPose |
         {/* Small plush cushion — soft cloth anchor, gently rotated */}
         <mesh receiveShadow castShadow position={[0, 0.045, 0]} rotation={[0, 0.12, 0]}>
           <boxGeometry args={[1.35, 0.07, 0.95]} />
-          <meshPhysicalMaterial color={isNight ? "#5b6058" : "#c3bcae"} roughness={0.96} metalness={0} sheen={0.4} sheenRoughness={0.9} sheenColor={isNight ? "#6d726a" : "#d8d2c6"} />
+          <meshPhysicalMaterial {...materialProps("softFabric", isNight)} color={isNight ? "#5b6058" : "#c3bcae"} bumpMap={softFabricBump} bumpScale={0.004} />
         </mesh>
         <ChangFenCat isNight={isNight} forcedPose={catPose ?? null} restRotation={catRestRotation} />
       </group>
@@ -145,62 +147,55 @@ function RoomShell({ isNight, catPose }: { isNight: boolean; catPose?: CatPose |
       {/* Opening: x [0.9, 4.1], y [1.7, 3.5] */}
       <mesh receiveShadow castShadow position={[-3.4, 2.25, -6.1]}>
         <boxGeometry args={[8.6, 4.5, 0.24]} />
-        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
+        <meshPhysicalMaterial {...materialProps("wall", isNight)} bumpMap={wallBump} bumpScale={0.003} />
       </mesh>
       <mesh receiveShadow castShadow position={[5.9, 2.25, -6.1]}>
         <boxGeometry args={[3.6, 4.5, 0.24]} />
-        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
+        <meshPhysicalMaterial {...materialProps("wall", isNight)} bumpMap={wallBump} bumpScale={0.003} />
       </mesh>
       <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 4.0, -6.1]}>
         <boxGeometry args={[WINDOW_SIZE[0], 1.0, 0.24]} />
-        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
+        <meshPhysicalMaterial {...materialProps("wall", isNight)} bumpMap={wallBump} bumpScale={0.003} />
       </mesh>
       <mesh receiveShadow castShadow position={[WINDOW_POSITION[0], 0.85, -6.1]}>
         <boxGeometry args={[WINDOW_SIZE[0], 1.7, 0.24]} />
-        <meshStandardMaterial color={matColor(MAT.wall, isNight)} roughness={MAT.wall.roughness} />
+        <meshPhysicalMaterial {...materialProps("wall", isNight)} bumpMap={wallBump} bumpScale={0.003} />
       </mesh>
 
       {/* Window frame (warm white, real thickness, protrudes slightly inward) */}
       <group>
         <mesh castShadow receiveShadow position={[0.9, WINDOW_POSITION[1], -5.99]}>
           <boxGeometry args={[0.12, WINDOW_SIZE[1], 0.22]} />
-          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={isNight ? "#4a4f4e" : "#e8e0d0"} />
         </mesh>
         <mesh castShadow receiveShadow position={[4.1, WINDOW_POSITION[1], -5.99]}>
           <boxGeometry args={[0.12, WINDOW_SIZE[1], 0.22]} />
-          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={isNight ? "#4a4f4e" : "#e8e0d0"} />
         </mesh>
         <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], 3.5, -5.99]}>
           <boxGeometry args={[WINDOW_SIZE[0], 0.12, 0.22]} />
-          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={isNight ? "#4a4f4e" : "#e8e0d0"} />
         </mesh>
         {/* Windowsill — wider and protrudes further into the room */}
         <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], 1.7, -5.89]}>
           <boxGeometry args={[WINDOW_SIZE[0] + 0.24, 0.14, 0.42]} />
-          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={isNight ? "#4a4f4e" : "#e8e0d0"} />
         </mesh>
         {/* Slim middle vertical muntin */}
         <mesh castShadow receiveShadow position={[WINDOW_POSITION[0], WINDOW_POSITION[1], -5.99]}>
           <boxGeometry args={[0.07, WINDOW_SIZE[1], 0.16]} />
-          <meshStandardMaterial color={isNight ? "#4a4f4e" : "#e8e0d0"} roughness={0.85} />
+          <meshPhysicalMaterial {...materialProps("furnitureWood", isNight)} color={isNight ? "#4a4f4e" : "#e8e0d0"} />
         </mesh>
       </group>
 
-      {/* Glass — thin, restrained gray-blue, sits inside wall thickness behind the frame */}
-      <mesh receiveShadow position={[WINDOW_POSITION[0], WINDOW_POSITION[1], -6.16]}>
+      {/* Glass — physical glass: translucent, subtle reflection, no blue-plastic look */}
+      <mesh position={[WINDOW_POSITION[0], WINDOW_POSITION[1], -6.16]}>
         <boxGeometry args={[WINDOW_SIZE[0], WINDOW_SIZE[1], 0.02]} />
-        <meshStandardMaterial
-          color={isNight ? "#3a4a55" : "#c2d0d6"}
-          roughness={0.15}
-          metalness={0}
-          transparent
-          opacity={isNight ? 0.28 : 0.22}
-          depthWrite={false}
-        />
+        <meshPhysicalMaterial {...materialProps("glass", isNight)} depthWrite={false} />
       </mesh>
       <mesh receiveShadow castShadow position={[-7.58, 2.25, 0]}>
         <boxGeometry args={[0.24, 4.5, 12.2]} />
-        <meshStandardMaterial color={isNight ? "#3c4241" : "#e5d7bf"} roughness={0.95} />
+        <meshPhysicalMaterial {...materialProps("wall", isNight)} bumpMap={wallBump} bumpScale={0.003} />
       </mesh>
 
       <group position={[-4.2, 2.7, -6.24]}>
