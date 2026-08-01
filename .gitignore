@@ -23,6 +23,8 @@ supabase/.temp/
 .playwright-mcp/
 
 # Blender asset pipeline
+*.blend1
+*.blend2
 assets-source/downloads/
 assets-source/blender/*.blend1
 assets-source/blender/*_autosave*

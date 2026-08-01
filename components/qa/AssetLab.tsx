@@ -6,11 +6,15 @@ import { Environment, Grid, OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, PerspectiveCamera, Sphere, Vector3 } from "three";
 import type { Group, Mesh, Object3D, Texture } from "three";
 import type { MapControls } from "three-stdlib";
+import { Vq1cHeroCornerRuntime, VQ1C_PBR_PATH, type Vq1cRuntimeDiagnostics } from "./Vq1cHeroCornerRuntime";
+import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "./vq1cEnvironmentPresets";
+import type { Vq1cRuntimeValidation } from "./validateVq1cRuntimeScene";
 
 // Whitelist of GLB assets in public/models/vq1/
 const GLB_WHITELIST = [
   { id: "vq1-pipeline-smoke", label: "VQ1 Pipeline Smoke Test", path: "/models/vq1/vq1-pipeline-smoke.glb" },
   { id: "vq1c-hero-corner", label: "VQ1C Hero Corner", path: "/models/vq1/vq1c-hero-corner.glb" },
+  { id: "vq1c-hero-corner-pbr", label: "VQ-1C Hero Corner PBR", path: VQ1C_PBR_PATH },
 ];
 
 type LightingMode = "neutral" | "clear-day" | "overcast" | "rain-preview" | "night";
@@ -178,14 +182,19 @@ function AssetModel({
 function SceneStats({
   onStats,
 }: {
-  onStats: (stats: { triangles: number; drawCalls: number; textures: number }) => void;
+  onStats: (stats: { triangles: number; drawCalls: number; geometries: number; textures: number }) => void;
 }) {
   const { gl } = useThree();
-  useFrame(() => {
+  const elapsedRef = useRef(0);
+  useFrame((_, delta) => {
+    elapsedRef.current += delta;
+    if (elapsedRef.current < 0.5) return;
+    elapsedRef.current = 0;
     const info = gl.info;
     onStats({
       triangles: info.render.triangles,
       drawCalls: info.render.calls,
+      geometries: info.memory.geometries,
       textures: info.memory.textures,
     });
   });
@@ -211,13 +220,17 @@ export function AssetLab() {
   const [showAxis, setShowAxis] = useState(false);
   const [showBounds, setShowBounds] = useState(false);
   const [turntable, setTurntable] = useState(false);
-  const [sceneStats, setSceneStats] = useState({ triangles: 0, drawCalls: 0, textures: 0 });
+  const [sceneStats, setSceneStats] = useState({ triangles: 0, drawCalls: 0, geometries: 0, textures: 0 });
   const [assetStats, setAssetStats] = useState<AssetStats>({ meshes: 0, materials: 0, triangles: 0, textures: 0 });
   const [fitTarget, setFitTarget] = useState<AutoFitTarget | null>(null);
+  const [vq1cMode, setVq1cMode] = useState<Vq1cEnvironmentMode>("clear-day");
+  const [runtimeValidation, setRuntimeValidation] = useState<Vq1cRuntimeValidation | null>(null);
+  const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<Vq1cRuntimeDiagnostics | null>(null);
   const fitVersionRef = useRef(0);
 
   const lighting = LIGHTING_CONFIG[lightingMode];
   const bgColor = BACKGROUND_COLORS[backgroundMode];
+  const isVq1cPbr = selectedAsset.id === "vq1c-hero-corner-pbr";
 
   const handleBoundsReady = useCallback((sphere: Sphere, center: Vector3) => {
     fitVersionRef.current += 1;
@@ -227,6 +240,9 @@ export function AssetLab() {
   const handleAssetChange = useCallback((asset: typeof GLB_WHITELIST[0]) => {
     setSelectedAsset(asset);
     setFitTarget(null);
+    setRuntimeValidation(null);
+    setRuntimeDiagnostics(null);
+    if (asset.id === "vq1c-hero-corner-pbr") setVq1cMode("clear-day");
   }, []);
 
   const handleResetView = useCallback(() => {
@@ -249,6 +265,24 @@ export function AssetLab() {
             <option key={asset.id} value={asset.id}>{asset.label}</option>
           ))}
         </select>
+        {isVq1cPbr && (
+          <span data-testid="vq1c-runtime-validation"
+            data-mode={runtimeDiagnostics?.mode}
+            data-scene-uuid={runtimeDiagnostics?.sceneUuid}
+            data-anchor-position={runtimeDiagnostics?.anchorPosition.join(",")}
+            data-anchor-encoded-direction={runtimeDiagnostics?.anchorEncodedDirection.join(",")}
+            data-anchor-direction={runtimeDiagnostics?.anchorDirection.join(",")}
+            data-camera-position={runtimeDiagnostics?.cameraPosition.join(",")}
+            data-desk-lights={runtimeDiagnostics?.deskLights}
+            data-window-backdrops={runtimeDiagnostics?.windowBackdrops}
+            data-render-calls={sceneStats.drawCalls}
+            data-render-triangles={sceneStats.triangles}
+            data-memory-geometries={sceneStats.geometries}
+            data-memory-textures={sceneStats.textures}
+            style={{ color: runtimeValidation?.ok ? "#83d89a" : "#f0b36a" }}>
+            Runtime validation: {runtimeValidation ? (runtimeValidation.ok ? "PASS" : "FAIL") : "checking"}
+          </span>
+        )}
         <span style={{ color: "#8ab4f8" }}>
           Asset: {assetStats.meshes} meshes · {assetStats.materials} mats · {assetStats.triangles.toLocaleString()} tris · {assetStats.textures} tex
         </span>
@@ -262,26 +296,38 @@ export function AssetLab() {
           camera={{ position: [0.8, 0.8, 0.8], fov: 50 }}
           gl={{ toneMapping: 3, toneMappingExposure: 1.0 }}
         >
-          <color attach="background" args={[bgColor]} />
-          <ambientLight intensity={lighting.ambient} />
-          <directionalLight position={[5, 5, 5]} intensity={lighting.key} color={lighting.keyColor} castShadow />
+          {!isVq1cPbr && <color attach="background" args={[bgColor]} />}
+          {!isVq1cPbr && <ambientLight intensity={lighting.ambient} />}
+          {!isVq1cPbr && <directionalLight position={[5, 5, 5]} intensity={lighting.key} color={lighting.keyColor} castShadow />}
 
-          <Environment
-            preset="studio"
-            environmentIntensity={lighting.envIntensity}
-            background={false}
-            backgroundIntensity={0}
-          />
+          {!isVq1cPbr && (
+            <Environment
+              preset="studio"
+              environmentIntensity={lighting.envIntensity}
+              background={false}
+              backgroundIntensity={0}
+            />
+          )}
 
           <Turntable enabled={turntable}>
             <Suspense fallback={null}>
-              <AssetModel
-                key={selectedAsset.id}
-                path={selectedAsset.path}
-                wireframe={wireframe}
-                showBounds={showBounds}
-                onBoundsReady={handleBoundsReady}
-              />
+              {isVq1cPbr ? (
+                <Vq1cHeroCornerRuntime
+                  mode={vq1cMode}
+                  showBounds={showBounds}
+                  onBoundsReady={handleBoundsReady}
+                  onValidation={setRuntimeValidation}
+                  onDiagnostics={setRuntimeDiagnostics}
+                />
+              ) : (
+                <AssetModel
+                  key={selectedAsset.id}
+                  path={selectedAsset.path}
+                  wireframe={wireframe}
+                  showBounds={showBounds}
+                  onBoundsReady={handleBoundsReady}
+                />
+              )}
             </Suspense>
           </Turntable>
 
@@ -290,30 +336,42 @@ export function AssetLab() {
 
           <AutoFit target={fitTarget} />
           <SceneStats onStats={setSceneStats} />
-          <AssetStatsReader path={selectedAsset.path} onStats={setAssetStats} />
+          <AssetStatsReader key={selectedAsset.id} path={selectedAsset.path} onStats={setAssetStats} />
         </Canvas>
       </div>
 
       <div style={{ padding: "10px 14px", background: "#2a2a2a", color: "#fff", display: "flex", gap: "14px", flexWrap: "wrap", fontSize: 12 }}>
-        <div>
+        {!isVq1cPbr && <div>
           <strong>Lighting:</strong>{" "}
           {(["neutral", "clear-day", "overcast", "rain-preview", "night"] as LightingMode[]).map((mode) => (
             <button key={mode} onClick={() => setLightingMode(mode)}
               style={{ padding: "2px 6px", margin: "0 2px", borderRadius: 3, background: lightingMode === mode ? "#4a90e2" : "#444", color: "#fff", border: "none", cursor: "pointer", fontSize: 11 }}
             >{mode}</button>
           ))}
-        </div>
-        <div>
+        </div>}
+        {!isVq1cPbr && <div>
           <strong>Background:</strong>{" "}
           {(["light-gray", "dark-gray", "warm-gray"] as BackgroundMode[]).map((mode) => (
             <button key={mode} onClick={() => setBackgroundMode(mode)}
               style={{ padding: "2px 6px", margin: "0 2px", borderRadius: 3, background: backgroundMode === mode ? "#4a90e2" : "#444", color: "#fff", border: "none", cursor: "pointer", fontSize: 11 }}
             >{mode}</button>
           ))}
-        </div>
+        </div>}
+        {isVq1cPbr && (
+          <div data-testid="vq1c-environment-controls">
+            <strong>Environment:</strong>{" "}
+            {(Object.keys(VQ1C_ENVIRONMENT_PRESETS) as Vq1cEnvironmentMode[]).map((mode) => (
+              <button key={mode} data-testid={`vq1c-mode-${mode}`} aria-pressed={vq1cMode === mode}
+                onClick={() => setVq1cMode(mode)}
+                style={{ padding: "3px 8px", margin: "0 2px", borderRadius: 3, background: vq1cMode === mode ? "#4a90e2" : "#444", color: "#fff", border: "none", cursor: "pointer", fontSize: 11 }}>
+                {VQ1C_ENVIRONMENT_PRESETS[mode].label}
+              </button>
+            ))}
+          </div>
+        )}
         <button onClick={handleResetView} style={{ padding: "2px 8px", borderRadius: 3, background: "#555", color: "#fff", border: "none", cursor: "pointer", fontSize: 11 }}>Reset View</button>
         <div>
-          <label style={{ marginRight: 8 }}><input type="checkbox" checked={wireframe} onChange={(e) => setWireframe(e.target.checked)} /> Wireframe</label>
+          <label style={{ marginRight: 8 }}><input type="checkbox" checked={wireframe} disabled={isVq1cPbr} onChange={(e) => setWireframe(e.target.checked)} /> Wireframe</label>
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} /> Grid</label>
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showAxis} onChange={(e) => setShowAxis(e.target.checked)} /> Axis</label>
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showBounds} onChange={(e) => setShowBounds(e.target.checked)} /> Bounds</label>
