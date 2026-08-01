@@ -109,7 +109,7 @@ export const CENTRAL_AISLE_POINT: Vector3Tuple = [0, 0, 0];
 export const LEFT_AISLE_POINT: Vector3Tuple = [-5.6, 0, 0];
 export const RIGHT_AISLE_POINT: Vector3Tuple = [5.6, 0, 0];
 export const BACK_AISLE_POINT: Vector3Tuple = [-1.2, 0, -4.6];
-export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.7];
+export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.2];
 
 export const CAT_ZONE_CENTER: Vector3Tuple = [2.3, 0, -4.65];
 export const CAT_ZONE_RADIUS = 1.3;
