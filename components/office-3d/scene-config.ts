@@ -109,10 +109,15 @@ export const CENTRAL_AISLE_POINT: Vector3Tuple = [0, 0, 0];
 export const LEFT_AISLE_POINT: Vector3Tuple = [-5.6, 0, 0];
 export const RIGHT_AISLE_POINT: Vector3Tuple = [5.6, 0, 0];
 export const BACK_AISLE_POINT: Vector3Tuple = [-1.2, 0, -4.6];
-export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 4.2];
+export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.7];
 
 export const CAT_ZONE_CENTER: Vector3Tuple = [2.3, 0, -4.65];
 export const CAT_ZONE_RADIUS = 1.3;
+
+// Foreground resting spot for ChangFen (the "red circle" spot), separate from
+// the under-window "cat home" (bed / bowl / post) which stays at CAT_ZONE_CENTER.
+export const CAT_ACTOR_CENTER: Vector3Tuple = [-2.4, 0, 4.8];
+export const CAT_ACTOR_RADIUS = 0.35;
 
 export const WINDOW_POSITION: Vector3Tuple = [2.5, 2.6, -6.22];
 export const WINDOW_SIZE: Vector3Tuple = [3.2, 1.8, 0.1];
@@ -206,6 +211,15 @@ export const MAT: Record<string, MaterialDef> = {
   screen: { day: "#2e3436", night: "#2a3236", roughness: 0.35 },
   metal: { day: "#b3a586", night: "#7d7362", roughness: 0.5, metalness: 0.35 },
   machine: { day: "#6d7772", night: "#4b5350", roughness: 0.6 },
+  // ChangFen — blue-gray British Shorthair
+  catBody: { day: "#8b95a2", night: "#616a76", roughness: 0.95 },
+  catLight: { day: "#9ba5b1", night: "#6d7682", roughness: 0.95 },
+  catEarInner: { day: "#b3a09a", night: "#7a6f6a", roughness: 0.95 },
+  catNose: { day: "#6b5755", night: "#4a3f3e", roughness: 0.8 },
+  catEye: { day: "#d9a441", night: "#c8963d", roughness: 0.4 },
+  catPupil: { day: "#2a2622", night: "#221f1c", roughness: 0.5 },
+  catBed: { day: "#8b95a0", night: "#5a6572", roughness: 1 },
+  catBedInner: { day: "#a7b0ba", night: "#6a7480", roughness: 1 },
 };
 
 export function matColor(mat: MaterialDef, isNight: boolean): string {

@@ -12,6 +12,7 @@ import { useHudSafeArea } from "@/components/hud/useHudSafeArea";
 import type { MyOfficeInfo } from "@/hooks/useOfficeManagement";
 import type { ActivityItem, InteractionKind, InteractionReactionKey, ObjectKind, OfficeUser, StatusKey } from "@/lib/types";
 import type { CameraZoneKey } from "@/components/office-3d/scene-config";
+import type { CatPose } from "@/components/office-3d/ChangFenCat";
 
 const OfficeWebGLScene = dynamic(
   () => import("@/components/office-3d/OfficeWebGLScene").then((module) => module.OfficeWebGLScene),
@@ -89,6 +90,7 @@ export function QASceneViewer() {
   const [longText, setLongText] = useState(false);
   const [activityMode, setActivityMode] = useState<"normal" | "empty" | "many">("normal");
   const [feedState, setFeedState] = useState<"normal" | "loading" | "error">("normal");
+  const [catPose, setCatPose] = useState<CatPose | null>(null);
 
   const diaryOpen = qaOverlay === "diary";
   const statusOpen = qaOverlay === "status";
@@ -143,6 +145,7 @@ export function QASceneViewer() {
           onClaimCoffee={noop}
           onCharacterClick={noop}
           onObjectClick={noop as (kind: ObjectKind, ownerId?: string) => void}
+          catPose={catPose}
         />
       </div>
       {hudTest ? (
@@ -257,6 +260,14 @@ export function QASceneViewer() {
           {(["normal", "loading", "error"] as const).map((fs) => (
             <button key={fs} type="button" onClick={() => setFeedState(fs)} style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #555", cursor: "pointer", background: feedState === fs ? "#c77755" : "#333", color: "#eee", fontSize: 11 }}>
               {fs === "normal" ? "正常" : fs === "loading" ? "loading" : "error"}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, borderTop: "1px solid #444", paddingTop: 6 }}>
+          <span style={{ fontSize: 11, color: "#999", width: "100%" }}>肠粉姿态</span>
+          {([["auto", "自动"], ["idle", "待机"], ["lying", "趴卧"], ["walking", "走动"]] as const).map(([pose, label]) => (
+            <button key={pose} type="button" onClick={() => setCatPose(pose === "auto" ? null : pose)} style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #555", cursor: "pointer", background: (pose === "auto" ? catPose === null : catPose === pose) ? "#8b95a2" : "#333", color: "#eee", fontSize: 11 }}>
+              {label}
             </button>
           ))}
         </div>

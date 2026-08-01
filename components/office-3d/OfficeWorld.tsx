@@ -7,14 +7,18 @@ import { RectAreaLightUniformsLib, type MapControls as MapControlsImpl } from "t
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
 import { CameraController } from "@/components/office-3d/CameraController";
 import { CharacterController } from "@/components/office-3d/CharacterController";
+import { ChangFenCat, type CatPose } from "@/components/office-3d/ChangFenCat";
 import type { CharacterDebugCommand } from "@/components/office-3d/character-actions";
 import { LowPolyWorkstation } from "@/components/office-3d/LowPolyWorkstation";
 import { OfficeAmenities } from "@/components/office-3d/OfficeAmenities";
-import { CAT_ZONE_CENTER, CAT_ZONE_RADIUS, LIGHT_PRESETS, MAT, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, matColor, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
+import { CAT_ACTOR_CENTER, CAT_ZONE_CENTER, CAT_ZONE_RADIUS, LIGHT_PRESETS, MAT, MEETING_CARPET_CENTER, MEETING_CARPET_SIZE, WINDOW_POSITION, WINDOW_SIZE, WORKSTATION_LAYOUT, matColor, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 // RectAreaLight needs its LTC lookup textures initialized once before use.
 RectAreaLightUniformsLib.init();
+
+// ChangFen faces the room center from its foreground resting spot.
+const catRestRotation = Math.atan2(-CAT_ACTOR_CENTER[0], -CAT_ACTOR_CENTER[2]);
 
 interface OfficeWorldProps {
   users: OfficeUser[];
@@ -28,6 +32,7 @@ interface OfficeWorldProps {
   interactionEffects: Record<string, CharacterInteractionEffect>;
   coffeeGifts: InteractionEvent[];
   onClaimCoffee: (interactionId: string) => void;
+  catPose?: CatPose | null;
 }
 
 function PerformanceReporter({ onFpsChange }: { onFpsChange: (fps: number) => void }) {
@@ -52,7 +57,7 @@ function PerformanceReporter({ onFpsChange }: { onFpsChange: (fps: number) => vo
   return null;
 }
 
-function RoomShell({ isNight }: { isNight: boolean }) {
+function RoomShell({ isNight, catPose }: { isNight: boolean; catPose?: CatPose | null }) {
   return (
     <group>
       <mesh receiveShadow position={[0, -0.32, 0]}>
@@ -81,26 +86,50 @@ function RoomShell({ isNight }: { isNight: boolean }) {
         <meshStandardMaterial color={isNight ? "#4a5568" : "#a8b8c8"} roughness={1} transparent opacity={0.35} />
       </mesh>
       <group position={[CAT_ZONE_CENTER[0], 0, CAT_ZONE_CENTER[2]]}>
-        <mesh castShadow position={[-0.55, 0.16, -0.35]}>
-          <cylinderGeometry args={[0.42, 0.48, 0.3, 14]} />
-          <meshStandardMaterial color={isNight ? "#5a6572" : "#8b95a0"} roughness={1} />
+        {/* Soft round cat bed — base + rim + inner cushion */}
+        <mesh castShadow receiveShadow position={[-0.55, 0.08, -0.35]}>
+          <cylinderGeometry args={[0.44, 0.48, 0.16, 16]} />
+          <meshStandardMaterial color={matColor(MAT.catBed, isNight)} roughness={MAT.catBed.roughness} />
         </mesh>
-        <mesh position={[-0.55, 0.32, -0.35]}>
-          <cylinderGeometry args={[0.3, 0.3, 0.04, 14]} />
-          <meshStandardMaterial color={isNight ? "#4a5560" : "#7a8490"} roughness={1} />
+        <mesh castShadow position={[-0.55, 0.2, -0.35]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.4, 0.12, 8, 16]} />
+          <meshStandardMaterial color={matColor(MAT.catBed, isNight)} roughness={MAT.catBed.roughness} />
         </mesh>
-        <mesh castShadow position={[0.5, 0.08, 0.45]}>
+        <mesh position={[-0.55, 0.18, -0.35]}>
+          <cylinderGeometry args={[0.32, 0.32, 0.06, 16]} />
+          <meshStandardMaterial color={matColor(MAT.catBedInner, isNight)} roughness={MAT.catBedInner.roughness} />
+        </mesh>
+        {/* Food bowl — outer bowl + inner food */}
+        <mesh castShadow position={[0.5, 0.07, 0.45]}>
           <cylinderGeometry args={[0.2, 0.16, 0.14, 12]} />
-          <meshStandardMaterial color={isNight ? "#6a7480" : "#9aa4b0"} roughness={0.9} />
+          <meshStandardMaterial color={matColor(MAT.catBedInner, isNight)} roughness={0.7} />
+        </mesh>
+        <mesh position={[0.5, 0.13, 0.45]}>
+          <cylinderGeometry args={[0.15, 0.13, 0.05, 12]} />
+          <meshStandardMaterial color="#8a6a4a" roughness={1} />
+        </mesh>
+        {/* Scratching post — base + post + top */}
+        <mesh castShadow position={[0.15, 0.04, -0.6]}>
+          <cylinderGeometry args={[0.22, 0.24, 0.08, 12]} />
+          <meshStandardMaterial color={matColor(MAT.catBed, isNight)} roughness={MAT.catBed.roughness} />
         </mesh>
         <mesh castShadow position={[0.15, 0.42, -0.6]}>
           <cylinderGeometry args={[0.09, 0.11, 0.82, 10]} />
-          <meshStandardMaterial color={isNight ? "#5a6068" : "#8a9098"} roughness={1} />
+          <meshStandardMaterial color="#c2a877" roughness={1} />
         </mesh>
         <mesh castShadow position={[0.15, 0.86, -0.6]}>
           <sphereGeometry args={[0.14, 10, 8]} />
-          <meshStandardMaterial color={isNight ? "#6a7480" : "#9aa4b0"} roughness={1} />
+          <meshStandardMaterial color={matColor(MAT.catBedInner, isNight)} roughness={MAT.catBedInner.roughness} />
         </mesh>
+      </group>
+      {/* ChangFen's foreground resting spot (the "red circle" spot) — plush cushion + cat */}
+      <group position={[CAT_ACTOR_CENTER[0], 0, CAT_ACTOR_CENTER[2]]}>
+        {/* Small plush cushion — soft cloth anchor, gently rotated */}
+        <mesh receiveShadow castShadow position={[0, 0.045, 0]} rotation={[0, 0.12, 0]}>
+          <boxGeometry args={[1.35, 0.07, 0.95]} />
+          <meshPhysicalMaterial color={isNight ? "#5b6058" : "#c3bcae"} roughness={0.96} metalness={0} sheen={0.4} sheenRoughness={0.9} sheenColor={isNight ? "#6d726a" : "#d8d2c6"} />
+        </mesh>
+        <ChangFenCat isNight={isNight} forcedPose={catPose ?? null} restRotation={catRestRotation} />
       </group>
       <mesh receiveShadow position={MEETING_CARPET_CENTER}>
         <boxGeometry args={MEETING_CARPET_SIZE} />
@@ -205,7 +234,7 @@ function RoomShell({ isNight }: { isNight: boolean }) {
   );
 }
 
-export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onObjectClick, onFpsChange, debugCommand, speedMultiplier, interactionEffects, coffeeGifts, onClaimCoffee }: OfficeWorldProps) {
+export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onObjectClick, onFpsChange, debugCommand, speedMultiplier, interactionEffects, coffeeGifts, onClaimCoffee, catPose }: OfficeWorldProps) {
   const { slots, invalidMembers } = useMemo(() => buildDeskSlots(users), [users]);
   const controlsRef = useRef<MapControlsImpl | null>(null);
   const light = isNight ? LIGHT_PRESETS.night : LIGHT_PRESETS.day;
@@ -252,7 +281,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
         intensity={light.windowLight.intensity}
         color={light.windowLight.color}
       />
-      <RoomShell isNight={isNight} />
+      <RoomShell isNight={isNight} catPose={catPose} />
       <OfficeAmenities onObjectClick={onObjectClick} isNight={isNight} />
 
       {slots.map(({ deskKey, index, member, workstationUser }) => {
