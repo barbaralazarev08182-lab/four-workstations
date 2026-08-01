@@ -7,8 +7,18 @@ import bpy
 import math
 import sys
 from mathutils import Vector
+from pathlib import Path
 
-PATH = r"E:\Projects\four-workstations\assets-source\blender\vq1c\polished\desk-polished.blend"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+PATH = (
+    PROJECT_ROOT
+    / "assets-source"
+    / "blender"
+    / "vq1c"
+    / "polished"
+    / "desk-polished.blend"
+)
 
 MASTER = Vector((1.433, 0.7654, 0.75))
 REQUIRED_PARTS = (
@@ -22,7 +32,7 @@ MAX_TRIANGLES = 12000
 
 
 def main():
-    bpy.ops.wm.open_mainfile(filepath=PATH)
+    bpy.ops.wm.open_mainfile(filepath=str(PATH))
     bpy.context.view_layer.update()
     depsgraph = bpy.context.evaluated_depsgraph_get()
     fails = []

@@ -7,13 +7,22 @@ import bpy
 import math
 import sys
 from mathutils import Vector
+from pathlib import Path
 
-POLISH_DIR = r"E:\Projects\four-workstations\assets-source\blender\vq1c\polished"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+POLISH_DIR = (
+    PROJECT_ROOT
+    / "assets-source"
+    / "blender"
+    / "vq1c"
+    / "polished"
+)
 
 PATHS = {
-    "monitor": POLISH_DIR + r"\monitor-polished.blend",
-    "keyboard": POLISH_DIR + r"\keyboard-polished.blend",
-    "lamp": POLISH_DIR + r"\lamp-polished.blend",
+    "monitor": POLISH_DIR / "monitor-polished.blend",
+    "keyboard": POLISH_DIR / "keyboard-polished.blend",
+    "lamp": POLISH_DIR / "lamp-polished.blend",
 }
 MASTERS = {
     "monitor": Vector((0.550, 0.146, 0.412)),
@@ -41,7 +50,7 @@ MAX_TRI = {"monitor": 6000, "keyboard": 8000, "lamp": 8000}
 def validate_one(key):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    bpy.ops.wm.open_mainfile(filepath=PATHS[key])
+    bpy.ops.wm.open_mainfile(filepath=str(PATHS[key]))
     bpy.context.view_layer.update()
     depsgraph = bpy.context.evaluated_depsgraph_get()
     fails = []

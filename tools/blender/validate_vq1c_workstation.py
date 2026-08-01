@@ -15,8 +15,18 @@ import bpy
 import math
 import sys
 from mathutils import Vector
+from pathlib import Path
 
-PATH = r"E:\Projects\four-workstations\assets-source\blender\vq1c\standardized\workstation-standardized.blend"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+PATH = (
+    PROJECT_ROOT
+    / "assets-source"
+    / "blender"
+    / "vq1c"
+    / "standardized"
+    / "workstation-standardized.blend"
+)
 EXPECTED_TRIANGLES = 2774
 
 ASSET_ROOTS = ("STD_DESK_ROOT", "STD_CHAIR_ROOT", "STD_MONITOR_ROOT", "STD_KEYBOARD_ROOT", "STD_LAMP_ROOT")
@@ -56,7 +66,7 @@ def subtree_meshes(obj):
 
 
 def main():
-    bpy.ops.wm.open_mainfile(filepath=PATH)
+    bpy.ops.wm.open_mainfile(filepath=str(PATH))
     bpy.context.view_layer.update()
     depsgraph = bpy.context.evaluated_depsgraph_get()
     fails = []

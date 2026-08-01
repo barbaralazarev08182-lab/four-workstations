@@ -7,9 +7,25 @@ processes and compares structural stats.
 import bpy
 import sys
 from mathutils import Vector
+from pathlib import Path
 
-BLEND_PATH = r"E:\Projects\four-workstations\assets-source\blender\vq1c\vq1c-hero-corner.blend"
-GLB_PATH = r"E:\Projects\four-workstations\public\models\vq1\vq1c-hero-corner.glb"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+BLEND_PATH = (
+    PROJECT_ROOT
+    / "assets-source"
+    / "blender"
+    / "vq1c"
+    / "vq1c-hero-corner.blend"
+)
+
+GLB_PATH = (
+    PROJECT_ROOT
+    / "public"
+    / "models"
+    / "vq1"
+    / "vq1c-hero-corner.glb"
+)
 
 EXPECTED_MESHES = 20
 EXPECTED_TRIANGLES = 3954  # arch 168 + workstation 2774 + sofa 1012
@@ -51,9 +67,9 @@ def collect_stats(label):
     bpy.ops.object.delete(use_global=False)
     bpy.context.view_layer.update()
     if label == "blend":
-        bpy.ops.wm.open_mainfile(filepath=BLEND_PATH)
+        bpy.ops.wm.open_mainfile(filepath=str(BLEND_PATH))
     else:
-        bpy.ops.import_scene.gltf(filepath=GLB_PATH)
+        bpy.ops.import_scene.gltf(filepath=str(GLB_PATH))
     bpy.context.view_layer.update()
     depsgraph = bpy.context.evaluated_depsgraph_get()
     fails = []
