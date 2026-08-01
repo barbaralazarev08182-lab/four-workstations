@@ -10,6 +10,7 @@ import type { MapControls } from "three-stdlib";
 // Whitelist of GLB assets in public/models/vq1/
 const GLB_WHITELIST = [
   { id: "vq1-pipeline-smoke", label: "VQ1 Pipeline Smoke Test", path: "/models/vq1/vq1-pipeline-smoke.glb" },
+  { id: "vq1c-hero-corner", label: "VQ1C Hero Corner", path: "/models/vq1/vq1c-hero-corner.glb" },
 ];
 
 type LightingMode = "neutral" | "clear-day" | "overcast" | "rain-preview" | "night";
