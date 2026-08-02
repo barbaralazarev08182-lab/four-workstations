@@ -7,14 +7,20 @@ import { Box3, PerspectiveCamera, Sphere, Vector3 } from "three";
 import type { Group, Mesh, Object3D, Texture } from "three";
 import type { MapControls } from "three-stdlib";
 import { Vq1cHeroCornerRuntime, VQ1C_PBR_PATH, type Vq1cRuntimeDiagnostics } from "./Vq1cHeroCornerRuntime";
+import {
+  Vq1cFullOfficeRuntime, VQ1C_FULL_OFFICE_PBR_PATH,
+  type Vq1cFullOfficeRuntimeDiagnostics,
+} from "./Vq1cFullOfficeRuntime";
 import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "./vq1cEnvironmentPresets";
 import type { Vq1cRuntimeValidation } from "./validateVq1cRuntimeScene";
+import type { Vq1cFullOfficeRuntimeValidation } from "./validateVq1cFullOfficeRuntime";
 
 // Whitelist of GLB assets in public/models/vq1/
 const GLB_WHITELIST = [
   { id: "vq1-pipeline-smoke", label: "VQ1 Pipeline Smoke Test", path: "/models/vq1/vq1-pipeline-smoke.glb" },
   { id: "vq1c-hero-corner", label: "VQ1C Hero Corner", path: "/models/vq1/vq1c-hero-corner.glb" },
   { id: "vq1c-hero-corner-pbr", label: "VQ-1C Hero Corner PBR", path: VQ1C_PBR_PATH },
+  { id: "vq1c-officeworld-full-pbr", label: "VQ-1C Full OfficeWorld PBR", path: VQ1C_FULL_OFFICE_PBR_PATH },
 ];
 
 type LightingMode = "neutral" | "clear-day" | "overcast" | "rain-preview" | "night";
@@ -92,7 +98,7 @@ interface AutoFitTarget {
   version: number;
 }
 
-function AutoFit({ target }: { target: AutoFitTarget | null }) {
+function AutoFit({ target, radiusMultiplier = 2.2 }: { target: AutoFitTarget | null; radiusMultiplier?: number }) {
   const controlsRef = useRef<MapControls>(null);
   const { camera } = useThree();
   const lastVersion = useRef(-1);
@@ -106,7 +112,7 @@ function AutoFit({ target }: { target: AutoFitTarget | null }) {
     const cam = camera as PerspectiveCamera;
     const { sphere, center } = target;
 
-    const radius = sphere.radius * 2.2;
+    const radius = sphere.radius * radiusMultiplier;
     const distH = radius / Math.tan(cam.fov * Math.PI / 360) * 0.5;
     const camDist = Math.max(distH, radius * 1.5);
 
@@ -224,13 +230,17 @@ export function AssetLab() {
   const [assetStats, setAssetStats] = useState<AssetStats>({ meshes: 0, materials: 0, triangles: 0, textures: 0 });
   const [fitTarget, setFitTarget] = useState<AutoFitTarget | null>(null);
   const [vq1cMode, setVq1cMode] = useState<Vq1cEnvironmentMode>("clear-day");
-  const [runtimeValidation, setRuntimeValidation] = useState<Vq1cRuntimeValidation | null>(null);
-  const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<Vq1cRuntimeDiagnostics | null>(null);
+  const [runtimeValidation, setRuntimeValidation] = useState<Vq1cRuntimeValidation | Vq1cFullOfficeRuntimeValidation | null>(null);
+  const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<Vq1cRuntimeDiagnostics | Vq1cFullOfficeRuntimeDiagnostics | null>(null);
   const fitVersionRef = useRef(0);
 
   const lighting = LIGHTING_CONFIG[lightingMode];
   const bgColor = BACKGROUND_COLORS[backgroundMode];
-  const isVq1cPbr = selectedAsset.id === "vq1c-hero-corner-pbr";
+  const isVq1cHeroPbr = selectedAsset.id === "vq1c-hero-corner-pbr";
+  const isVq1cFullOfficePbr = selectedAsset.id === "vq1c-officeworld-full-pbr";
+  const isVq1cPbr = isVq1cHeroPbr || isVq1cFullOfficePbr;
+  const heroDiagnostics = runtimeDiagnostics && "anchorPosition" in runtimeDiagnostics ? runtimeDiagnostics : null;
+  const fullOfficeDiagnostics = runtimeDiagnostics && "enabledDeskLights" in runtimeDiagnostics ? runtimeDiagnostics : null;
 
   const handleBoundsReady = useCallback((sphere: Sphere, center: Vector3) => {
     fitVersionRef.current += 1;
@@ -242,7 +252,7 @@ export function AssetLab() {
     setFitTarget(null);
     setRuntimeValidation(null);
     setRuntimeDiagnostics(null);
-    if (asset.id === "vq1c-hero-corner-pbr") setVq1cMode("clear-day");
+    if (asset.id === "vq1c-hero-corner-pbr" || asset.id === "vq1c-officeworld-full-pbr") setVq1cMode("clear-day");
   }, []);
 
   const handleResetView = useCallback(() => {
@@ -269,11 +279,20 @@ export function AssetLab() {
           <span data-testid="vq1c-runtime-validation"
             data-mode={runtimeDiagnostics?.mode}
             data-scene-uuid={runtimeDiagnostics?.sceneUuid}
-            data-anchor-position={runtimeDiagnostics?.anchorPosition.join(",")}
-            data-anchor-encoded-direction={runtimeDiagnostics?.anchorEncodedDirection.join(",")}
-            data-anchor-direction={runtimeDiagnostics?.anchorDirection.join(",")}
+            data-anchor-position={heroDiagnostics?.anchorPosition.join(",")}
+            data-anchor-encoded-direction={heroDiagnostics?.anchorEncodedDirection.join(",")}
+            data-anchor-direction={heroDiagnostics?.anchorDirection.join(",")}
             data-camera-position={runtimeDiagnostics?.cameraPosition.join(",")}
             data-desk-lights={runtimeDiagnostics?.deskLights}
+            data-enabled-desk-lights={fullOfficeDiagnostics?.enabledDeskLights}
+            data-mode-changes={fullOfficeDiagnostics?.modeChanges}
+            data-observed-fps={fullOfficeDiagnostics?.observedFps}
+            data-office-anchors={fullOfficeDiagnostics?.validation.officeAnchors}
+            data-internal-anchors={fullOfficeDiagnostics?.validation.internalAnchors}
+            data-workstations={fullOfficeDiagnostics ? JSON.stringify(fullOfficeDiagnostics.validation.workstations) : undefined}
+            data-desk-light-positions={fullOfficeDiagnostics ? JSON.stringify(fullOfficeDiagnostics.deskLightPositions) : undefined}
+            data-desk-light-directions={fullOfficeDiagnostics ? JSON.stringify(fullOfficeDiagnostics.deskLightDirections) : undefined}
+            data-runtime-renderer={fullOfficeDiagnostics ? JSON.stringify(fullOfficeDiagnostics.renderer) : undefined}
             data-window-backdrops={runtimeDiagnostics?.windowBackdrops}
             data-render-calls={sceneStats.drawCalls}
             data-render-triangles={sceneStats.triangles}
@@ -309,10 +328,18 @@ export function AssetLab() {
             />
           )}
 
-          <Turntable enabled={turntable}>
+          <Turntable enabled={turntable && !isVq1cPbr}>
             <Suspense fallback={null}>
-              {isVq1cPbr ? (
+              {isVq1cHeroPbr ? (
                 <Vq1cHeroCornerRuntime
+                  mode={vq1cMode}
+                  showBounds={showBounds}
+                  onBoundsReady={handleBoundsReady}
+                  onValidation={setRuntimeValidation}
+                  onDiagnostics={setRuntimeDiagnostics}
+                />
+              ) : isVq1cFullOfficePbr ? (
+                <Vq1cFullOfficeRuntime
                   mode={vq1cMode}
                   showBounds={showBounds}
                   onBoundsReady={handleBoundsReady}
@@ -334,7 +361,7 @@ export function AssetLab() {
           {showGrid && <Grid infiniteGrid fadeDistance={10} />}
           {showAxis && <axesHelper args={[5]} />}
 
-          <AutoFit target={fitTarget} />
+          <AutoFit target={fitTarget} radiusMultiplier={isVq1cFullOfficePbr ? 1.6 : 2.2} />
           <SceneStats onStats={setSceneStats} />
           <AssetStatsReader key={selectedAsset.id} path={selectedAsset.path} onStats={setAssetStats} />
         </Canvas>
@@ -375,7 +402,7 @@ export function AssetLab() {
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} /> Grid</label>
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showAxis} onChange={(e) => setShowAxis(e.target.checked)} /> Axis</label>
           <label style={{ marginRight: 8 }}><input type="checkbox" checked={showBounds} onChange={(e) => setShowBounds(e.target.checked)} /> Bounds</label>
-          <label><input type="checkbox" checked={turntable} onChange={(e) => setTurntable(e.target.checked)} /> Turntable</label>
+          <label><input type="checkbox" checked={turntable} disabled={isVq1cPbr} onChange={(e) => setTurntable(e.target.checked)} /> Turntable</label>
         </div>
       </div>
     </div>
