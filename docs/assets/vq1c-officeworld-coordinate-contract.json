@@ -1,0 +1,596 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "e4fcc055d71ddf8903ac113efecf3b21e071566e",
+  "units": "meters",
+  "threeCoordinateSystem": {
+    "handedness": "right-handed",
+    "upAxis": "+Y",
+    "horizontalAxes": ["X", "Z"],
+    "floorTop": 0,
+    "worldDirections": {
+      "left": "-X",
+      "right": "+X",
+      "back": "-Z",
+      "front": "+Z"
+    },
+    "forwardConvention": "Local +Z is the procedural character forward axis; world-facing vectors are obtained by rotation about +Y.",
+    "rotationUnit": "radians",
+    "source": {
+      "file": "components/office-3d/scene-config.ts",
+      "symbols": ["CENTRAL_AISLE_POINT", "LEFT_AISLE_POINT", "RIGHT_AISLE_POINT", "BACK_AISLE_POINT", "FRONT_AISLE_POINT"],
+      "kind": "authoritative"
+    }
+  },
+  "blenderAuthoringSystem": {
+    "handedness": "right-handed",
+    "upAxis": "+Z",
+    "threeToBlender": "(threeX, threeY, threeZ) -> (threeX, -threeZ, threeY)",
+    "blenderToThree": "(blenderX, blenderY, blenderZ) -> (blenderX, blenderZ, -blenderY)",
+    "threeLocalForwardToBlender": "Three +Z -> Blender -Y",
+    "rotationMapping": "Three rotationY theta -> Blender rotationZ theta for roots authored under the stated axis mapping",
+    "conversionStage": "Blender glTF export and Three.js GLTF loading perform the axis conversion; do not add a frontend correction rotation.",
+    "source": {
+      "files": [
+        "components/qa/Vq1cHeroCornerRuntime.tsx",
+        "tools/blender/build_vq1c_hero_corner.py"
+      ],
+      "symbols": ["Vq1cHeroCornerRuntime", "bpy.ops.export_scene.gltf"],
+      "kind": "pipeline-convention"
+    }
+  },
+  "room": {
+    "originMeaning": "Horizontal center of the full office; X=0 and Z=0 are the floor center axes, and Y=0 is the visible plank floor top.",
+    "size": {
+      "width": 16.2,
+      "depth": 13.2,
+      "heightAboveFloor": 4.5
+    },
+    "bounds": {
+      "min": [-8.1, -0.41, -6.6],
+      "max": [8.1, 4.5, 6.6],
+      "meaning": "Authoritative camera-fit room bounds; includes the base slab down to Y=-0.41 but excludes visual backdrop geometry outside the room."
+    },
+    "floor": {
+      "center": [0, -0.32, 0],
+      "baseSize": [16.2, 0.18, 13.2],
+      "baseAabb": {
+        "min": [-8.1, -0.41, -6.6],
+        "max": [8.1, -0.23, 6.6]
+      },
+      "plankTop": 0,
+      "plankArrayAabb": {
+        "min": [-7.7, -0.24, -6.2],
+        "max": [7.7, 0, 6.2]
+      },
+      "source": {
+        "file": "components/office-3d/OfficeWorld.tsx",
+        "symbol": "RoomShell",
+        "kind": "authoritative-and-derived"
+      }
+    },
+    "walls": [
+      {
+        "id": "back-wall",
+        "plane": "Z=-6.1",
+        "thickness": 0.24,
+        "aabb": {
+          "min": [-7.7, 0, -6.22],
+          "max": [7.7, 4.5, -5.98]
+        },
+        "windowOpening": {
+          "xRange": [0.9, 4.1],
+          "yRange": [1.7, 3.5]
+        }
+      },
+      {
+        "id": "left-wall",
+        "plane": "X=-7.58",
+        "thickness": 0.24,
+        "aabb": {
+          "min": [-7.7, 0, -6.1],
+          "max": [-7.46, 4.5, 6.1]
+        }
+      }
+    ],
+    "openSides": ["+X/right", "+Z/front"],
+    "window": {
+      "semanticCenter": [2.5, 2.6, -6.22],
+      "semanticSize": [3.2, 1.8, 0.1],
+      "openingXRange": [0.9, 4.1],
+      "openingYRange": [1.7, 3.5],
+      "glassCenter": [2.5, 2.6, -6.16],
+      "source": {
+        "file": "components/office-3d/scene-config.ts",
+        "symbol": "WINDOW_POSITION/WINDOW_SIZE",
+        "kind": "authoritative"
+      }
+    },
+    "doorOpenings": null,
+    "doorOpeningNote": "Entrance and restroom door meshes exist, but RoomShell does not cut corresponding wall openings.",
+    "source": {
+      "files": [
+        "components/office-3d/scene-config.ts",
+        "components/office-3d/OfficeWorld.tsx"
+      ],
+      "symbols": ["ROOM_BOUNDS", "RoomShell"],
+      "kind": "authoritative"
+    }
+  },
+  "playableBounds": {
+    "min": null,
+    "max": null,
+    "authoritativeClamp": null,
+    "edgePadding": null,
+    "yHandling": "All authored character destinations and path nodes use Y=0. CharacterController zeroes waypoint direction.y and writes the character root at floor level.",
+    "derivedMovementNetworkEnvelope": {
+      "min": [-6.5, 0, -5.2],
+      "max": [7, 0, 5.1],
+      "includesCharacterRadius": false,
+      "meaning": "Envelope of authored destinations and route nodes, not a collision or playable clamp."
+    },
+    "safeArea": {
+      "unit": "CSS pixels",
+      "mobileBreakpoint": 760,
+      "portrait": { "top": 64, "bottom": 160, "left": 16, "right": 16 },
+      "landscape": { "top": 48, "bottom": 44, "left": 24, "right": 24 },
+      "desktop": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
+      "meaning": "Viewport insets used by camera-fit available width/height and exported as HUD CSS variables; not world-space padding."
+    },
+    "cameraPanClamp": {
+      "formula": "target X/Z is clamped to active camera-zone bounds inset by 1.5m",
+      "desktop": { "xRange": [-6.6, 6.6], "zRange": [-5.1, 5.1] },
+      "meaning": "Camera target clamp only; not character movement bounds."
+    },
+    "source": {
+      "files": [
+        "components/office-3d/CharacterController.tsx",
+        "components/office-3d/character-paths.ts",
+        "components/office-3d/CameraController.tsx",
+        "components/office-3d/scene-config.ts",
+        "components/hud/useHudSafeArea.ts"
+      ],
+      "symbols": ["buildCharacterPath", "getPanBounds", "SAFE_AREA", "getSafeArea"],
+      "kind": "authoritative-and-derived"
+    }
+  },
+  "workstations": [
+    {
+      "id": "desk_1",
+      "displayName": "左上 / 工位 01",
+      "index": 0,
+      "sceneKey": "ming",
+      "center": [-3.2, 0, -1.75],
+      "rotationY": { "expression": "Math.PI / 2", "radians": 1.570796, "degrees": 90 },
+      "facingDirection": [1, 0, 0],
+      "deskVisual": { "root": [-3.2, 0, -1.75], "topCenter": [-3.2, 0.82, -1.75], "topWorldSize": [1.35, 0.26, 3.05] },
+      "chairVisual": { "root": [-1.95, 0, -1.75], "seatCenter": [-1.95, 0.55, -1.75], "seatWorldSize": [0.9, 0.2, 0.95] },
+      "seatWorkPosition": [-2.25, 0, -1.75],
+      "characterIdlePosition": [-2.25, 0, -1.75],
+      "approachTarget": [-1.8, 0, -1.75],
+      "interactionHotspot": { "kind": "visible-descendant-raycast", "root": [-3.2, 0, -1.75], "explicitCollider": null },
+      "computerHotspot": { "groupOrigin": [-3.28, 1.28, -1.75], "visualCenter": [-3.28, 1.53, -1.75], "approximateWorldSize": [0.12, 0.82, 1.35] },
+      "coffeeClaimPoint": [-3.52, 1.16, -0.67],
+      "emptyDeskLabel": [-3.2, 2.38, -1.75],
+      "visualFootprint": { "center": [-3.15, 0.018, -1.75], "worldSize": [2.8, 0.035, 3.5], "aabbMin": [-4.55, 0.0005, -3.5], "aabbMax": [-1.75, 0.0355, 0] },
+      "collider": null,
+      "blenderRootTarget": [-3.2, 1.75, 0],
+      "blenderRotationZ": 1.570796,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "WORKSTATION_LAYOUT[0]/buildPositionSet(0)", "kind": "authoritative" },
+      "derivedFrom": { "file": "components/office-3d/LowPolyWorkstation.tsx", "formula": "world = parentPosition + rotateY(parentRotation, localOffset)" }
+    },
+    {
+      "id": "desk_2",
+      "displayName": "右上 / 工位 02",
+      "index": 1,
+      "sceneKey": "hong",
+      "center": [3.2, 0, 1.75],
+      "rotationY": { "expression": "-Math.PI / 2", "radians": -1.570796, "degrees": -90 },
+      "facingDirection": [-1, 0, 0],
+      "deskVisual": { "root": [3.2, 0, 1.75], "topCenter": [3.2, 0.82, 1.75], "topWorldSize": [1.35, 0.26, 3.05] },
+      "chairVisual": { "root": [1.95, 0, 1.75], "seatCenter": [1.95, 0.55, 1.75], "seatWorldSize": [0.9, 0.2, 0.95] },
+      "seatWorkPosition": [2.25, 0, 1.75],
+      "characterIdlePosition": [2.25, 0, 1.75],
+      "approachTarget": [1.8, 0, 1.75],
+      "interactionHotspot": { "kind": "visible-descendant-raycast", "root": [3.2, 0, 1.75], "explicitCollider": null },
+      "computerHotspot": { "groupOrigin": [3.28, 1.28, 1.75], "visualCenter": [3.28, 1.53, 1.75], "approximateWorldSize": [0.12, 0.82, 1.35] },
+      "coffeeClaimPoint": [3.52, 1.16, 0.67],
+      "emptyDeskLabel": [3.2, 2.38, 1.75],
+      "visualFootprint": { "center": [3.15, 0.018, 1.75], "worldSize": [2.8, 0.035, 3.5], "aabbMin": [1.75, 0.0005, 0], "aabbMax": [4.55, 0.0355, 3.5] },
+      "collider": null,
+      "blenderRootTarget": [3.2, -1.75, 0],
+      "blenderRotationZ": -1.570796,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "WORKSTATION_LAYOUT[1]/buildPositionSet(1)", "kind": "authoritative" },
+      "derivedFrom": { "file": "components/office-3d/LowPolyWorkstation.tsx", "formula": "world = parentPosition + rotateY(parentRotation, localOffset)" }
+    },
+    {
+      "id": "desk_3",
+      "displayName": "左下 / 工位 03",
+      "index": 2,
+      "sceneKey": "jie",
+      "center": [-3.2, 0, 1.75],
+      "rotationY": { "expression": "Math.PI / 2", "radians": 1.570796, "degrees": 90 },
+      "facingDirection": [1, 0, 0],
+      "deskVisual": { "root": [-3.2, 0, 1.75], "topCenter": [-3.2, 0.82, 1.75], "topWorldSize": [1.35, 0.26, 3.05] },
+      "chairVisual": { "root": [-1.95, 0, 1.75], "seatCenter": [-1.95, 0.55, 1.75], "seatWorldSize": [0.9, 0.2, 0.95] },
+      "seatWorkPosition": [-2.25, 0, 1.75],
+      "characterIdlePosition": [-2.25, 0, 1.75],
+      "approachTarget": [-1.8, 0, 1.75],
+      "interactionHotspot": { "kind": "visible-descendant-raycast", "root": [-3.2, 0, 1.75], "explicitCollider": null },
+      "computerHotspot": { "groupOrigin": [-3.28, 1.28, 1.75], "visualCenter": [-3.28, 1.53, 1.75], "approximateWorldSize": [0.12, 0.82, 1.35] },
+      "coffeeClaimPoint": [-3.52, 1.16, 2.83],
+      "emptyDeskLabel": [-3.2, 2.38, 1.75],
+      "visualFootprint": { "center": [-3.15, 0.018, 1.75], "worldSize": [2.8, 0.035, 3.5], "aabbMin": [-4.55, 0.0005, 0], "aabbMax": [-1.75, 0.0355, 3.5] },
+      "collider": null,
+      "blenderRootTarget": [-3.2, -1.75, 0],
+      "blenderRotationZ": 1.570796,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "WORKSTATION_LAYOUT[2]/buildPositionSet(2)", "kind": "authoritative" },
+      "derivedFrom": { "file": "components/office-3d/LowPolyWorkstation.tsx", "formula": "world = parentPosition + rotateY(parentRotation, localOffset)" }
+    },
+    {
+      "id": "desk_4",
+      "displayName": "右下 / 工位 04",
+      "index": 3,
+      "sceneKey": "qixi",
+      "center": [3.2, 0, -1.75],
+      "rotationY": { "expression": "-Math.PI / 2", "radians": -1.570796, "degrees": -90 },
+      "facingDirection": [-1, 0, 0],
+      "deskVisual": { "root": [3.2, 0, -1.75], "topCenter": [3.2, 0.82, -1.75], "topWorldSize": [1.35, 0.26, 3.05] },
+      "chairVisual": { "root": [1.95, 0, -1.75], "seatCenter": [1.95, 0.55, -1.75], "seatWorldSize": [0.9, 0.2, 0.95] },
+      "seatWorkPosition": [2.25, 0, -1.75],
+      "characterIdlePosition": [2.25, 0, -1.75],
+      "approachTarget": [1.8, 0, -1.75],
+      "interactionHotspot": { "kind": "visible-descendant-raycast", "root": [3.2, 0, -1.75], "explicitCollider": null },
+      "computerHotspot": { "groupOrigin": [3.28, 1.28, -1.75], "visualCenter": [3.28, 1.53, -1.75], "approximateWorldSize": [0.12, 0.82, 1.35] },
+      "coffeeClaimPoint": [3.52, 1.16, -2.83],
+      "emptyDeskLabel": [3.2, 2.38, -1.75],
+      "visualFootprint": { "center": [3.15, 0.018, -1.75], "worldSize": [2.8, 0.035, 3.5], "aabbMin": [1.75, 0.0005, -3.5], "aabbMax": [4.55, 0.0355, 0] },
+      "collider": null,
+      "blenderRootTarget": [3.2, 1.75, 0],
+      "blenderRotationZ": -1.570796,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "WORKSTATION_LAYOUT[3]/buildPositionSet(3)", "kind": "authoritative" },
+      "derivedFrom": { "file": "components/office-3d/LowPolyWorkstation.tsx", "formula": "world = parentPosition + rotateY(parentRotation, localOffset)" }
+    }
+  ],
+  "characters": [
+    {
+      "sceneKey": "ming",
+      "deskId": "desk_1",
+      "memberBinding": "The runtime office member whose deskKey is desk_1",
+      "defaultDeskPosition": [-2.25, 0, -1.75],
+      "deskApproach": [-1.8, 0, -1.75],
+      "deskRotationY": 1.570796,
+      "destinations": {
+        "meeting": { "position": [4.45, 0, 3], "approach": [3.3, 0, 3], "rotationY": 0.680521 },
+        "dining": { "position": [6, 0, -2.75], "approach": [4.4, 0, -3.9], "rotationY": 3.141593 },
+        "sofa": { "position": [-5.2, 0, 3.3], "approach": [-3.8, 0, 3.3], "rotationY": 1.570796 },
+        "coffee": { "position": [-1.5, 0, -4.5], "approach": [-1.2, 0, -4.6], "rotationY": 3.141593 },
+        "restroom": { "position": [-5.5, 0, -5.2], "approach": [-4.5, 0, -4.2], "rotationY": 3.141593 },
+        "entrance": { "position": [-6.5, 0, 2.8], "approach": [-6.2, 0, 3.5], "rotationY": -1.570796 }
+      },
+      "initialPositionRule": "Initial destination is selected from current status; resetToDesk uses defaultDeskPosition.",
+      "footY": 0,
+      "collisionRadius": null,
+      "labelOffset": [0, 2.8, 0],
+      "interactionEmojiOffset": [0, 3.48, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CHARACTER_POSITIONS.ming", "kind": "authoritative" }
+    },
+    {
+      "sceneKey": "hong",
+      "deskId": "desk_2",
+      "memberBinding": "The runtime office member whose deskKey is desk_2",
+      "defaultDeskPosition": [2.25, 0, 1.75],
+      "deskApproach": [1.8, 0, 1.75],
+      "deskRotationY": -1.570796,
+      "destinations": {
+        "meeting": { "position": [6.15, 0, 3], "approach": [3.3, 0, 3], "rotationY": -0.680521 },
+        "dining": { "position": [7, 0, -3.9], "approach": [4.4, 0, -3.9], "rotationY": -1.570796 },
+        "sofa": { "position": [-5.2, 0, 3.9], "approach": [-3.8, 0, 3.9], "rotationY": 1.570796 },
+        "coffee": { "position": [-1.05, 0, -4.5], "approach": [-1.2, 0, -4.6], "rotationY": 3.141593 },
+        "restroom": { "position": [-5.1, 0, -5.2], "approach": [-4.5, 0, -4.2], "rotationY": 3.141593 },
+        "entrance": { "position": [-6.5, 0, 3.25], "approach": [-6.2, 0, 3.5], "rotationY": -1.570796 }
+      },
+      "initialPositionRule": "Initial destination is selected from current status; resetToDesk uses defaultDeskPosition.",
+      "footY": 0,
+      "collisionRadius": null,
+      "labelOffset": [0, 2.8, 0],
+      "interactionEmojiOffset": [0, 3.48, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CHARACTER_POSITIONS.hong", "kind": "authoritative" }
+    },
+    {
+      "sceneKey": "jie",
+      "deskId": "desk_3",
+      "memberBinding": "The runtime office member whose deskKey is desk_3",
+      "defaultDeskPosition": [-2.25, 0, 1.75],
+      "deskApproach": [-1.8, 0, 1.75],
+      "deskRotationY": 1.570796,
+      "destinations": {
+        "meeting": { "position": [4.45, 0, 5.1], "approach": [3.3, 0, 5.1], "rotationY": 2.461072 },
+        "dining": { "position": [6, 0, -5.05], "approach": [4.4, 0, -3.9], "rotationY": 0 },
+        "sofa": { "position": [-5.2, 0, 4.5], "approach": [-3.8, 0, 4.5], "rotationY": 1.570796 },
+        "coffee": { "position": [-0.6, 0, -4.5], "approach": [-1.2, 0, -4.6], "rotationY": 3.141593 },
+        "restroom": { "position": [-4.7, 0, -5.2], "approach": [-4.5, 0, -4.2], "rotationY": 3.141593 },
+        "entrance": { "position": [-6.5, 0, 3.7], "approach": [-6.2, 0, 3.5], "rotationY": -1.570796 }
+      },
+      "initialPositionRule": "Initial destination is selected from current status; resetToDesk uses defaultDeskPosition.",
+      "footY": 0,
+      "collisionRadius": null,
+      "labelOffset": [0, 2.8, 0],
+      "interactionEmojiOffset": [0, 3.48, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CHARACTER_POSITIONS.jie", "kind": "authoritative" }
+    },
+    {
+      "sceneKey": "qixi",
+      "deskId": "desk_4",
+      "memberBinding": "The runtime office member whose deskKey is desk_4",
+      "defaultDeskPosition": [2.25, 0, -1.75],
+      "deskApproach": [1.8, 0, -1.75],
+      "deskRotationY": -1.570796,
+      "destinations": {
+        "meeting": { "position": [6.15, 0, 5.1], "approach": [3.3, 0, 5.1], "rotationY": -2.461072 },
+        "dining": { "position": [5, 0, -3.9], "approach": [4.4, 0, -3.9], "rotationY": 1.570796 },
+        "sofa": { "position": [-5.2, 0, 5.1], "approach": [-3.8, 0, 5.1], "rotationY": 1.570796 },
+        "coffee": { "position": [-0.15, 0, -4.5], "approach": [-1.2, 0, -4.6], "rotationY": 3.141593 },
+        "restroom": { "position": [-4.3, 0, -5.2], "approach": [-4.5, 0, -4.2], "rotationY": 3.141593 },
+        "entrance": { "position": [-6.5, 0, 4.15], "approach": [-6.2, 0, 3.5], "rotationY": -1.570796 }
+      },
+      "initialPositionRule": "Initial destination is selected from current status; resetToDesk uses defaultDeskPosition.",
+      "footY": 0,
+      "collisionRadius": null,
+      "labelOffset": [0, 2.8, 0],
+      "interactionEmojiOffset": [0, 3.48, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CHARACTER_POSITIONS.qixi", "kind": "authoritative" }
+    }
+  ],
+  "movementGraph": {
+    "nodes": {
+      "center": [0, 0, 0],
+      "left": [-5.6, 0, 0],
+      "right": [5.6, 0, 0],
+      "back": [-1.2, 0, -4.6],
+      "front": [0, 0, 3.2],
+      "dining": [4.4, 0, -3.9],
+      "meeting": [3.3, 0, 4.05],
+      "sofa": [-3.8, 0, 4.2],
+      "restroom": [-4.5, 0, -4.2],
+      "entrance": [-6.4, 0, 3.5]
+    },
+    "edges": [
+      ["center", "left"], ["center", "right"], ["center", "back"], ["center", "front"],
+      ["center", "meeting"], ["left", "entrance"], ["left", "restroom"],
+      ["right", "dining"], ["back", "restroom"], ["front", "sofa"]
+    ],
+    "pathSelection": "Shortest weighted route over the node graph, then destination approach and final position; waypoints within 0.12m are deduplicated.",
+    "movementSpeed": "1.62 * speedMultiplier meters per second",
+    "arrivalThreshold": 0.08,
+    "collisionAvoidance": null,
+    "source": { "file": "components/office-3d/character-paths.ts", "symbols": ["PATH_NODES", "PATH_EDGES", "buildCharacterPath"], "kind": "authoritative" }
+  },
+  "facilities": [
+    {
+      "id": "meeting",
+      "visualPosition": [5.3, 0, 4.05],
+      "interactionPosition": [5.3, 0, 4.05],
+      "rotationY": 0,
+      "primaryGeometry": { "type": "rounded-box", "center": [5.3, 0.72, 4.05], "size": [3.7, 0.2, 1.55] },
+      "worldLabelPosition": [5.3, 2.45, 4.05],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [5.3, -4.05, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.meetingTable", "kind": "authoritative" }
+    },
+    {
+      "id": "dining",
+      "visualPosition": [6, 0, -3.9],
+      "interactionPosition": [6, 0, -3.9],
+      "rotationY": 0,
+      "primaryGeometry": { "type": "cylinder", "center": [6, 0.72, -3.9], "radius": 1.25, "height": 0.2 },
+      "worldLabelPosition": [6, 2.05, -3.9],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [6, 3.9, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.diningTable", "kind": "authoritative" }
+    },
+    {
+      "id": "sofa",
+      "visualPosition": [-5.2, 0, 4.2],
+      "interactionPosition": [-5.2, 0, 4.2],
+      "rotationY": 3.141593,
+      "primaryGeometry": { "type": "rounded-box", "center": [-5.2, 0.5, 4.2], "size": [1.35, 0.45, 3.05] },
+      "worldLabelPosition": [-5.2, 2.1, 4.2],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [-5.2, -4.2, 0],
+      "blenderRotationZ": 3.141593,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.sofa", "kind": "authoritative" }
+    },
+    {
+      "id": "coffee",
+      "visualPosition": [-0.8, 0, -5.45],
+      "interactionPosition": [-0.8, 0, -5.45],
+      "rotationY": 0,
+      "primaryGeometry": { "type": "rounded-box", "center": [-0.8, 0.8, -5.45], "size": [1.45, 1.6, 0.75] },
+      "worldLabelPosition": [-0.8, 2.2, -5.45],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [-0.8, 5.45, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.coffeeMachine", "kind": "authoritative" }
+    },
+    {
+      "id": "restroom",
+      "visualPosition": [-5.5, 0, -6.1],
+      "interactionPosition": [-5.5, 0, -6.1],
+      "rotationY": 0,
+      "primaryGeometry": { "type": "box-door", "center": [-5.5, 1.35, -6.1], "size": [2, 2.7, 0.2] },
+      "worldLabelPosition": [-5.5, 3.05, -6.1],
+      "statusMarkerPosition": [4.9, 2.65, -5.92],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [-5.5, 6.1, 0],
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.restroomDoor", "kind": "authoritative" }
+    },
+    {
+      "id": "entrance",
+      "visualPosition": [-7.58, 0, 3.5],
+      "interactionPosition": [-7.58, 0, 3.5],
+      "rotationY": 1.570796,
+      "primaryGeometry": { "type": "box-door", "center": [-7.58, 1.35, 3.5], "worldSize": [0.2, 2.7, 2] },
+      "worldLabelPosition": [-7.58, 3.05, 3.5],
+      "collider": null,
+      "raycastTarget": "InteractiveFurniture group and visible descendants",
+      "blenderRootTarget": [-7.58, -3.5, 0],
+      "blenderRotationZ": 1.570796,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "FURNITURE_POSITIONS.entrance", "kind": "authoritative" }
+    },
+    {
+      "id": "cat-home",
+      "visualPosition": [2.3, 0, -4.65],
+      "interactionPosition": null,
+      "visualRadius": 1.3,
+      "collider": null,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CAT_ZONE_CENTER/CAT_ZONE_RADIUS", "kind": "authoritative-visual" }
+    },
+    {
+      "id": "cat-actor-rest",
+      "visualPosition": [-2.4, 0, 4.8],
+      "interactionPosition": null,
+      "visualRadius": 0.35,
+      "collider": null,
+      "source": { "file": "components/office-3d/scene-config.ts", "symbol": "CAT_ACTOR_CENTER/CAT_ACTOR_RADIUS", "kind": "authoritative-visual" }
+    }
+  ],
+  "interactionContract": {
+    "characterRaycast": "Procedural character group and its visible mesh descendants",
+    "characterHtmlLabelOffset": [0, 2.8, 0],
+    "characterInteractionMenuAnchor": "Screen-space pointer clientX/clientY; it is not a Three.js world coordinate.",
+    "facilityRaycast": "InteractiveFurniture group and visible geometry; no separate hotspot mesh.",
+    "computerRaycast": "Monitor group and visible descendants; no separate collider.",
+    "coffeeGiftRaycast": "Gifted cup group at workstation-local [-1.08, 1.16, -0.32].",
+    "source": {
+      "files": [
+        "components/office-3d/AnimatedLowPolyCharacter.tsx",
+        "components/office-3d/OfficeAmenities.tsx",
+        "components/office-3d/LowPolyWorkstation.tsx",
+        "components/hud/ContextInteractionMenu.tsx"
+      ],
+      "kind": "authoritative"
+    }
+  },
+  "camera": {
+    "projection": "orthographic",
+    "initialPosition": [10.8, 11.8, 14.5],
+    "initialTarget": [0, 0.8, 0],
+    "initialZoom": 44,
+    "near": 0.1,
+    "far": 100,
+    "fixedOffsetFromTarget": [10.8, 11, 14.5],
+    "runtimeZoom": "Calculated from projected active-zone bounds, viewport dimensions, SAFE_AREA and zone margin; minimum 12.",
+    "controls": {
+      "type": "MapControls",
+      "rotateEnabled": false,
+      "dampingEnabled": true,
+      "dampingFactor": 0.08,
+      "screenSpacePanning": true,
+      "minZoom": 12,
+      "maxZoom": 120,
+      "maxPolarAngle": { "expression": "Math.PI / 2.4", "radians": 1.308997, "degrees": 75 },
+      "azimuthLimit": null,
+      "panClamp": "Active zone bounds inset by 1.5m on X and Z."
+    },
+    "autoZoneRule": "desktop when min(viewportWidth, viewportHeight) >= 760; otherwise workstations in portrait and overview in landscape.",
+    "fitZones": {
+      "desktop": { "target": [0, 0.8, 0], "position": [10.8, 11.8, 14.5], "boundsMin": [-8.1, -0.41, -6.6], "boundsMax": [8.1, 4.5, 6.6], "margin": 0.88 },
+      "workstations": { "target": [0, 0.5, 0.3], "position": [10.8, 11.5, 14.8], "boundsMin": [-5.5, 0, -2.8], "boundsMax": [5.5, 2, 3.5], "margin": 0.92 },
+      "living": { "target": [-0.5, 0.5, 4.5], "position": [10.3, 11.5, 19], "boundsMin": [-6.5, 0, 2.8], "boundsMax": [7.2, 2.2, 6.2], "margin": 0.88 },
+      "amenities": { "target": [0, 0.5, -4], "position": [10.8, 11.5, 10.5], "boundsMin": [-6.5, 0, -6.2], "boundsMax": [7, 2.2, -1.5], "margin": 0.9 },
+      "overview": { "target": [0, 0.8, 0], "position": [10.8, 11.8, 14.5], "boundsMin": [-8.1, -0.41, -6.6], "boundsMax": [8.1, 4.5, 6.6], "margin": 0.85 }
+    },
+    "fitDependsOnRoomBounds": true,
+    "safeAreaEffect": "SAFE_AREA pixels are subtracted from viewport width/height before fit zoom is calculated.",
+    "source": {
+      "files": [
+        "components/office-3d/scene-config.ts",
+        "components/office-3d/CameraController.tsx",
+        "components/office-3d/OfficeWebGLScene.tsx",
+        "components/office-3d/OfficeWorld.tsx"
+      ],
+      "symbols": ["OFFICE_CAMERA", "CAMERA_ZONES", "calculateFitZoom", "MapControls"],
+      "kind": "authoritative"
+    }
+  },
+  "blenderAuthoringTargets": {
+    "origin": [0, 0, 0],
+    "floorTopZ": 0,
+    "roomSize": [16.2, 13.2, 4.5],
+    "workstationRoots": {
+      "desk_1": { "position": [-3.2, 1.75, 0], "rotationZ": 1.570796 },
+      "desk_2": { "position": [3.2, -1.75, 0], "rotationZ": -1.570796 },
+      "desk_3": { "position": [-3.2, -1.75, 0], "rotationZ": 1.570796 },
+      "desk_4": { "position": [3.2, 1.75, 0], "rotationZ": -1.570796 }
+    },
+    "facilityRoots": {
+      "meeting": [5.3, -4.05, 0],
+      "dining": [6, 3.9, 0],
+      "sofa": [-5.2, -4.2, 0],
+      "coffee": [-0.8, 5.45, 0],
+      "restroom": [-5.5, 6.1, 0],
+      "entrance": [-7.58, -3.5, 0]
+    },
+    "recommendedAnchors": [
+      "OW_DESK_1_ROOT", "OW_DESK_1_SEAT", "OW_DESK_1_APPROACH", "OW_DESK_1_COMPUTER",
+      "OW_DESK_2_ROOT", "OW_DESK_2_SEAT", "OW_DESK_2_APPROACH", "OW_DESK_2_COMPUTER",
+      "OW_DESK_3_ROOT", "OW_DESK_3_SEAT", "OW_DESK_3_APPROACH", "OW_DESK_3_COMPUTER",
+      "OW_DESK_4_ROOT", "OW_DESK_4_SEAT", "OW_DESK_4_APPROACH", "OW_DESK_4_COMPUTER",
+      "OW_MEETING_ROOT", "OW_DINING_ROOT", "OW_SOFA_ROOT", "OW_COFFEE_ROOT",
+      "OW_RESTROOM_ROOT", "OW_ENTRANCE_ROOT", "OW_WINDOW_ROOT"
+    ],
+    "exportedHeroRootTransform": {
+      "position": [0, 0, 0],
+      "rotation": [0, 0, 0],
+      "scale": [1, 1, 1]
+    },
+    "frontendScaleCorrectionAllowed": false
+  },
+  "sources": [
+    { "file": "components/office-3d/scene-config.ts", "symbols": ["OFFICE_CAMERA", "ROOM_BOUNDS", "SAFE_AREA", "CAMERA_ZONES", "WORKSTATION_LAYOUT", "CHARACTER_POSITIONS", "FURNITURE_POSITIONS"], "role": "primary spatial constants" },
+    { "file": "components/office-3d/OfficeWorld.tsx", "symbols": ["RoomShell", "OfficeWorld"], "role": "room geometry, parent transforms, labels, controls" },
+    { "file": "components/office-3d/LowPolyWorkstation.tsx", "symbols": ["LowPolyWorkstation", "Chair", "DeskLamp"], "role": "workstation local geometry and raycast groups" },
+    { "file": "components/office-3d/OfficeAmenities.tsx", "symbols": ["OfficeAmenities", "InteractiveFurniture"], "role": "facility geometry, roots, labels and raycast behavior" },
+    { "file": "components/office-3d/character-paths.ts", "symbols": ["PATH_NODES", "PATH_EDGES", "getCharacterDestination", "buildCharacterPath"], "role": "character destinations, facing and route graph" },
+    { "file": "components/office-3d/CharacterController.tsx", "symbols": ["CharacterController"], "role": "runtime initial position, movement and floor-height behavior" },
+    { "file": "components/office-3d/AnimatedLowPolyCharacter.tsx", "symbols": ["AnimatedLowPolyCharacter"], "role": "character geometry, world labels and pointer anchor" },
+    { "file": "components/office-3d/CameraController.tsx", "symbols": ["calculateFitZoom", "getPanBounds", "CameraController"], "role": "camera fit and pan clamp" },
+    { "file": "components/office-3d/OfficeWebGLScene.tsx", "symbols": ["OfficeWebGLScene"], "role": "formal orthographic Canvas and initial camera" },
+    { "file": "components/hud/useHudSafeArea.ts", "symbols": ["useHudSafeArea"], "role": "HUD CSS safe-area application" },
+    { "file": "lib/office/desk-slots.ts", "symbols": ["DESK_KEYS", "buildDeskSlots"], "role": "business desk-slot order and member binding" },
+    { "file": "lib/supabase/status-mapper.ts", "symbols": ["DESK_SCENE_KEYS", "currentStatusToUser"], "role": "Supabase desk_key to sceneKey binding" }
+  ],
+  "unresolved": [
+    {
+      "id": "no-character-playable-clamp",
+      "issue": "No authoritative character playable AABB, edge padding, collision avoidance or room-bound clamp exists. Only a discrete path graph and destinations are implemented.",
+      "requiredBeforeModeling": "Treat route clearance as a design requirement, not as an existing collision contract; define collision/navigation separately before enabling free movement."
+    },
+    {
+      "id": "chair-seat-versus-character-seat",
+      "issue": "Each visual chair root is 0.30m closer to the room center than the corresponding character deskSeatPosition on X.",
+      "runtimeAuthority": "CharacterController uses CHARACTER_POSITIONS.deskSeatPosition; the chair position is visual geometry only.",
+      "requiredBeforeModeling": "Preserve the character seat anchor or explicitly resolve the 0.30m visual offset in the full-office asset."
+    },
+    {
+      "id": "door-meshes-without-openings",
+      "issue": "Entrance and restroom door meshes overlap wall planes, but no matching structural wall openings are authored.",
+      "requiredBeforeModeling": "Choose and document actual opening width, height and wall cuts before final architecture modeling."
+    },
+    {
+      "id": "implicit-raycast-sizes",
+      "issue": "Facility, computer, character and coffee interactions raycast visible geometry; no independent collider/hotspot dimensions are authoritative.",
+      "requiredBeforeModeling": "If the full-office GLB replaces visual meshes, create explicit runtime hotspot meshes or named GLB anchors without changing the recorded interaction positions."
+    },
+    {
+      "id": "restroom-marker-coordinate-mismatch",
+      "issue": "The restroom status marker is at [4.9, 2.65, -5.92], while the restroom door and restroom character destinations are on the negative-X side.",
+      "runtimeAuthority": "CharacterController renders the marker at [4.9, 2.65, -5.92].",
+      "requiredBeforeModeling": "Confirm whether the marker coordinate is intentional before placing restroom signage in Blender."
+    }
+  ]
+}
