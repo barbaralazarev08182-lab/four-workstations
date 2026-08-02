@@ -15,13 +15,14 @@ import {
   type CharacterDestinationKey,
 } from "@/components/office-3d/character-actions";
 import { buildCharacterPath, getCharacterDestination } from "@/components/office-3d/character-paths";
+import type { InteractionAnchor } from "@/components/office-3d/scene-config";
 
 interface CharacterControllerProps {
   user: OfficeUser;
   index: number;
   speedMultiplier: number;
   debugCommand: CharacterDebugCommand | null;
-  onClick: () => void;
+  onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
 }
 

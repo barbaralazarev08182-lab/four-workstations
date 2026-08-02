@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, Copy, CrownSimple, DoorOpen, SpinnerGap, Trash, UsersThree, X } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
+import { useDialogFocus } from "@/components/hud/useDialogFocus";
 import type { MyOfficeInfo, OfficeManagementAction } from "@/hooks/useOfficeManagement";
 import { ACTIVE_STATUSES, getStatusLabel } from "@/lib/status";
 import type { OfficeUser } from "@/lib/types";
@@ -37,10 +38,12 @@ const DESK_LABELS: Record<string, string> = {
   desk_4: "右下工位",
 };
 
-export function RoomInfoPanel({ open, info, users, loading, busyAction, errorMessage, onClose, onRefresh, onLeave, onDelete, onTransfer, onNotice }: RoomInfoPanelProps) {
+export function RoomInfoPanelView({ open, info, users, loading, busyAction, errorMessage, onClose, onRefresh, onLeave, onDelete, onTransfer, onNotice }: RoomInfoPanelProps) {
   const inviteInputRef = useRef<HTMLInputElement>(null);
   const [copyFallback, setCopyFallback] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const dialogRef = useDialogFocus(open, onClose, { suspended: confirmation !== null });
+  const confirmationRef = useDialogFocus(confirmation !== null, () => setConfirmation(null));
   const members = useMemo(() => users
     .filter((user) => !user.isPlaceholder)
     .toSorted((left, right) => (left.deskKey ?? "").localeCompare(right.deskKey ?? "")), [users]);
@@ -84,14 +87,18 @@ export function RoomInfoPanel({ open, info, users, loading, busyAction, errorMes
     <AnimatePresence>
       {open ? (
         <>
-          <motion.button className="panel-scrim" type="button" aria-label="关闭房间信息" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+          <motion.button className="panel-scrim" type="button" aria-label="关闭房间信息" onClick={() => { if (!confirmation) onClose(); }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
           <motion.aside
+            ref={(node) => { dialogRef.current = node as HTMLDivElement | null; }}
             className="room-info-panel"
             initial={{ x: 28, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 27 }}
+            role="dialog"
+            aria-modal="true"
             aria-label="房间信息与成员管理"
+            aria-busy={loading}
           >
             <header className="room-info-header">
               <span><UsersThree size={21} weight="duotone" /></span>
@@ -172,7 +179,16 @@ export function RoomInfoPanel({ open, info, users, loading, busyAction, errorMes
             <AnimatePresence>
               {confirmation ? (
                 <motion.div className="room-confirmation-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <motion.div className={`room-confirmation ${confirmation.type === "delete" ? "is-danger" : ""}`} initial={{ y: 10, scale: 0.97 }} animate={{ y: 0, scale: 1 }} exit={{ y: 8, scale: 0.98 }} role="dialog" aria-modal="true">
+                  <motion.div
+                    ref={(node) => { confirmationRef.current = node as HTMLDivElement | null; }}
+                    className={`room-confirmation ${confirmation.type === "delete" ? "is-danger" : ""}`}
+                    initial={{ y: 10, scale: 0.97 }}
+                    animate={{ y: 0, scale: 1 }}
+                    exit={{ y: 8, scale: 0.98 }}
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-label={confirmation.type === "delete" ? "确认解散房间" : confirmation.type === "transfer" ? "确认转让房主" : "确认退出房间"}
+                  >
                     <span>{confirmation.type === "delete" ? <Trash size={22} /> : confirmation.type === "transfer" ? <CrownSimple size={22} /> : <DoorOpen size={22} />}</span>
                     <h3>{confirmation.type === "delete" ? "确定解散这个房间吗？" : confirmation.type === "transfer" ? `将房主转让给${confirmation.user.name}？` : "确定退出这个共享工位吗？"}</h3>
                     <p>{confirmation.type === "delete"
@@ -182,7 +198,7 @@ export function RoomInfoPanel({ open, info, users, loading, busyAction, errorMes
                         : "退出后你将暂时无法查看房间内的状态和互动，但账号与个人资料会保留。"}</p>
                     <div>
                       <button type="button" disabled={Boolean(busyAction)} onClick={() => setConfirmation(null)}>取消</button>
-                      <button className={confirmation.type === "delete" ? "is-danger" : "is-primary"} type="button" disabled={Boolean(busyAction)} onClick={() => void confirmAction()} data-testid={`confirm-${confirmation.type}`}>
+                      <button className="is-danger" type="button" disabled={Boolean(busyAction)} onClick={() => void confirmAction()} data-testid={`confirm-${confirmation.type}`}>
                         {busyAction ? <><SpinnerGap className="is-spinning" />处理中</> : <><Check />{confirmation.type === "delete" ? "确认解散" : confirmation.type === "transfer" ? "确认转让" : "确认退出"}</>}
                       </button>
                     </div>
@@ -196,3 +212,5 @@ export function RoomInfoPanel({ open, info, users, loading, busyAction, errorMes
     </AnimatePresence>
   );
 }
+
+export const RoomInfoPanel = RoomInfoPanelView;

@@ -2,6 +2,11 @@ import type { AccentKey } from "@/lib/types";
 
 export type Vector3Tuple = [number, number, number];
 
+export interface InteractionAnchor {
+  x: number;
+  y: number;
+}
+
 export const OFFICE_CAMERA = {
   position: [10.8, 11.8, 14.5] as Vector3Tuple,
   target: [0, 0.8, 0] as Vector3Tuple,
@@ -9,6 +14,77 @@ export const OFFICE_CAMERA = {
   near: 0.1,
   far: 100,
 };
+
+export const CAMERA_OFFSET: Vector3Tuple = [
+  OFFICE_CAMERA.position[0] - OFFICE_CAMERA.target[0],
+  OFFICE_CAMERA.position[1] - OFFICE_CAMERA.target[1],
+  OFFICE_CAMERA.position[2] - OFFICE_CAMERA.target[2],
+];
+
+export const ROOM_BOUNDS = {
+  min: [-8.1, -0.41, -6.6] as Vector3Tuple,
+  max: [8.1, 4.5, 6.6] as Vector3Tuple,
+};
+
+export const MOBILE_BREAKPOINT = 760;
+
+export const SAFE_AREA = {
+  portrait: { top: 64, bottom: 160, left: 16, right: 16 },
+  landscape: { top: 48, bottom: 44, left: 24, right: 24 },
+  desktop: { top: 0, bottom: 0, left: 0, right: 0 },
+};
+
+export type CameraZoneKey = "auto" | "desktop" | "workstations" | "living" | "amenities" | "overview";
+
+export interface CameraZonePreset {
+  target: Vector3Tuple;
+  bounds: { min: Vector3Tuple; max: Vector3Tuple };
+  margin: number;
+}
+
+export const CAMERA_ZONES: Record<Exclude<CameraZoneKey, "auto">, CameraZonePreset> = {
+  desktop: {
+    target: [0, 0.8, 0],
+    bounds: ROOM_BOUNDS,
+    margin: 0.88,
+  },
+  workstations: {
+    target: [0, 0.5, 0.3],
+    bounds: { min: [-5.5, 0, -2.8], max: [5.5, 2.0, 3.5] },
+    margin: 0.92,
+  },
+  living: {
+    target: [-0.5, 0.5, 4.5],
+    bounds: { min: [-6.5, 0, 2.8], max: [7.2, 2.2, 6.2] },
+    margin: 0.88,
+  },
+  amenities: {
+    target: [0, 0.5, -4.0],
+    bounds: { min: [-6.5, 0, -6.2], max: [7.0, 2.2, -1.5] },
+    margin: 0.90,
+  },
+  overview: {
+    target: [0, 0.8, 0],
+    bounds: ROOM_BOUNDS,
+    margin: 0.85,
+  },
+};
+
+export function isMobileViewport(width: number, height: number): boolean {
+  return Math.min(width, height) < MOBILE_BREAKPOINT;
+}
+
+export type SafeAreaInsets = { top: number; bottom: number; left: number; right: number };
+
+export function getSafeArea(width: number, height: number): SafeAreaInsets {
+  if (!isMobileViewport(width, height)) return SAFE_AREA.desktop;
+  return height > width ? SAFE_AREA.portrait : SAFE_AREA.landscape;
+}
+
+export function resolveAutoZone(width: number, height: number): Exclude<CameraZoneKey, "auto"> {
+  if (!isMobileViewport(width, height)) return "desktop";
+  return height > width ? "workstations" : "overview";
+}
 
 export const ACCENT_COLORS: Record<AccentKey, string> = {
   sage: "#77906e",
@@ -21,19 +97,33 @@ export const WORKSTATION_LAYOUT: Array<{
   position: Vector3Tuple;
   rotation: number;
 }> = [
-  { position: [-3.2, 0, -2.25], rotation: 0 },
-  { position: [3.2, 0, -2.25], rotation: 0 },
-  { position: [-3.2, 0, 2.35], rotation: Math.PI },
-  { position: [3.2, 0, 2.35], rotation: Math.PI },
+  { position: [-3.2, 0, -1.75], rotation: Math.PI / 2 },
+  { position: [3.2, 0, 1.75], rotation: -Math.PI / 2 },
+  { position: [-3.2, 0, 1.75], rotation: Math.PI / 2 },
+  { position: [3.2, 0, -1.75], rotation: -Math.PI / 2 },
 ];
 
 export const DECORATION_COLORS = ["#eab96d", "#94a889", "#d98c76", "#839db5"];
 
 export const CENTRAL_AISLE_POINT: Vector3Tuple = [0, 0, 0];
-export const LEFT_AISLE_POINT: Vector3Tuple = [-5.35, 0, 0];
-export const RIGHT_AISLE_POINT: Vector3Tuple = [5.25, 0, 0];
-export const BACK_AISLE_POINT: Vector3Tuple = [0, 0, -4.3];
-export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.35];
+export const LEFT_AISLE_POINT: Vector3Tuple = [-5.6, 0, 0];
+export const RIGHT_AISLE_POINT: Vector3Tuple = [5.6, 0, 0];
+export const BACK_AISLE_POINT: Vector3Tuple = [-1.2, 0, -4.6];
+export const FRONT_AISLE_POINT: Vector3Tuple = [0, 0, 3.2];
+
+export const CAT_ZONE_CENTER: Vector3Tuple = [2.3, 0, -4.65];
+export const CAT_ZONE_RADIUS = 1.3;
+
+// Foreground resting spot for ChangFen (the "red circle" spot), separate from
+// the under-window "cat home" (bed / bowl / post) which stays at CAT_ZONE_CENTER.
+export const CAT_ACTOR_CENTER: Vector3Tuple = [-2.4, 0, 4.8];
+export const CAT_ACTOR_RADIUS = 0.35;
+
+export const WINDOW_POSITION: Vector3Tuple = [2.5, 2.6, -6.22];
+export const WINDOW_SIZE: Vector3Tuple = [3.2, 1.8, 0.1];
+
+export const MEETING_CARPET_CENTER: Vector3Tuple = [5.3, 0.015, 4.05];
+export const MEETING_CARPET_SIZE: Vector3Tuple = [3.0, 0.03, 1.8];
 
 export interface CharacterPositionSet {
   deskApproachPosition: Vector3Tuple;
@@ -53,26 +143,32 @@ const USER_IDS = ["ming", "hong", "jie", "qixi"] as const;
 
 function buildPositionSet(index: number): CharacterPositionSet {
   const desk = WORKSTATION_LAYOUT[index];
-  const side = index % 2 === 0 ? -1 : 1;
-  const backRow = index < 2;
-  const deskSeatZ = desk.position[2] + (backRow ? 1.25 : -1.25);
-  const meetingX = index % 2 === 0 ? -1.35 : 1.35;
-  const meetingZ = index < 2 ? 3.75 : 5.55;
-  const diningX = index < 2 ? 4.65 : 6.65;
-  const diningZ = index % 2 === 0 ? -2.45 : -0.95;
+  const isLeft = desk.position[0] < 0;
+  const seatX = desk.position[0] + (isLeft ? 0.95 : -0.95);
+  const approachX = isLeft ? -1.8 : 1.8;
+
+  const meetingSeats: Vector3Tuple[] = [
+    [4.45, 0, 3.0], [6.15, 0, 3.0], [4.45, 0, 5.1], [6.15, 0, 5.1],
+  ];
+  const diningSeats: Vector3Tuple[] = [
+    [6.0, 0, -2.75], [7.0, 0, -3.9], [6.0, 0, -5.05], [5.0, 0, -3.9],
+  ];
+  const sofaSeats: Vector3Tuple[] = [
+    [-5.2, 0, 3.3], [-5.2, 0, 3.9], [-5.2, 0, 4.5], [-5.2, 0, 5.1],
+  ];
 
   return {
-    deskApproachPosition: [side * 5.05, 0, deskSeatZ],
-    deskSeatPosition: [desk.position[0], 0, deskSeatZ],
-    meetingApproachPosition: [meetingX, 0, index < 2 ? 3.32 : 5.92],
-    meetingSeatPosition: [meetingX, 0, meetingZ],
-    diningApproachPosition: [index < 2 ? 4.25 : 7.05, 0, diningZ],
-    diningSeatPosition: [diningX, 0, diningZ],
-    sofaApproachPosition: [5.15, 0, 2.25 + index * 0.58],
-    sofaPosition: [6.05, 0, 2.25 + index * 0.58],
-    coffeePosition: [-1.05 + index * 0.7, 0, -5.05],
-    restroomPosition: [4.15 + index * 0.42, 0, -5.35],
-    entrancePosition: [-6.85, 0, 3.25 + index * 0.38],
+    deskApproachPosition: [approachX, 0, desk.position[2]],
+    deskSeatPosition: [seatX, 0, desk.position[2]],
+    meetingApproachPosition: [3.3, 0, index < 2 ? 3.0 : 5.1],
+    meetingSeatPosition: meetingSeats[index],
+    diningApproachPosition: [4.4, 0, -3.9],
+    diningSeatPosition: diningSeats[index],
+    sofaApproachPosition: [-3.8, 0, sofaSeats[index][2]],
+    sofaPosition: sofaSeats[index],
+    coffeePosition: [-1.5 + index * 0.45, 0, -4.5],
+    restroomPosition: [-5.5 + index * 0.4, 0, -5.2],
+    entrancePosition: [-6.5, 0, 2.8 + index * 0.45],
   };
 }
 
@@ -81,10 +177,88 @@ export const CHARACTER_POSITIONS: Record<string, CharacterPositionSet> = Object.
 );
 
 export const FURNITURE_POSITIONS = {
-  meetingTable: [0, 0, 4.65] as Vector3Tuple,
-  diningTable: [5.65, 0, -1.7] as Vector3Tuple,
-  sofa: [6.58, 0, 3.18] as Vector3Tuple,
-  coffeeMachine: [0, 0, -5.72] as Vector3Tuple,
-  restroomDoor: [4.9, 0, -6.15] as Vector3Tuple,
-  entrance: [-7.62, 0, 3.9] as Vector3Tuple,
+  meetingTable: [5.3, 0, 4.05] as Vector3Tuple,
+  diningTable: [6.0, 0, -3.9] as Vector3Tuple,
+  sofa: [-5.2, 0, 4.2] as Vector3Tuple,
+  coffeeMachine: [-0.8, 0, -5.45] as Vector3Tuple,
+  restroomDoor: [-5.5, 0, -6.1] as Vector3Tuple,
+  entrance: [-7.58, 0, 3.5] as Vector3Tuple,
+};
+
+export interface MaterialDef {
+  day: string;
+  night: string;
+  roughness: number;
+  metalness?: number;
+}
+
+// Restrained material palette — warm toy-house / architectural-model feel.
+// Structural surfaces (wall/floor) use day/night variants; furniture keeps its
+// day color and relies on the lighting presets for the night mood.
+export const MAT: Record<string, MaterialDef> = {
+  wall: { day: "#efe7d7", night: "#474c4b", roughness: 0.96 },
+  floor: { day: "#d6b78c", night: "#574c42", roughness: 0.9 },
+  floorPlankA: { day: "#d6b78c", night: "#574c42", roughness: 0.9 },
+  floorPlankB: { day: "#d0b083", night: "#52473e", roughness: 0.92 },
+  floorPlankC: { day: "#dabf97", night: "#5c5046", roughness: 0.9 },
+  floorSeam: { day: "#c09e6f", night: "#453c35", roughness: 1 },
+  woodTop: { day: "#c9a173", night: "#6e5a45", roughness: 0.78 },
+  woodLeg: { day: "#9c7856", night: "#5c4838", roughness: 0.85 },
+  fabric: { day: "#8a9d8a", night: "#4c574a", roughness: 0.98 },
+  fabricSoft: { day: "#9aad98", night: "#556052", roughness: 0.98 },
+  plastic: { day: "#4a514f", night: "#3b413f", roughness: 0.55 },
+  plasticLight: { day: "#5c6361", night: "#474e4c", roughness: 0.6 },
+  screen: { day: "#2e3436", night: "#2a3236", roughness: 0.35 },
+  metal: { day: "#b3a586", night: "#7d7362", roughness: 0.5, metalness: 0.35 },
+  machine: { day: "#6d7772", night: "#4b5350", roughness: 0.6 },
+  // ChangFen — blue-gray British Shorthair
+  catBody: { day: "#8b95a2", night: "#616a76", roughness: 0.95 },
+  catLight: { day: "#9ba5b1", night: "#6d7682", roughness: 0.95 },
+  catEarInner: { day: "#b3a09a", night: "#7a6f6a", roughness: 0.95 },
+  catNose: { day: "#6b5755", night: "#4a3f3e", roughness: 0.8 },
+  catEye: { day: "#d9a441", night: "#c8963d", roughness: 0.4 },
+  catPupil: { day: "#2a2622", night: "#221f1c", roughness: 0.5 },
+  catBed: { day: "#8b95a0", night: "#5a6572", roughness: 1 },
+  catBedInner: { day: "#a7b0ba", night: "#6a7480", roughness: 1 },
+};
+
+export function matColor(mat: MaterialDef, isNight: boolean): string {
+  return isNight ? mat.night : mat.day;
+}
+
+export interface LightPreset {
+  background: string;
+  ambient: { intensity: number; color: string };
+  hemisphere: { intensity: number; sky: string; ground: string };
+  key: { intensity: number; color: string; position: Vector3Tuple };
+  fill: { intensity: number; color: string };
+  windowLight: { intensity: number; color: string; width: number; height: number };
+  contactShadow: { opacity: number; blur: number };
+}
+
+// Grouped by condition so future weather variants (dayOvercast / rainy / nightRain)
+// can be added alongside these without restructuring the scene lights.
+// A low directional key keeps gentle window-direction shading + soft shadows,
+// while the RectAreaLight at the window provides the soft sky diffusion.
+// Future rainy direction: lower key, cooler/softer windowLight, slightly lower
+// ambient, softer shadows, interior stays warm and visible.
+export const LIGHT_PRESETS: Record<"day" | "night", LightPreset> = {
+  day: {
+    background: "#eae3d3",
+    ambient: { intensity: 0.55, color: "#fdf8ef" },
+    hemisphere: { intensity: 0.65, sky: "#fdf9f0", ground: "#c9a884" },
+    key: { intensity: 1.3, color: "#fff4df", position: [2.5, 8.5, -5.5] },
+    fill: { intensity: 0.3, color: "#e6ebf0" },
+    windowLight: { intensity: 1.8, color: "#fff3df", width: 3.0, height: 1.7 },
+    contactShadow: { opacity: 0.27, blur: 3.2 },
+  },
+  night: {
+    background: "#263036",
+    ambient: { intensity: 0.3, color: "#93a3b8" },
+    hemisphere: { intensity: 0.32, sky: "#7280a0", ground: "#3a3430" },
+    key: { intensity: 0.28, color: "#9db2d4", position: [2.5, 8.5, -5.5] },
+    fill: { intensity: 0.2, color: "#5f6f8a" },
+    windowLight: { intensity: 0.4, color: "#a8b8cc", width: 3.0, height: 1.7 },
+    contactShadow: { opacity: 0.2, blur: 3.4 },
+  },
 };

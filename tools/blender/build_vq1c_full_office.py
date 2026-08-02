@@ -1,0 +1,806 @@
+"""Build the contract-aligned VQ-1C full OfficeWorld PBR scene."""
+
+import argparse
+import json
+import math
+import sys
+from pathlib import Path
+
+import bpy
+from mathutils import Matrix, Vector
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONTRACT_PATH = REPO_ROOT / "docs/assets/vq1c-officeworld-coordinate-contract.json"
+PBR_SOURCE = REPO_ROOT / "assets-source/blender/vq1c/pbr/vq1c-hero-corner-pbr.blend"
+OUTPUT_BLEND = REPO_ROOT / "assets-source/blender/vq1c/full-office/vq1c-officeworld-full-pbr.blend"
+OUTPUT_GLB = REPO_ROOT / "public/models/vq1/vq1c-officeworld-full-pbr.glb"
+OUTPUT_MANIFEST = REPO_ROOT / "assets-source/blender/vq1c/full-office/vq1c-officeworld-full-manifest.json"
+OUTPUT_PREVIEW = REPO_ROOT / "outputs/vq-1c/full-office/10-officeworld-full-pbr.png"
+
+FULL_ROOT = "VQ1C_FULL_OFFICE_ROOT"
+ARCH_ROOT = "OFFICE_ARCH_ROOT"
+WORKSTATIONS_ROOT = "OFFICE_WORKSTATIONS_ROOT"
+AMENITIES_ROOT = "OFFICE_AMENITIES_ROOT"
+ANCHORS_ROOT = "OFFICE_ANCHORS_ROOT"
+EXPECTED_WORKSTATION_MESHES = 73
+EXPECTED_WORKSTATION_TRIANGLES = 12544
+EXPECTED_SOFA_MESHES = 9
+EXPECTED_SOFA_TRIANGLES = 5664
+REQUIRED_MATERIALS = {
+    "VQ_Wall_Plaster", "VQ_Floor_Wood", "VQ_Desk_Wood", "VQ_Trim_Warm",
+    "VQ_Window_Frame", "VQ_Window_Glass", "VQ_Sofa_Fabric", "VQ_Sofa_Fabric_Accent",
+    "VQ_Chair_Fabric", "VQ_Metal_Charcoal", "VQ_Plastic_Dark", "VQ_Keycap",
+    "VQ_Screen_Glass", "VQ_Lamp_Shade", "VQ_Lamp_Inner", "VQ_Sofa_Legs",
+}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--contract", default=str(CONTRACT_PATH))
+    parser.add_argument("--source", default=str(PBR_SOURCE))
+    parser.add_argument("--output", default=str(OUTPUT_BLEND))
+    parser.add_argument("--glb", default=str(OUTPUT_GLB))
+    parser.add_argument("--manifest", default=str(OUTPUT_MANIFEST))
+    parser.add_argument("--preview", default=str(OUTPUT_PREVIEW))
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    return parser.parse_args(argv)
+
+
+def project_relative(path):
+    return Path(path).resolve().relative_to(REPO_ROOT).as_posix()
+
+
+def load_contract(path):
+    with Path(path).open("r", encoding="utf-8") as handle:
+        contract = json.load(handle)
+    if contract.get("schemaVersion") != 1:
+        raise RuntimeError("Unsupported coordinate contract schema")
+    if len(contract.get("workstations", [])) != 4 or len(contract.get("facilities", [])) != 8:
+        raise RuntimeError("Coordinate contract must contain four workstations and eight facilities")
+    if len(contract.get("unresolved", [])) != 5:
+        raise RuntimeError("Coordinate contract unresolved items changed")
+    return contract
+
+
+def three_to_blender_position(position):
+    x, y, z = position
+    return Vector((x, -z, y))
+
+
+def blender_to_three_direction(direction):
+    x, y, z = direction
+    return Vector((x, z, -y))
+
+
+def three_rotation_y_to_blender_z(rotation_y):
+    if isinstance(rotation_y, dict):
+        return float(rotation_y["radians"])
+    return float(rotation_y)
+
+
+def descendants(root, include_root=False):
+    result = [root] if include_root else []
+    stack = list(root.children)
+    while stack:
+        obj = stack.pop()
+        result.append(obj)
+        stack.extend(obj.children)
+    return result
+
+
+def evaluated_triangles(objects):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    meshes = [obj for obj in objects if obj.type == "MESH"]
+    triangles = 0
+    empty_meshes = []
+    for obj in meshes:
+        evaluated = obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            if not mesh.vertices:
+                empty_meshes.append(obj.name)
+            mesh.calc_loop_triangles()
+            triangles += len(mesh.loop_triangles)
+        finally:
+            evaluated.to_mesh_clear()
+    return len(meshes), triangles, empty_meshes
+
+
+def world_bounds(objects):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    minimum = Vector((float("inf"),) * 3)
+    maximum = Vector((float("-inf"),) * 3)
+    found = False
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        found = True
+        evaluated = obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            for vertex in mesh.vertices:
+                point = evaluated.matrix_world @ vertex.co
+                for axis in range(3):
+                    minimum[axis] = min(minimum[axis], point[axis])
+                    maximum[axis] = max(maximum[axis], point[axis])
+        finally:
+            evaluated.to_mesh_clear()
+    if not found:
+        raise RuntimeError("Cannot calculate bounds for an empty mesh set")
+    return minimum, maximum
+
+
+def rounded(vector, digits=6):
+    return [round(float(value), digits) for value in vector]
+
+
+def new_empty(name, parent=None, location=(0, 0, 0), rotation_z=0.0):
+    obj = bpy.data.objects.new(name, None)
+    bpy.context.collection.objects.link(obj)
+    obj.empty_display_type = "PLAIN_AXES"
+    obj.empty_display_size = 0.16
+    if parent:
+        obj.parent = parent
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = location
+    obj.rotation_euler = (0.0, 0.0, rotation_z)
+    obj.scale = (1.0, 1.0, 1.0)
+    return obj
+
+
+def assign_material(obj, material_name):
+    material = bpy.data.materials.get(material_name)
+    if material is None:
+        raise RuntimeError(f"Required PBR material missing: {material_name}")
+    obj.data.materials.clear()
+    obj.data.materials.append(material)
+
+
+def planar_uv(obj, meters_per_repeat=1.5):
+    mesh = obj.data
+    uv_layer = mesh.uv_layers.active or mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        normal = polygon.normal
+        axis = max(range(3), key=lambda index: abs(normal[index]))
+        for loop_index in polygon.loop_indices:
+            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            if axis == 0:
+                uv = (co.y / meters_per_repeat, co.z / meters_per_repeat)
+            elif axis == 1:
+                uv = (co.x / meters_per_repeat, co.z / meters_per_repeat)
+            else:
+                uv = (co.x / meters_per_repeat, co.y / meters_per_repeat)
+            uv_layer.data[loop_index].uv = uv
+
+
+def add_box(name, parent, location, size, material, rotation=(0, 0, 0), uv_scale=1.5):
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, 0, 0))
+    obj = bpy.context.object
+    obj.name = name
+    obj.dimensions = size
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    planar_uv(obj, uv_scale)
+    assign_material(obj, material)
+    obj.parent = parent
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = location
+    obj.rotation_euler = rotation
+    obj.scale = (1.0, 1.0, 1.0)
+    return obj
+
+
+def add_cylinder(name, parent, location, radius, depth, material, vertices=20, radius_top=None):
+    top = radius if radius_top is None else radius_top
+    bpy.ops.mesh.primitive_cone_add(vertices=vertices, radius1=radius, radius2=top, depth=depth, location=(0, 0, 0))
+    obj = bpy.context.object
+    obj.name = name
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    planar_uv(obj, 1.0)
+    assign_material(obj, material)
+    obj.parent = parent
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = location
+    obj.scale = (1.0, 1.0, 1.0)
+    return obj
+
+
+def add_sphere(name, parent, location, radius, material):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=radius, location=(0, 0, 0))
+    obj = bpy.context.object
+    obj.name = name
+    assign_material(obj, material)
+    obj.parent = parent
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = location
+    obj.scale = (1.0, 1.0, 1.0)
+    return obj
+
+
+def duplicate_subtree(source_root, root_name, prefix, parent, location, rotation_z):
+    source_objects = descendants(source_root, include_root=True)
+    mapping = {}
+    for source in source_objects:
+        duplicate = source.copy()
+        duplicate.data = source.data
+        duplicate.animation_data_clear()
+        duplicate.name = root_name if source is source_root else f"{prefix}_{source.name}"
+        bpy.context.collection.objects.link(duplicate)
+        mapping[source] = duplicate
+    for source in source_objects:
+        duplicate = mapping[source]
+        if source is source_root:
+            duplicate.parent = parent
+            duplicate.matrix_parent_inverse = Matrix.Identity(4)
+            duplicate.location = location
+            duplicate.rotation_euler = (0.0, 0.0, rotation_z)
+            duplicate.scale = (1.0, 1.0, 1.0)
+        else:
+            duplicate.parent = mapping[source.parent]
+            duplicate.matrix_parent_inverse = Matrix.Identity(4)
+            duplicate.matrix_basis = source.matrix_basis.copy()
+    return mapping[source_root]
+
+
+def remove_source_objects(source_objects):
+    for obj in source_objects:
+        if obj.name in bpy.data.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+
+def add_back_wall_segment(parent, name, x_min, x_max, z_min, z_max, wall_center_y, thickness):
+    return add_box(
+        name, parent,
+        ((x_min + x_max) / 2, wall_center_y, (z_min + z_max) / 2),
+        (x_max - x_min, thickness, z_max - z_min),
+        "VQ_Wall_Plaster",
+    )
+
+
+def add_left_wall_segment(parent, name, y_min, y_max, z_min, z_max, wall_center_x, thickness):
+    return add_box(
+        name, parent,
+        (wall_center_x, (y_min + y_max) / 2, (z_min + z_max) / 2),
+        (thickness, y_max - y_min, z_max - z_min),
+        "VQ_Wall_Plaster",
+    )
+
+
+def create_architecture(contract, parent):
+    room = contract["room"]
+    width = float(room["size"]["width"])
+    depth = float(room["size"]["depth"])
+    height = float(room["size"]["heightAboveFloor"])
+    camera_floor_min = float(room["bounds"]["min"][1])
+    floor = add_box("FLOOR", parent, (0, 0, camera_floor_min / 2), (width, depth, -camera_floor_min), "VQ_Floor_Wood", uv_scale=1.35)
+    floor["floor_top_z"] = 0.0
+
+    back = next(wall for wall in room["walls"] if wall["id"] == "back-wall")
+    left = next(wall for wall in room["walls"] if wall["id"] == "left-wall")
+    back_x_min, _, back_three_z_min = back["aabb"]["min"]
+    back_x_max, _, back_three_z_max = back["aabb"]["max"]
+    back_center_y = -(back_three_z_min + back_three_z_max) / 2
+    back_thickness = back_three_z_max - back_three_z_min
+    left_three_x_min, _, left_three_z_min = left["aabb"]["min"]
+    left_three_x_max, _, left_three_z_max = left["aabb"]["max"]
+    left_center_x = (left_three_x_min + left_three_x_max) / 2
+    left_thickness = left_three_x_max - left_three_x_min
+    left_y_min, left_y_max = -left_three_z_max, -left_three_z_min
+
+    restroom = next(f for f in contract["facilities"] if f["id"] == "restroom")
+    entrance = next(f for f in contract["facilities"] if f["id"] == "entrance")
+    restroom_center = three_to_blender_position(restroom["visualPosition"])
+    restroom_size = restroom["primaryGeometry"]["size"]
+    restroom_x_min = restroom_center.x - restroom_size[0] / 2
+    restroom_x_max = restroom_center.x + restroom_size[0] / 2
+    restroom_height = restroom_size[1]
+    window = room["window"]
+    window_x_min, window_x_max = window["openingXRange"]
+    window_z_min, window_z_max = window["openingYRange"]
+
+    add_back_wall_segment(parent, "BACK_WALL_LEFT", back_x_min, restroom_x_min, 0, height, back_center_y, back_thickness)
+    add_back_wall_segment(parent, "BACK_WALL_RESTROOM_LINTEL", restroom_x_min, restroom_x_max, restroom_height, height, back_center_y, back_thickness)
+    add_back_wall_segment(parent, "BACK_WALL_CENTER", restroom_x_max, window_x_min, 0, height, back_center_y, back_thickness)
+    add_back_wall_segment(parent, "BACK_WALL_WINDOW_BOTTOM", window_x_min, window_x_max, 0, window_z_min, back_center_y, back_thickness)
+    add_back_wall_segment(parent, "BACK_WALL_WINDOW_TOP", window_x_min, window_x_max, window_z_max, height, back_center_y, back_thickness)
+    add_back_wall_segment(parent, "BACK_WALL_RIGHT", window_x_max, back_x_max, 0, height, back_center_y, back_thickness)
+
+    entrance_center = three_to_blender_position(entrance["visualPosition"])
+    entrance_world_size = entrance["primaryGeometry"]["worldSize"]
+    entrance_y_min = entrance_center.y - entrance_world_size[2] / 2
+    entrance_y_max = entrance_center.y + entrance_world_size[2] / 2
+    entrance_height = entrance_world_size[1]
+    add_left_wall_segment(parent, "LEFT_WALL_BACK", left_y_min, entrance_y_min, 0, height, left_center_x, left_thickness)
+    add_left_wall_segment(parent, "LEFT_WALL_ENTRANCE_LINTEL", entrance_y_min, entrance_y_max, entrance_height, height, left_center_x, left_thickness)
+    add_left_wall_segment(parent, "LEFT_WALL_FRONT", entrance_y_max, left_y_max, 0, height, left_center_x, left_thickness)
+
+    trim_h = 0.14
+    trim_d = 0.08
+    add_box("BASEBOARD_BACK_LEFT", parent, ((back_x_min + restroom_x_min) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (restroom_x_min - back_x_min, trim_d, trim_h), "VQ_Trim_Warm")
+    add_box("BASEBOARD_BACK_CENTER", parent, ((restroom_x_max + window_x_min) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (window_x_min - restroom_x_max, trim_d, trim_h), "VQ_Trim_Warm")
+    add_box("BASEBOARD_BACK_RIGHT", parent, ((window_x_max + back_x_max) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (back_x_max - window_x_max, trim_d, trim_h), "VQ_Trim_Warm")
+    add_box("BASEBOARD_LEFT_BACK", parent, (left_center_x + left_thickness / 2 + trim_d / 2, (left_y_min + entrance_y_min) / 2, trim_h / 2), (trim_d, entrance_y_min - left_y_min, trim_h), "VQ_Trim_Warm")
+    add_box("BASEBOARD_LEFT_FRONT", parent, (left_center_x + left_thickness / 2 + trim_d / 2, (entrance_y_max + left_y_max) / 2, trim_h / 2), (trim_d, left_y_max - entrance_y_max, trim_h), "VQ_Trim_Warm")
+
+    frame = 0.12
+    frame_depth = 0.16
+    window_center_y = -float(window["semanticCenter"][2])
+    add_box("WINDOW_FRAME_LEFT", parent, (window_x_min + frame / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame, frame_depth, window_z_max - window_z_min), "VQ_Window_Frame")
+    add_box("WINDOW_FRAME_RIGHT", parent, (window_x_max - frame / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame, frame_depth, window_z_max - window_z_min), "VQ_Window_Frame")
+    add_box("WINDOW_FRAME_BOTTOM", parent, ((window_x_min + window_x_max) / 2, window_center_y, window_z_min + frame / 2), (window_x_max - window_x_min, frame_depth, frame), "VQ_Window_Frame")
+    add_box("WINDOW_FRAME_TOP", parent, ((window_x_min + window_x_max) / 2, window_center_y, window_z_max - frame / 2), (window_x_max - window_x_min, frame_depth, frame), "VQ_Window_Frame")
+    add_box("WINDOW_FRAME_MULLION", parent, ((window_x_min + window_x_max) / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame * 0.75, frame_depth, window_z_max - window_z_min - 2 * frame), "VQ_Window_Frame")
+    add_box("WINDOW_GLASS", parent, ((window_x_min + window_x_max) / 2, window_center_y + 0.01, (window_z_min + window_z_max) / 2), (window_x_max - window_x_min - 2 * frame, 0.025, window_z_max - window_z_min - 2 * frame), "VQ_Window_Glass")
+    add_box("WINDOW_SILL", parent, ((window_x_min + window_x_max) / 2, back_center_y - 0.2, window_z_min - 0.04), (window_x_max - window_x_min + 0.18, 0.42, 0.12), "VQ_Trim_Warm")
+    return floor
+
+
+def create_meeting(parent):
+    add_box("MEETING_TABLE_TOP", parent, (0, 0, 0.72), (3.7, 1.55, 0.2), "VQ_Desk_Wood")
+    for x in (-1.45, 1.45):
+        for y in (-0.52, 0.52):
+            add_box(f"MEETING_LEG_{'L' if x < 0 else 'R'}_{'F' if y < 0 else 'B'}", parent, (x, y, 0.34), (0.12, 0.12, 0.72), "VQ_Metal_Charcoal")
+    add_box("MEETING_DOCUMENT", parent, (-0.75, -0.1, 0.84), (0.72, 0.5, 0.035), "VQ_Trim_Warm", rotation=(0, 0, 0.18))
+    add_box("MEETING_LAPTOP_BASE", parent, (0.6, 0.04, 0.86), (0.7, 0.48, 0.08), "VQ_Plastic_Dark")
+    add_box("MEETING_LAPTOP_SCREEN", parent, (0.6, 0.25, 1.17), (0.7, 0.05, 0.48), "VQ_Screen_Glass", rotation=(-0.22, 0, 0))
+    add_box("MEETING_WHITEBOARD", parent, (0, 0.85, 1.55), (1.5, 0.06, 0.85), "VQ_Wall_Plaster")
+
+
+def create_dining(parent):
+    add_cylinder("DINING_TABLE_TOP", parent, (0, 0, 0.72), 1.25, 0.2, "VQ_Desk_Wood", vertices=20)
+    add_cylinder("DINING_TABLE_PEDESTAL", parent, (0, 0, 0.34), 0.28, 0.72, "VQ_Metal_Charcoal", vertices=12, radius_top=0.18)
+    for index, (x, y) in enumerate(((-0.52, 0.25), (0.44, -0.28), (0.12, 0.5))):
+        add_cylinder(f"DINING_PLATE_{index + 1}", parent, (x, y, 0.85), 0.3, 0.045, "VQ_Trim_Warm", vertices=16)
+        add_box(f"DINING_TRAY_{index + 1}", parent, (x, y, 0.93), (0.38, 0.28, 0.12), "VQ_Sofa_Fabric_Accent")
+    add_cylinder("DINING_TUMBLER", parent, (0.7, 0.25, 0.98), 0.1, 0.3, "VQ_Window_Glass", vertices=12, radius_top=0.09)
+
+
+def create_coffee(parent):
+    add_box("COFFEE_MACHINE_BODY", parent, (0, 0, 0.8), (1.45, 0.75, 1.6), "VQ_Plastic_Dark")
+    add_box("COFFEE_DISPLAY", parent, (0, -0.4, 1.23), (1.1, 0.08, 0.42), "VQ_Screen_Glass")
+    add_box("COFFEE_DISPENSE", parent, (0, -0.44, 0.72), (0.8, 0.08, 0.46), "VQ_Metal_Charcoal")
+    add_cylinder("COFFEE_CUP", parent, (0, -0.52, 0.38), 0.16, 0.3, "VQ_Trim_Warm", vertices=12, radius_top=0.13)
+
+
+def create_door(parent, prefix, restroom=False):
+    panel_material = "VQ_Desk_Wood" if restroom else "VQ_Sofa_Fabric_Accent"
+    add_box(f"{prefix}_DOOR_PANEL", parent, (0, 0, 1.35), (2.0, 0.10, 2.7), panel_material)
+    add_box(f"{prefix}_DOOR_INSET", parent, (0, -0.065, 1.35), (1.5, 0.05, 2.22), "VQ_Trim_Warm")
+    add_sphere(f"{prefix}_DOOR_HANDLE", parent, (-0.55, -0.12, 1.35), 0.07, "VQ_Metal_Charcoal")
+    add_box(f"{prefix}_FRAME_LEFT", parent, (-1.06, 0, 1.38), (0.12, 0.22, 2.76), "VQ_Window_Frame")
+    add_box(f"{prefix}_FRAME_RIGHT", parent, (1.06, 0, 1.38), (0.12, 0.22, 2.76), "VQ_Window_Frame")
+    add_box(f"{prefix}_FRAME_TOP", parent, (0, 0, 2.76), (2.24, 0.22, 0.12), "VQ_Window_Frame")
+
+
+def create_cat_home(parent, radius):
+    add_cylinder("CAT_HOME_CUSHION", parent, (0, 0, 0.08), radius * 0.66, 0.16, "VQ_Sofa_Fabric_Accent", vertices=24)
+    add_cylinder("CAT_HOME_BASE", parent, (0, 0, 0.035), radius, 0.07, "VQ_Sofa_Legs", vertices=24)
+
+
+def facility_root_name(facility_id):
+    return f"OFFICE_{facility_id.replace('-', '_').upper()}_ROOT"
+
+
+def facility_anchor_name(facility_id):
+    return f"OFFICE_{facility_id.replace('-', '_').upper()}_ANCHOR"
+
+
+def add_contract_anchor(name, parent, three_position, source_id, authority, unresolved_note=None):
+    position = three_to_blender_position(three_position)
+    anchor = new_empty(name, parent, position)
+    anchor["three_position"] = [float(value) for value in three_position]
+    anchor["source_id"] = source_id
+    anchor["authority"] = authority
+    if unresolved_note:
+        anchor["unresolved_note"] = unresolved_note
+    return anchor
+
+
+def validate_fixed_asset(root, expected_meshes, expected_triangles, label):
+    stats = evaluated_triangles(descendants(root, include_root=True))
+    print("FIXED_ASSET_STATS", label, stats[0], stats[1])
+    if stats != (expected_meshes, expected_triangles, []):
+        raise RuntimeError(f"{label} fixed stats changed: {stats}")
+
+
+def build_workstations(contract, source, group, anchors_group):
+    result = []
+    for workstation in contract["workstations"]:
+        desk_id = workstation["id"]
+        number = int(desk_id.split("_")[-1])
+        target = Vector(workstation["blenderRootTarget"])
+        rotation_z = three_rotation_y_to_blender_z(workstation["rotationY"])
+        root = duplicate_subtree(source, f"OFFICE_WORKSTATION_DESK_{number}_ROOT", f"D{number}", group, target, rotation_z)
+        root["three_position"] = workstation["center"]
+        root["source_id"] = desk_id
+        root["scene_key"] = workstation["sceneKey"]
+        root["authority"] = "authoritative"
+        validate_fixed_asset(root, EXPECTED_WORKSTATION_MESHES, EXPECTED_WORKSTATION_TRIANGLES, desk_id)
+
+        add_contract_anchor(f"OFFICE_DESK_{number}_CENTER_ANCHOR", anchors_group, workstation["center"], desk_id, "authoritative")
+        seat = add_contract_anchor(
+            f"OFFICE_DESK_{number}_SEAT_ANCHOR", anchors_group, workstation["seatWorkPosition"],
+            f"{desk_id}:{workstation['sceneKey']}", "authoritative",
+            "Visual chair and business seat intentionally remain distinct.",
+        )
+        chair_root = bpy.data.objects[f"D{number}_POLISHED_CHAIR_ROOT"]
+        chair_objects = descendants(chair_root, include_root=True)
+        chair_bounds = world_bounds(chair_objects)
+        chair_visual_center = (chair_bounds[0] + chair_bounds[1]) / 2
+        chair_root_distance = Vector((chair_root.matrix_world.translation.x - seat.matrix_world.translation.x, chair_root.matrix_world.translation.y - seat.matrix_world.translation.y, 0)).length
+        chair_center_distance = Vector((chair_visual_center.x - seat.matrix_world.translation.x, chair_visual_center.y - seat.matrix_world.translation.y, 0)).length
+
+        facing_blender = (root.matrix_world.to_3x3() @ Vector((0, -1, 0))).normalized()
+        facing_three = blender_to_three_direction(facing_blender).normalized()
+        expected_facing = Vector(workstation["facingDirection"]).normalized()
+        facing_error = (facing_three - expected_facing).length
+        if facing_error > 0.000001:
+            raise RuntimeError(f"{desk_id} facing mismatch: {tuple(facing_three)} vs {tuple(expected_facing)}")
+        alignment = {}
+        for asset, base, socket in (
+            ("monitor", f"D{number}_MONITOR_BASE_ANCHOR", f"D{number}_MONITOR_SOCKET"),
+            ("keyboard", f"D{number}_KEYBOARD_BASE_ANCHOR", f"D{number}_KEYBOARD_SOCKET"),
+            ("lamp", f"D{number}_LAMP_BASE_ANCHOR", f"D{number}_LAMP_SOCKET"),
+        ):
+            error = (bpy.data.objects[base].matrix_world.translation - bpy.data.objects[socket].matrix_world.translation).length
+            alignment[asset] = error
+            if error > 0.0001:
+                raise RuntimeError(f"{desk_id} {asset} anchor alignment error {error}")
+        print("WORKSTATION_TRANSFORM", desk_id, rounded(root.matrix_world.translation), round(rotation_z, 6), "facing", rounded(facing_three))
+        print("WORKSTATION_CHAIR_SEAT", desk_id, "chair_root", rounded(chair_root.matrix_world.translation), "chair_center", rounded(chair_visual_center), "seat", rounded(seat.matrix_world.translation), "horizontal_distance", round(chair_root_distance, 6), round(chair_center_distance, 6))
+        result.append({
+            "id": desk_id,
+            "sceneKey": workstation["sceneKey"],
+            "rootName": root.name,
+            "threePosition": workstation["center"],
+            "blenderPosition": rounded(root.matrix_world.translation),
+            "rotationZ": round(rotation_z, 6),
+            "expectedFacingThree": workstation["facingDirection"],
+            "actualFacingThree": rounded(facing_three),
+            "seatAnchorBlender": rounded(seat.matrix_world.translation),
+            "chairRootBlender": rounded(chair_root.matrix_world.translation),
+            "chairVisualBoundsCenterBlender": rounded(chair_visual_center),
+            "chairRootToSeatHorizontalDistance": round(chair_root_distance, 6),
+            "chairBoundsCenterToSeatHorizontalDistance": round(chair_center_distance, 6),
+            "meshCount": EXPECTED_WORKSTATION_MESHES,
+            "triangleCount": EXPECTED_WORKSTATION_TRIANGLES,
+            "deviceAnchorAlignmentError": {key: round(value, 9) for key, value in alignment.items()},
+        })
+    return result
+
+
+def aabb_intersects(a, b, tolerance=0.001):
+    return all(a[0][axis] < b[1][axis] - tolerance and a[1][axis] > b[0][axis] + tolerance for axis in range(3))
+
+
+def validate_workstation_separation(workstation_manifest):
+    bounds = {}
+    for entry in workstation_manifest:
+        root = bpy.data.objects[entry["rootName"]]
+        bounds[entry["id"]] = world_bounds(descendants(root, include_root=True))
+        entry["bounds"] = {"min": rounded(bounds[entry["id"]][0]), "max": rounded(bounds[entry["id"]][1])}
+    identifiers = list(bounds)
+    for index, first in enumerate(identifiers):
+        for second in identifiers[index + 1 :]:
+            if aabb_intersects(bounds[first], bounds[second]):
+                raise RuntimeError(f"Workstation AABBs intersect: {first}/{second}")
+
+
+def build_facilities(contract, source_sofa, group, anchors_group):
+    manifest = []
+    for facility in contract["facilities"]:
+        facility_id = facility["id"]
+        target = three_to_blender_position(facility["visualPosition"])
+        rotation_z = three_rotation_y_to_blender_z(facility.get("rotationY", 0.0))
+        root_name = facility_root_name(facility_id)
+        if facility_id == "sofa":
+            root = duplicate_subtree(source_sofa, root_name, "OFFICE_SOFA", group, target, rotation_z)
+            validate_fixed_asset(root, EXPECTED_SOFA_MESHES, EXPECTED_SOFA_TRIANGLES, "sofa")
+        else:
+            root = new_empty(root_name, group, target, rotation_z)
+            if facility_id == "meeting":
+                create_meeting(root)
+            elif facility_id == "dining":
+                create_dining(root)
+            elif facility_id == "coffee":
+                create_coffee(root)
+            elif facility_id == "restroom":
+                create_door(root, "RESTROOM", restroom=True)
+            elif facility_id == "entrance":
+                create_door(root, "ENTRANCE", restroom=False)
+            elif facility_id == "cat-home":
+                create_cat_home(root, float(facility["visualRadius"]))
+            elif facility_id == "cat-actor-rest":
+                pass
+        root["three_position"] = facility["visualPosition"]
+        root["source_id"] = facility_id
+        root["authority"] = facility["source"]["kind"]
+        anchor_note = None
+        if facility_id in {"restroom", "entrance"}:
+            anchor_note = "Visible door position is authoritative; no new business door logic or collider is defined."
+        add_contract_anchor(facility_anchor_name(facility_id), anchors_group, facility["visualPosition"], facility_id, facility["source"]["kind"], anchor_note)
+        if facility.get("worldLabelPosition"):
+            add_contract_anchor(f"OFFICE_{facility_id.replace('-', '_').upper()}_LABEL_ANCHOR", anchors_group, facility["worldLabelPosition"], f"{facility_id}:label", "authoritative")
+        if facility_id in {"meeting", "dining", "sofa", "coffee", "restroom", "entrance"}:
+            add_contract_anchor(f"OFFICE_{facility_id.upper()}_INTERACTION_ANCHOR", anchors_group, facility["interactionPosition"], f"{facility_id}:interaction", "authoritative")
+        stats = evaluated_triangles(descendants(root, include_root=True))
+        manifest.append({
+            "id": facility_id,
+            "rootName": root.name,
+            "threePosition": facility["visualPosition"],
+            "blenderPosition": rounded(root.matrix_world.translation),
+            "rotationZ": round(rotation_z, 6),
+            "meshCount": stats[0],
+            "triangleCount": stats[1],
+        })
+    restroom = next(f for f in contract["facilities"] if f["id"] == "restroom")
+    status = add_contract_anchor(
+        "OFFICE_RESTROOM_STATUS_MARKER_ANCHOR", anchors_group, restroom["statusMarkerPosition"],
+        "restroom:statusMarkerPosition", "authoritative-runtime-conflict",
+        "Coordinate intentionally remains separate from the restroom door; contract mismatch is unresolved.",
+    )
+    restroom_anchor = bpy.data.objects[facility_anchor_name("restroom")]
+    bpy.context.view_layer.update()
+    distance = (status.matrix_world.translation - restroom_anchor.matrix_world.translation).length
+    print("RESTROOM_STATUS_MARKER_CONFLICT_DISTANCE", round(distance, 6))
+    return manifest, distance
+
+
+def validate_formal_scene(root, contract, workstation_manifest):
+    failures = []
+    identity = Matrix.Identity(4)
+    if root.parent is not None or max(abs(root.matrix_world[row][column] - identity[row][column]) for row in range(4) for column in range(4)) > 1e-7:
+        failures.append("VQ1C_FULL_OFFICE_ROOT is not top-level identity")
+    direct = {child.name for child in root.children}
+    expected = {ARCH_ROOT, WORKSTATIONS_ROOT, AMENITIES_ROOT, ANCHORS_ROOT}
+    if direct != expected:
+        failures.append(f"top-level groups differ: {sorted(direct)}")
+    for obj in bpy.context.scene.objects:
+        if obj.type in {"CAMERA", "LIGHT"}:
+            failures.append(f"formal camera/light present: {obj.name}")
+        scale = obj.matrix_world.to_scale()
+        if max(scale) - min(scale) > 0.00001:
+            failures.append(f"non-uniform scale: {obj.name} {tuple(scale)}")
+        if obj.type == "MESH":
+            if not obj.data.vertices:
+                failures.append(f"empty mesh: {obj.name}")
+            if len(obj.data.materials) != 1 or obj.data.materials[0] is None:
+                failures.append(f"mesh material invalid: {obj.name}")
+            else:
+                material = obj.data.materials[0]
+                textured = material.use_nodes and any(node.type == "TEX_IMAGE" and node.image for node in material.node_tree.nodes)
+                if textured and obj.data.uv_layers.active is None:
+                    failures.append(f"textured mesh lacks UV: {obj.name}")
+    forbidden = {"VQ1C_POLISHED_HERO_ROOT", "HERO_ARCH_ROOT", "POLISHED_WORKSTATION_ROOT", "POLISHED_SOFA_ROOT"}
+    remaining = forbidden.intersection(bpy.data.objects.keys())
+    if remaining:
+        failures.append(f"temporary source roots remain: {sorted(remaining)}")
+    floor = bpy.data.objects.get("FLOOR")
+    if floor is None:
+        failures.append("FLOOR missing")
+    else:
+        floor_bounds = world_bounds([floor])
+        if abs(floor_bounds[1].z) > 0.0001:
+            failures.append(f"floor top is not Z=0: {floor_bounds[1].z}")
+        room_size = contract["room"]["size"]
+        if abs((floor_bounds[1].x - floor_bounds[0].x) - room_size["width"]) > 0.001 or abs((floor_bounds[1].y - floor_bounds[0].y) - room_size["depth"]) > 0.001:
+            failures.append("floor horizontal size differs from room contract")
+    roots = [bpy.data.objects[entry["rootName"]] for entry in workstation_manifest]
+    for index, first in enumerate(roots):
+        first_bounds = world_bounds(descendants(first, include_root=True))
+        for second in roots[index + 1 :]:
+            if aabb_intersects(first_bounds, world_bounds(descendants(second, include_root=True))):
+                failures.append(f"workstation AABB collision: {first.name}/{second.name}")
+    used_materials = {material.name for obj in bpy.context.scene.objects if obj.type == "MESH" for material in obj.data.materials if material}
+    missing_materials = REQUIRED_MATERIALS - used_materials
+    if missing_materials:
+        failures.append(f"required PBR materials unused: {sorted(missing_materials)}")
+    if failures:
+        raise RuntimeError("Formal scene validation failed:\n- " + "\n- ".join(failures))
+
+
+def used_texture_names():
+    names = set()
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+        for material in obj.data.materials:
+            if material and material.use_nodes:
+                for node in material.node_tree.nodes:
+                    if node.type == "TEX_IMAGE" and node.image:
+                        names.add(Path(bpy.path.abspath(node.image.filepath)).name)
+    return sorted(names)
+
+
+def write_manifest(path, contract, workstation_manifest, facility_manifest, restroom_conflict_distance):
+    arch = bpy.data.objects[ARCH_ROOT]
+    workstation_group = bpy.data.objects[WORKSTATIONS_ROOT]
+    amenities = bpy.data.objects[AMENITIES_ROOT]
+    anchors = bpy.data.objects[ANCHORS_ROOT]
+    scene_objects = descendants(bpy.data.objects[FULL_ROOT], include_root=True)
+    total_stats = evaluated_triangles(scene_objects)
+    architecture_stats = evaluated_triangles(descendants(arch, include_root=True))
+    workstation_stats = evaluated_triangles(descendants(workstation_group, include_root=True))
+    amenities_stats = evaluated_triangles(descendants(amenities, include_root=True))
+    bounds = world_bounds(scene_objects)
+    anchor_positions = {
+        obj.name: rounded(obj.matrix_world.translation)
+        for obj in sorted(descendants(anchors), key=lambda item: item.name)
+        if obj.type == "EMPTY"
+    }
+    material_names = sorted({material.name for obj in scene_objects if obj.type == "MESH" for material in obj.data.materials if material})
+    manifest = {
+        "schemaVersion": 1,
+        "sourceCoordinateContract": project_relative(CONTRACT_PATH),
+        "sourceCommit": contract["sourceCommit"],
+        "rootName": FULL_ROOT,
+        "roomSize": contract["room"]["size"],
+        "floorTopZ": 0.0,
+        "meshCount": total_stats[0],
+        "triangleCount": total_stats[1],
+        "architecture": {"meshCount": architecture_stats[0], "triangleCount": architecture_stats[1]},
+        "workstations": workstation_manifest,
+        "workstationTotals": {"meshCount": workstation_stats[0], "triangleCount": workstation_stats[1]},
+        "sofaFixedStats": {"meshCount": EXPECTED_SOFA_MESHES, "triangleCount": EXPECTED_SOFA_TRIANGLES},
+        "fixedAssetTotals": {"meshCount": 301, "triangleCount": 55840},
+        "amenities": {"meshCount": amenities_stats[0], "triangleCount": amenities_stats[1], "facilities": facility_manifest},
+        "materialNames": material_names,
+        "textureNames": used_texture_names(),
+        "officeAnchorPositions": anchor_positions,
+        "bounds": {"min": rounded(bounds[0]), "max": rounded(bounds[1])},
+        "restroomStatusMarkerConflictDistance": round(restroom_conflict_distance, 6),
+        "unresolvedItemsPreserved": [
+            {"id": item["id"], "issue": item["issue"]}
+            for item in contract["unresolved"]
+        ],
+    }
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(manifest, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    print("FULL_OFFICE_MANIFEST", project_relative(path), total_stats[0], total_stats[1])
+    return manifest
+
+
+def export_glb(root, path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in descendants(root, include_root=True):
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = root
+    bpy.ops.export_scene.gltf(
+        filepath=str(path), export_format="GLB", use_selection=True, export_apply=False,
+        export_materials="EXPORT", export_extras=True, export_animations=False,
+        export_skins=False, export_cameras=False, export_lights=False,
+        export_draco_mesh_compression_enable=False,
+    )
+    if not path.is_file() or path.stat().st_size < 100000:
+        raise RuntimeError("Full OfficeWorld GLB was not produced correctly")
+    print("FULL_OFFICE_GLB", project_relative(path), path.stat().st_size)
+
+
+def render_preview(path, bounds):
+    bpy.ops.object.light_add(type="SUN", location=(0, 0, 10))
+    sun = bpy.context.object
+    sun.name = "TEMP_PREVIEW_SUN"
+    sun.rotation_euler = (math.radians(28), math.radians(-20), math.radians(-32))
+    sun.data.energy = 1.6
+    sun.data.color = (1.0, 0.88, 0.74)
+    sun.data.angle = math.radians(16)
+    bpy.ops.object.light_add(type="AREA", location=(-3.5, -5.5, 9.0))
+    key = bpy.context.object
+    key.name = "TEMP_PREVIEW_KEY"
+    key.data.energy = 1800
+    key.data.shape = "DISK"
+    key.data.size = 8.0
+    key.data.color = (1.0, 0.92, 0.82)
+    bpy.ops.object.light_add(type="AREA", location=(7.0, 4.0, 6.0))
+    fill = bpy.context.object
+    fill.name = "TEMP_PREVIEW_FILL"
+    fill.data.energy = 850
+    fill.data.size = 7.0
+    fill.data.color = (0.80, 0.88, 1.0)
+
+    target = Vector((0, 0, 0.85))
+    camera_location = three_to_blender_position((10.8, 11.8, 14.5))
+    bpy.ops.object.camera_add(location=camera_location)
+    camera = bpy.context.object
+    camera.name = "TEMP_PREVIEW_CAMERA"
+    camera.data.type = "ORTHO"
+    camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
+    bpy.context.view_layer.update()
+    corners = [Vector((x, y, z)) for x in (bounds[0].x, bounds[1].x) for y in (bounds[0].y, bounds[1].y) for z in (0, bounds[1].z)]
+    basis = camera.matrix_world.to_3x3()
+    right = basis.col[0].normalized()
+    up = basis.col[1].normalized()
+    projected_width = max((corner - target).dot(right) for corner in corners) - min((corner - target).dot(right) for corner in corners)
+    projected_height = max((corner - target).dot(up) for corner in corners) - min((corner - target).dot(up) for corner in corners)
+    camera.data.ortho_scale = max(projected_height, projected_width / (1920 / 1080)) * 1.20
+    scene = bpy.context.scene
+    scene.camera = camera
+    try:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    except TypeError:
+        scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.film_transparent = False
+    scene.render.filepath = str(path)
+    scene.view_settings.look = "AgX - Medium High Contrast"
+    world = bpy.data.worlds.new("TEMP_CLEAR_DAY_WORLD")
+    world.use_nodes = True
+    background = world.node_tree.nodes.get("Background")
+    background.inputs["Color"].default_value = (0.24, 0.31, 0.40, 1.0)
+    background.inputs["Strength"].default_value = 0.42
+    scene.world = world
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.render.render(write_still=True)
+    if not path.is_file() or path.stat().st_size < 10000:
+        raise RuntimeError("Full office preview was not produced correctly")
+    print("FULL_OFFICE_PREVIEW", project_relative(path), "1920x1080", path.stat().st_size)
+    for obj in (camera, sun, key, fill):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.data.worlds.remove(world)
+
+
+def main():
+    args = parse_args()
+    contract_path = Path(args.contract).resolve()
+    source_path = Path(args.source).resolve()
+    output_path = Path(args.output).resolve()
+    glb_path = Path(args.glb).resolve()
+    manifest_path = Path(args.manifest).resolve()
+    preview_path = Path(args.preview).resolve()
+    for path in (contract_path, source_path):
+        if not path.is_file():
+            raise RuntimeError(f"Required input missing: {project_relative(path)}")
+    protected = {contract_path, source_path}
+    if output_path in protected or glb_path.name in {"vq1c-hero-corner.glb", "vq1c-hero-corner-polished.glb", "vq1c-hero-corner-pbr.glb"}:
+        raise RuntimeError("Refusing to overwrite a protected input or Hero Corner GLB")
+
+    contract = load_contract(contract_path)
+    bpy.ops.wm.open_mainfile(filepath=str(source_path))
+    source_objects = list(bpy.data.objects)
+    source_workstation = bpy.data.objects.get("POLISHED_WORKSTATION_ROOT")
+    source_sofa = bpy.data.objects.get("POLISHED_SOFA_ROOT")
+    if source_workstation is None or source_sofa is None:
+        raise RuntimeError("PBR source lacks polished workstation or sofa root")
+    validate_fixed_asset(source_workstation, EXPECTED_WORKSTATION_MESHES, EXPECTED_WORKSTATION_TRIANGLES, "source_workstation")
+    validate_fixed_asset(source_sofa, EXPECTED_SOFA_MESHES, EXPECTED_SOFA_TRIANGLES, "source_sofa")
+    if REQUIRED_MATERIALS - set(bpy.data.materials.keys()):
+        raise RuntimeError("PBR source is missing required semantic materials")
+
+    full_root = new_empty(FULL_ROOT)
+    arch_root = new_empty(ARCH_ROOT, full_root)
+    workstations_root = new_empty(WORKSTATIONS_ROOT, full_root)
+    amenities_root = new_empty(AMENITIES_ROOT, full_root)
+    anchors_root = new_empty(ANCHORS_ROOT, full_root)
+    full_root["source_coordinate_contract"] = project_relative(contract_path)
+    full_root["source_commit"] = contract["sourceCommit"]
+
+    workstation_manifest = build_workstations(contract, source_workstation, workstations_root, anchors_root)
+    facility_manifest, restroom_distance = build_facilities(contract, source_sofa, amenities_root, anchors_root)
+    remove_source_objects(source_objects)
+    create_architecture(contract, arch_root)
+    validate_workstation_separation(workstation_manifest)
+    bpy.context.view_layer.update()
+    validate_formal_scene(full_root, contract, workstation_manifest)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.file.make_paths_relative()
+    bpy.ops.wm.save_as_mainfile(filepath=str(output_path))
+    print("FULL_OFFICE_BLEND", project_relative(output_path))
+    manifest = write_manifest(manifest_path, contract, workstation_manifest, facility_manifest, restroom_distance)
+    export_glb(full_root, glb_path)
+    formal_bounds = (Vector(manifest["bounds"]["min"]), Vector(manifest["bounds"]["max"]))
+    render_preview(preview_path, formal_bounds)
+    print("VQ1C_FULL_OFFICE_BUILD_OK")
+
+
+if __name__ == "__main__":
+    main()

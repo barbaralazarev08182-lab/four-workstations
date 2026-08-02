@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, SignOut, X } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
+import { useDialogFocus } from "@/components/hud/useDialogFocus";
 import { getStatusLabel, MOOD_LABELS, STATUS_DEFINITIONS } from "@/lib/status";
 import type { MoodKey, OfficeUser, StatusKey } from "@/lib/types";
 
@@ -14,14 +15,16 @@ interface CheckInPanelProps {
   onClose: () => void;
   onSubmit: (status: StatusKey, note: string, mood: MoodKey) => void;
   onSignOut?: () => Promise<{ error: string | null }>;
+  fallbackFocusRef?: RefObject<HTMLElement | null>;
 }
 
 const ALL_MOODS = Object.keys(MOOD_LABELS) as MoodKey[];
 
-export function CheckInPanel({ open, user, suggestedStatuses, onClose, onSubmit, onSignOut }: CheckInPanelProps) {
+export function CheckInPanel({ open, user, suggestedStatuses, onClose, onSubmit, onSignOut, fallbackFocusRef }: CheckInPanelProps) {
   const [status, setStatus] = useState<StatusKey>(suggestedStatuses[0] ?? user?.status ?? "working");
   const [note, setNote] = useState(user?.isCurrentUser ? user.note : "");
   const [mood, setMood] = useState<MoodKey>(user?.mood ?? "calm");
+  const dialogRef = useDialogFocus(open, onClose, { fallbackFocusRef });
   if (!user || !user.isCurrentUser) return null;
 
   const statuses = suggestedStatuses.length ? suggestedStatuses : (Object.keys(STATUS_DEFINITIONS) as StatusKey[]);
@@ -32,11 +35,14 @@ export function CheckInPanel({ open, user, suggestedStatuses, onClose, onSubmit,
         <>
           <motion.button className="panel-scrim" type="button" aria-label="关闭面板" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
           <motion.aside
+            ref={(node) => { dialogRef.current = node as HTMLDivElement | null; }}
             className="checkin-panel"
             initial={{ x: 30, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 30, opacity: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 26 }}
+            role="dialog"
+            aria-modal="true"
             aria-label="状态打卡面板"
           >
             <header className="panel-header">

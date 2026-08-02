@@ -2,113 +2,111 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CaretDown, CaretLeft, CaretRight, ChatCircleDots } from "@phosphor-icons/react";
+import { CaretDown, ChatCircleDots, X } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
+import { useDialogFocus } from "@/components/hud/useDialogFocus";
 import { getDurationLabel, getStatusLabel, REACTION_LABELS } from "@/lib/status";
 import type { ActivityItem, InteractionEvent, OfficeUser } from "@/lib/types";
 
 interface ActivityFeedProps {
   activities: ActivityItem[];
   users: OfficeUser[];
-  collapsed: boolean;
-  mobileOpen: boolean;
-  onToggle: () => void;
-  onMobileToggle: () => void;
+  open: boolean;
+  onClose: () => void;
   onReact: (activityId: string, key: ActivityItem["reactions"][number]["key"]) => void;
   onUserClick: (user: OfficeUser) => void;
   interactions: InteractionEvent[];
+  loading?: boolean;
+  error?: string | null;
+  limit?: number;
 }
 
-export function ActivityFeed({ activities, users, collapsed, mobileOpen, onToggle, onMobileToggle, onReact, onUserClick, interactions }: ActivityFeedProps) {
+export function ActivityFeed({ activities, users, open, onClose, onReact, onUserClick, interactions, loading = false, error = null, limit = 3 }: ActivityFeedProps) {
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
-  const latestActivities = getLatestActivities(activities);
-  const memberCount = users.filter((user) => !user.isPlaceholder).length;
+  const latestActivities = getLatestActivities(activities, limit);
+  const dialogRef = useDialogFocus(open, onClose);
 
   return (
-    <>
-      <aside className={`activity-feed ${collapsed ? "is-collapsed" : ""}`} aria-label="实时动态">
-        <header>
-          <div><ChatCircleDots size={20} weight="duotone" /><strong>实时动态</strong></div>
-          <span><i />{memberCount} 人在线</span>
-          <button type="button" onClick={onToggle} aria-label={collapsed ? "展开动态栏" : "折叠动态栏"}>{collapsed ? <CaretLeft /> : <CaretRight />}</button>
-        </header>
-        {!collapsed ? (
-          <div className="activity-list">
-            {latestActivities.map((activity) => {
-              const user = users.find((item) => item.id === activity.userId);
-              if (!user) return null;
-              const expanded = expandedActivityId === activity.id;
-              return (
-                <article key={activity.id} className={`activity-item ${expanded ? "is-expanded" : ""}`}>
-                  <button className={`feed-avatar avatar-${user.accent}`} type="button" onClick={() => onUserClick(user)}><Avatar user={user} /></button>
-                  <div className="activity-copy">
-                    <div><strong>{user.name}</strong><time>{activity.time}</time></div>
-                    <span className={`status-text text-${user.accent}`}>{getStatusLabel(activity.status)} · {getDurationLabel(user.statusSince)}</span>
-                    <p>{activity.note}</p>
-                    <button
-                      type="button"
-                      className="activity-expand"
-                      onClick={() => setExpandedActivityId(expanded ? null : activity.id)}
-                      aria-expanded={expanded}
-                    >
-                      {expanded ? "收起互动" : `查看互动 · ${activity.reactions.reduce((sum, reaction) => sum + reaction.count, 0)}`}
-                      <CaretDown size={12} className={expanded ? "is-open" : ""} />
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {expanded ? (
-                        <motion.div className="activity-details" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                          <div className="reaction-row">
-                            {activity.reactions.slice(0, 3).map((reaction) => (
-                              <button key={reaction.key} type="button" onClick={() => onReact(activity.id, reaction.key)} aria-label={`回应 ${REACTION_LABELS[reaction.key]}`}>
-                                {REACTION_LABELS[reaction.key]} <span>{reaction.count}</span>
-                              </button>
-                            ))}
-                            <button type="button" className="add-reaction" onClick={() => onReact(activity.id, "like")} aria-label="添加回应">+</button>
-                          </div>
-                          {activity.recentInteraction ? <small className="recent-interaction">{activity.recentInteraction}</small> : null}
-                        </motion.div>
-                      ) : null}
-                    </AnimatePresence>
-                  </div>
-                </article>
-              );
-            })}
-            <InteractionFeedItems interactions={interactions} users={users} />
-          </div>
-        ) : null}
-      </aside>
-
-      <button className="mobile-feed-handle" type="button" onClick={onMobileToggle} aria-expanded={mobileOpen}>
-        <span><ChatCircleDots size={19} />实时动态</span><CaretDown className={mobileOpen ? "is-open" : ""} />
-      </button>
-      <AnimatePresence>
-        {mobileOpen ? (
-          <motion.aside className="mobile-feed-sheet" initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 240, damping: 28 }}>
-            <div className="sheet-grip" />
-            <ActivityFeedList activities={latestActivities} users={users} onReact={onReact} onUserClick={onUserClick} interactions={interactions} />
+    <AnimatePresence>
+      {open ? (
+        <>
+          <motion.div
+            className="diary-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <motion.aside
+            ref={(node) => { dialogRef.current = node as HTMLDivElement | null; }}
+            className="diary-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="办公室日记"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 32 }}
+          >
+            <header className="diary-header">
+              <div><ChatCircleDots size={19} weight="duotone" /><strong>办公室日记</strong></div>
+              <button type="button" onClick={onClose} aria-label="关闭办公室日记"><X size={16} /></button>
+            </header>
+            <div className="diary-list" aria-busy={loading}>
+              {loading ? (
+                <p className="diary-empty" role="status">正在读取办公室日记…</p>
+              ) : error ? (
+                <p className="diary-empty diary-error" role="alert">{error}</p>
+              ) : latestActivities.length === 0 ? (
+                <p className="diary-empty">还没有动态，先去打个卡吧。</p>
+              ) : (
+                latestActivities.map((activity) => {
+                  const user = users.find((item) => item.id === activity.userId);
+                  if (!user) return null;
+                  const expanded = expandedActivityId === activity.id;
+                  return (
+                    <article key={activity.id} className={`activity-item ${expanded ? "is-expanded" : ""}`}>
+                      <button className={`feed-avatar avatar-${user.accent}`} type="button" onClick={() => onUserClick(user)}><Avatar user={user} /></button>
+                      <div className="activity-copy">
+                        <div><strong>{user.name}</strong><time>{activity.time}</time></div>
+                        <span className={`status-text text-${user.accent}`}>{getStatusLabel(activity.status)} · {getDurationLabel(user.statusSince)}</span>
+                        <p>{activity.note}</p>
+                        <button
+                          type="button"
+                          className="activity-expand"
+                          onClick={() => setExpandedActivityId(expanded ? null : activity.id)}
+                          aria-expanded={expanded}
+                        >
+                          {expanded ? "收起互动" : `查看互动 · ${activity.reactions.reduce((sum, reaction) => sum + reaction.count, 0)}`}
+                          <CaretDown size={12} className={expanded ? "is-open" : ""} />
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {expanded ? (
+                            <motion.div className="activity-details" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                              <div className="reaction-row">
+                                {activity.reactions.slice(0, 3).map((reaction) => (
+                                  <button key={reaction.key} type="button" onClick={() => onReact(activity.id, reaction.key)} aria-label={`回应 ${REACTION_LABELS[reaction.key]}`}>
+                                    {REACTION_LABELS[reaction.key]} <span>{reaction.count}</span>
+                                  </button>
+                                ))}
+                                <button type="button" className="add-reaction" onClick={() => onReact(activity.id, "like")} aria-label="添加回应">+</button>
+                              </div>
+                              {activity.recentInteraction ? <small className="recent-interaction">{activity.recentInteraction}</small> : null}
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+              <InteractionFeedItems interactions={interactions} users={users} />
+            </div>
           </motion.aside>
-        ) : null}
-      </AnimatePresence>
-    </>
-  );
-}
-
-function ActivityFeedList({ activities, users, onReact, onUserClick, interactions }: Pick<ActivityFeedProps, "activities" | "users" | "onReact" | "onUserClick" | "interactions">) {
-  return (
-    <div className="mobile-activity-list">
-      {activities.map((activity) => {
-        const user = users.find((item) => item.id === activity.userId);
-        if (!user) return null;
-        return (
-          <article key={activity.id}>
-            <button className={`feed-avatar avatar-${user.accent}`} type="button" onClick={() => onUserClick(user)}><Avatar user={user} /></button>
-            <div><strong>{user.name} · {getStatusLabel(activity.status)}</strong><p>{activity.note}</p><button type="button" onClick={() => onReact(activity.id, "like")}>👍 回应</button></div>
-            <time>{activity.time}</time>
-          </article>
-        );
-      })}
-      <InteractionFeedItems interactions={interactions} users={users} />
-    </div>
+        </>
+      ) : null}
+    </AnimatePresence>
   );
 }
 
@@ -149,11 +147,12 @@ function InteractionFeedItems({ interactions, users }: { interactions: Interacti
   );
 }
 
-function getLatestActivities(activities: ActivityItem[]) {
+function getLatestActivities(activities: ActivityItem[], limit: number) {
+  if (limit >= activities.length) return activities;
   const seen = new Set<string>();
   return activities.filter((activity) => {
     if (seen.has(activity.userId)) return false;
     seen.add(activity.userId);
     return true;
-  }).slice(0, 3);
+  }).slice(0, limit);
 }

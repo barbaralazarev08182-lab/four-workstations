@@ -7,7 +7,7 @@ import type { Group } from "three";
 import { STATUS_DEFINITIONS, getDurationLabel } from "@/lib/status";
 import type { CharacterInteractionEffect, OfficeUser } from "@/lib/types";
 import type { CharacterActionState } from "@/components/office-3d/character-actions";
-import { ACCENT_COLORS } from "@/components/office-3d/scene-config";
+import { ACCENT_COLORS, type InteractionAnchor } from "@/components/office-3d/scene-config";
 
 export interface CharacterRigRefs {
   characterRoot: RefObject<Group | null>;
@@ -33,7 +33,7 @@ interface AnimatedLowPolyCharacterProps {
   actionState: CharacterActionState;
   isMoving: boolean;
   rendererKind?: "procedural" | "glb";
-  onClick: () => void;
+  onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
 }
 
@@ -64,7 +64,7 @@ export function AnimatedLowPolyCharacter({
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onClick();
+    onClick({ x: event.nativeEvent.clientX, y: event.nativeEvent.clientY });
   };
 
   return (
@@ -157,7 +157,7 @@ export function AnimatedLowPolyCharacter({
             data-character-action={actionState}
             data-moving={isMoving ? "true" : "false"}
             data-renderer-kind={rendererKind}
-            onClick={onClick}
+            onClick={(event) => onClick({ x: event.clientX, y: event.clientY })}
           >
             <strong>{user.name}</strong>
             <span>{isMoving ? "正在前往" : STATUS_DEFINITIONS[user.status].shortLabel} · {getDurationLabel(user.statusSince)}</span>
