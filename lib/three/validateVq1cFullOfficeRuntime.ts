@@ -1,3 +1,4 @@
+// Shared by the formal OfficeWorld visual layer and the QA runtime.
 import { Box3, Vector3 } from "three";
 import type { BufferGeometry, Material, Mesh, Object3D, Texture } from "three";
 
@@ -85,7 +86,7 @@ function collectSubtreeStats(root: Object3D) {
   return { meshes, triangles };
 }
 
-function exactSubtreeObject(root: Object3D, expectedName: string) {
+function exactSubtreeObject(root: Object3D, expectedName: string): Object3D | null {
   let exact: Object3D | null = null;
   let suffixed: Object3D | null = null;
   root.traverse((object) => {
@@ -94,7 +95,7 @@ function exactSubtreeObject(root: Object3D, expectedName: string) {
       suffixed = object;
     }
   });
-  return exact ?? suffixed;
+  return (exact ?? suffixed) as Object3D | null;
 }
 
 function tuple(vector: Vector3): [number, number, number] {

@@ -7,14 +7,17 @@ import { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import {
-  ACESFilmicToneMapping, Box3, CanvasTexture, Color, Fog, LinearFilter,
-  Object3D, PMREMGenerator, Quaternion, SRGBColorSpace, Sphere, SpotLight, Vector3,
+  ACESFilmicToneMapping, Box3, Color, Fog,
+  Object3D, SRGBColorSpace, Sphere, SpotLight, Vector3,
 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "./vq1cEnvironmentPresets";
-import { validateVq1cRuntimeScene, type Vq1cRuntimeValidation } from "./validateVq1cRuntimeScene";
+import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "@/lib/three/vq1cEnvironmentPresets";
+import { validateVq1cRuntimeScene, type Vq1cRuntimeValidation } from "@/lib/three/validateVq1cRuntimeScene";
+import {
+  createVq1cBackdropTexture, createVq1cRoomEnvironment,
+  resolveVq1cDeskLightTransform, VQ1C_PBR_PATH,
+} from "@/lib/three/vq1cRuntime";
 
-export const VQ1C_PBR_PATH = "/models/vq1/vq1c-hero-corner-pbr.glb";
+export { VQ1C_PBR_PATH } from "@/lib/three/vq1cRuntime";
 
 export interface Vq1cRuntimeDiagnostics {
   mode: Vq1cEnvironmentMode;
@@ -33,42 +36,6 @@ declare global {
   interface Window { __VQ1C_RUNTIME_QA__?: Vq1cRuntimeDiagnostics }
 }
 
-function makeBackdropTexture(kind: "clear" | "rain") {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas 2D context unavailable");
-  const gradient = context.createLinearGradient(0, 0, 0, 256);
-  if (kind === "clear") {
-    gradient.addColorStop(0, "#adc9d8");
-    gradient.addColorStop(0.7, "#d9e2df");
-    gradient.addColorStop(1, "#eee7d9");
-  } else {
-    gradient.addColorStop(0, "#607482");
-    gradient.addColorStop(0.65, "#87959c");
-    gradient.addColorStop(1, "#a8ada9");
-  }
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, 256, 256);
-  if (kind === "rain") {
-    context.strokeStyle = "rgba(220, 230, 234, 0.13)";
-    context.lineWidth = 1;
-    for (let x = 18; x < 256; x += 29) {
-      context.beginPath();
-      context.moveTo(x, 12 + (x % 21));
-      context.lineTo(x - 10, 102 + (x % 47));
-      context.stroke();
-    }
-  }
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.name = `VQ1C_RUNTIME_${kind.toUpperCase()}_BACKDROP`;
-  return texture;
-}
-
 export function Vq1cHeroCornerRuntime({ mode, showBounds, onBoundsReady, onValidation, onDiagnostics }: {
   mode: Vq1cEnvironmentMode;
   showBounds: boolean;
@@ -81,7 +48,10 @@ export function Vq1cHeroCornerRuntime({ mode, showBounds, onBoundsReady, onValid
   const deskLightRef = useRef<SpotLight>(null);
   const deskTarget = useMemo(() => new Object3D(), []);
   const preset = VQ1C_ENVIRONMENT_PRESETS[mode];
-  const textures = useMemo(() => ({ clear: makeBackdropTexture("clear"), rain: makeBackdropTexture("rain") }), []);
+  const textures = useMemo(() => ({
+    clear: createVq1cBackdropTexture("clear", "VQ1C_RUNTIME_CLEAR_BACKDROP"),
+    rain: createVq1cBackdropTexture("rain", "VQ1C_RUNTIME_RAIN_BACKDROP"),
+  }), []);
 
   const modelData = useMemo(() => {
     model.updateMatrixWorld(true);
@@ -90,16 +60,7 @@ export function Vq1cHeroCornerRuntime({ mode, showBounds, onBoundsReady, onValid
     const center = new Vector3();
     box.getBoundingSphere(sphere);
     box.getCenter(center);
-    const anchor = model.getObjectByName("LIGHT_DESK_ANCHOR");
-    if (!anchor) throw new Error("LIGHT_DESK_ANCHOR missing from VQ-1C PBR model");
-    const position = anchor.getWorldPosition(new Vector3());
-    const quaternion = anchor.getWorldQuaternion(new Quaternion());
-    const encodedDirection = new Vector3(0, 0, -1).applyQuaternion(quaternion).normalize();
-    // The current Blender anchor has an identity rotation. Its authored Z-down
-    // semantic therefore needs the Blender Z-up -> glTF/Three Y-up axis mapping.
-    const direction = encodedDirection.y < -0.5
-      ? encodedDirection.clone()
-      : new Vector3(0, -1, 0).applyQuaternion(quaternion).normalize();
+    const { position, encodedDirection, direction } = resolveVq1cDeskLightTransform(model);
     return { box, sphere, center, position, encodedDirection, direction, validation: validateVq1cRuntimeScene(model) };
   }, [model]);
 
@@ -120,14 +81,10 @@ export function Vq1cHeroCornerRuntime({ mode, showBounds, onBoundsReady, onValid
       environmentIntensity: runtimeScene.environmentIntensity,
       fog: runtimeScene.fog,
     };
-    const pmrem = new PMREMGenerator(gl);
-    const environmentScene = new RoomEnvironment();
-    const environment = pmrem.fromScene(environmentScene, 0.04).texture;
-    environmentScene.dispose();
-    environment.name = "VQ1C_RUNTIME_ROOM_ENVIRONMENT";
+    const environment = createVq1cRoomEnvironment(gl, "VQ1C_RUNTIME_ROOM_ENVIRONMENT");
     gl.outputColorSpace = SRGBColorSpace;
     gl.toneMapping = ACESFilmicToneMapping;
-    runtimeScene.environment = environment;
+    runtimeScene.environment = environment.texture;
     return () => {
       gl.outputColorSpace = previous.outputColorSpace;
       gl.toneMapping = previous.toneMapping;
@@ -137,7 +94,6 @@ export function Vq1cHeroCornerRuntime({ mode, showBounds, onBoundsReady, onValid
       runtimeScene.environmentIntensity = previous.environmentIntensity;
       runtimeScene.fog = previous.fog;
       environment.dispose();
-      pmrem.dispose();
     };
   }, [gl, runtimeScene]);
 

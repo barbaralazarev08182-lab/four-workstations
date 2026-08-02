@@ -11,9 +11,9 @@ import {
   Vq1cFullOfficeRuntime, VQ1C_FULL_OFFICE_PBR_PATH,
   type Vq1cFullOfficeRuntimeDiagnostics,
 } from "./Vq1cFullOfficeRuntime";
-import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "./vq1cEnvironmentPresets";
-import type { Vq1cRuntimeValidation } from "./validateVq1cRuntimeScene";
-import type { Vq1cFullOfficeRuntimeValidation } from "./validateVq1cFullOfficeRuntime";
+import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "@/lib/three/vq1cEnvironmentPresets";
+import type { Vq1cRuntimeValidation } from "@/lib/three/validateVq1cRuntimeScene";
+import type { Vq1cFullOfficeRuntimeValidation } from "@/lib/three/validateVq1cFullOfficeRuntime";
 
 // Whitelist of GLB assets in public/models/vq1/
 const GLB_WHITELIST = [

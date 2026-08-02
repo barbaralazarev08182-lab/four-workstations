@@ -4,8 +4,9 @@ import { Component, Suspense, useCallback, useMemo, useRef, useState, type Error
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { SRGBColorSpace } from "three";
 import { OfficeWorld } from "@/components/office-3d/OfficeWorld";
+import type { Vq1cOfficeWorldDiagnostics } from "@/components/office-3d/Vq1cOfficeWorldScene";
 import type { CharacterDebugAction, CharacterDebugCommand } from "@/components/office-3d/character-actions";
-import { OFFICE_CAMERA, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
+import { OFFICE_CAMERA, WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import type { CatPose } from "@/components/office-3d/ChangFenCat";
 import { buildDeskSlots, createSceneDebugUsers } from "@/lib/office/desk-slots";
 import type { CharacterInteractionEffect, InteractionEvent, ObjectKind, OfficeUser } from "@/lib/types";
@@ -35,6 +36,10 @@ interface SceneRuntimeDiagnostics {
   sceneChildren: number;
   rendererStatus: "initializing" | "ready" | "context-lost";
   hasNaNTransform: boolean;
+  rendererCalls: number;
+  rendererTriangles: number;
+  rendererGeometries: number;
+  rendererTextures: number;
 }
 
 const INITIAL_DIAGNOSTICS: SceneRuntimeDiagnostics = {
@@ -44,6 +49,10 @@ const INITIAL_DIAGNOSTICS: SceneRuntimeDiagnostics = {
   sceneChildren: 0,
   rendererStatus: "initializing",
   hasNaNTransform: false,
+  rendererCalls: 0,
+  rendererTriangles: 0,
+  rendererGeometries: 0,
+  rendererTextures: 0,
 };
 
 class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void }, SceneBoundaryState> {
@@ -97,6 +106,10 @@ function SceneRuntimeProbe({ onUpdate }: { onUpdate: (value: SceneRuntimeDiagnos
       sceneChildren: scene.children.length,
       rendererStatus: gl.getContext().isContextLost() ? "context-lost" : "ready",
       hasNaNTransform,
+      rendererCalls: gl.info.render.calls,
+      rendererTriangles: gl.info.render.triangles,
+      rendererGeometries: gl.info.memory.geometries,
+      rendererTextures: gl.info.memory.textures,
     });
   });
 
@@ -118,6 +131,7 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
   const [debugCommand, setDebugCommand] = useState<CharacterDebugCommand | null>(null);
   const [sceneVersion, setSceneVersion] = useState(0);
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<SceneRuntimeDiagnostics>(INITIAL_DIAGNOSTICS);
+  const [vq1cDiagnostics, setVq1cDiagnostics] = useState<Vq1cOfficeWorldDiagnostics | null>(null);
   const [speedMultiplier, setSpeedMultiplier] = useState(() => {
     if (process.env.NODE_ENV === "production" || typeof window === "undefined") return 1;
     const speed = Number(new URLSearchParams(window.location.search).get("animationSpeed"));
@@ -129,7 +143,8 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
     [debugMemberCount, props.users],
   );
   const memberCount = sceneUsers.filter((user) => !user.isPlaceholder).length;
-  const renderedCharacters = buildDeskSlots(sceneUsers).slots.filter((slot) => slot.member !== null).length;
+  const sceneSlots = buildDeskSlots(sceneUsers).slots;
+  const renderedCharacters = sceneSlots.filter((slot) => slot.member !== null).length;
 
   const triggerDebugAction = useCallback((action: CharacterDebugAction, scope: "current" | "all" = "current") => {
     commandId.current += 1;
@@ -150,6 +165,36 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
       data-rendered-characters={renderedCharacters}
       data-renderer-status={runtimeDiagnostics.rendererStatus}
       data-nan-transform={runtimeDiagnostics.hasNaNTransform ? "true" : "false"}
+      data-vq1c-validation={vq1cDiagnostics?.validation.ok ? "pass" : vq1cDiagnostics ? "fail" : "pending"}
+      data-vq1c-mode={vq1cDiagnostics?.mode ?? "pending"}
+      data-vq1c-source-uuid={vq1cDiagnostics?.sourceSceneUuid ?? "pending"}
+      data-vq1c-clone-uuid={vq1cDiagnostics?.cloneUuid ?? "pending"}
+      data-vq1c-model-meshes={vq1cDiagnostics?.validation.meshes ?? 0}
+      data-vq1c-model-triangles={vq1cDiagnostics?.validation.triangles ?? 0}
+      data-vq1c-model-materials={vq1cDiagnostics?.validation.materials ?? 0}
+      data-vq1c-model-textures={vq1cDiagnostics?.validation.textures ?? 0}
+      data-vq1c-office-anchors={vq1cDiagnostics?.validation.officeAnchors ?? 0}
+      data-vq1c-internal-anchors={vq1cDiagnostics?.validation.internalAnchors ?? 0}
+      data-vq1c-workstations={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.validation.workstations) : "pending"}
+      data-vq1c-root={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.rootTransform) : "pending"}
+      data-vq1c-desk-lights={vq1cDiagnostics?.deskLights ?? 0}
+      data-vq1c-enabled-desk-lights={vq1cDiagnostics?.enabledDeskLights ?? 0}
+      data-vq1c-desk-light-positions={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.deskLightPositions) : "pending"}
+      data-vq1c-desk-light-directions={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.deskLightDirections) : "pending"}
+      data-vq1c-window-backdrops={vq1cDiagnostics?.windowBackdrops ?? 0}
+      data-vq1c-camera-position={vq1cDiagnostics?.cameraPosition.join(",") ?? "pending"}
+      data-vq1c-camera-zoom={vq1cDiagnostics?.cameraZoom ?? 0}
+      data-vq1c-camera-near={vq1cDiagnostics?.cameraNear ?? 0}
+      data-vq1c-camera-far={vq1cDiagnostics?.cameraFar ?? 0}
+      data-vq1c-desk-bindings={JSON.stringify(sceneSlots.map((slot, index) => ({
+        deskKey: slot.deskKey,
+        memberId: slot.member?.id ?? null,
+        position: WORKSTATION_LAYOUT[index].position,
+      })))}
+      data-renderer-calls={runtimeDiagnostics.rendererCalls}
+      data-renderer-triangles={runtimeDiagnostics.rendererTriangles}
+      data-renderer-geometries={runtimeDiagnostics.rendererGeometries}
+      data-renderer-textures={runtimeDiagnostics.rendererTextures}
     >
       <SceneBoundary key={sceneVersion} onRetry={reloadScene}>
         <Canvas
@@ -171,11 +216,15 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
               sceneChildren: scene.children.length,
               rendererStatus: gl.getContext().isContextLost() ? "context-lost" : "ready",
               hasNaNTransform: false,
+              rendererCalls: 0,
+              rendererTriangles: 0,
+              rendererGeometries: gl.info.memory.geometries,
+              rendererTextures: gl.info.memory.textures,
             });
           }}
         >
           <Suspense fallback={null}>
-            <OfficeWorld {...props} cameraZone={props.cameraZone ?? "auto"} users={sceneUsers} onFpsChange={setFps} debugCommand={debugCommand} speedMultiplier={speedMultiplier} />
+            <OfficeWorld {...props} cameraZone={props.cameraZone ?? "auto"} users={sceneUsers} onFpsChange={setFps} debugCommand={debugCommand} speedMultiplier={speedMultiplier} onVq1cDiagnostics={setVq1cDiagnostics} />
             <SceneRuntimeProbe onUpdate={setRuntimeDiagnostics} />
           </Suspense>
         </Canvas>
@@ -201,6 +250,9 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
             <div><dt>scene children</dt><dd>{runtimeDiagnostics.sceneChildren}</dd></div>
             <div><dt>renderer</dt><dd>{runtimeDiagnostics.rendererStatus}</dd></div>
             <div><dt>NaN transform</dt><dd>{runtimeDiagnostics.hasNaNTransform ? "yes" : "no"}</dd></div>
+            <div><dt>VQ1C</dt><dd>{vq1cDiagnostics?.validation.ok ? "pass" : "pending"}</dd></div>
+            <div><dt>model tris</dt><dd>{vq1cDiagnostics?.validation.triangles ?? 0}</dd></div>
+            <div><dt>draw calls</dt><dd>{runtimeDiagnostics.rendererCalls}</dd></div>
           </dl>
           <div className="animation-debug-grid">
             <button type="button" onClick={() => triggerDebugAction("desk")}>Walk to desk</button>

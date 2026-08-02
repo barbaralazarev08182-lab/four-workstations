@@ -7,17 +7,21 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import {
-  ACESFilmicToneMapping, Box3, CanvasTexture, Color, Fog, LinearFilter,
-  Object3D, PMREMGenerator, SRGBColorSpace, Sphere, Vector3,
+  ACESFilmicToneMapping, Box3, Color, Fog,
+  Object3D, SRGBColorSpace, Sphere, Vector3,
 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "./vq1cEnvironmentPresets";
+import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "@/lib/three/vq1cEnvironmentPresets";
+import {
+  countNamedObjects, createVq1cBackdropTexture, createVq1cRoomEnvironment,
+  resolveVq1cFullOfficeDeskLights,
+  VQ1C_FULL_OFFICE_PBR_PATH,
+} from "@/lib/three/vq1cRuntime";
 import {
   validateVq1cFullOfficeRuntimeScene,
   type Vq1cFullOfficeRuntimeValidation,
-} from "./validateVq1cFullOfficeRuntime";
+} from "@/lib/three/validateVq1cFullOfficeRuntime";
 
-export const VQ1C_FULL_OFFICE_PBR_PATH = "/models/vq1/vq1c-officeworld-full-pbr.glb";
+export { VQ1C_FULL_OFFICE_PBR_PATH } from "@/lib/three/vq1cRuntime";
 const FULL_OFFICE_DESK_LIGHT_INTENSITY = 7;
 
 export interface Vq1cFullOfficeRuntimeDiagnostics {
@@ -40,48 +44,6 @@ declare global {
   interface Window { __VQ1C_FULL_OFFICE_QA__?: Vq1cFullOfficeRuntimeDiagnostics }
 }
 
-function makeBackdropTexture(kind: "clear" | "rain") {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas 2D context unavailable");
-  const gradient = context.createLinearGradient(0, 0, 0, 256);
-  if (kind === "clear") {
-    gradient.addColorStop(0, "#adc9d8");
-    gradient.addColorStop(0.7, "#d9e2df");
-    gradient.addColorStop(1, "#eee7d9");
-  } else {
-    gradient.addColorStop(0, "#607482");
-    gradient.addColorStop(0.65, "#87959c");
-    gradient.addColorStop(1, "#a8ada9");
-  }
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, 256, 256);
-  if (kind === "rain") {
-    context.strokeStyle = "rgba(220, 230, 234, 0.13)";
-    context.lineWidth = 1;
-    for (let x = 18; x < 256; x += 29) {
-      context.beginPath();
-      context.moveTo(x, 12 + (x % 21));
-      context.lineTo(x - 10, 102 + (x % 47));
-      context.stroke();
-    }
-  }
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.name = `VQ1C_FULL_OFFICE_${kind.toUpperCase()}_BACKDROP`;
-  return texture;
-}
-
-function countNamedPrefix(root: Object3D, prefix: string) {
-  let count = 0;
-  root.traverse((object) => { if (object.name.startsWith(prefix)) count += 1; });
-  return count;
-}
-
 export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValidation, onDiagnostics }: {
   mode: Vq1cEnvironmentMode;
   showBounds: boolean;
@@ -93,7 +55,10 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
   const model = useMemo(() => cachedModel.clone(true), [cachedModel]);
   const { camera, gl, scene: runtimeScene } = useThree();
   const preset = VQ1C_ENVIRONMENT_PRESETS[mode];
-  const textures = useMemo(() => ({ clear: makeBackdropTexture("clear"), rain: makeBackdropTexture("rain") }), []);
+  const textures = useMemo(() => ({
+    clear: createVq1cBackdropTexture("clear", "VQ1C_FULL_OFFICE_CLEAR_BACKDROP"),
+    rain: createVq1cBackdropTexture("rain", "VQ1C_FULL_OFFICE_RAIN_BACKDROP"),
+  }), []);
   const modeChangesRef = useRef(0);
   const fpsRef = useRef({ elapsed: 0, frames: 0, value: 0 });
 
@@ -126,17 +91,7 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
     const center = new Vector3();
     box.getBoundingSphere(sphere);
     box.getCenter(center);
-    const lamps = [1, 2, 3, 4].map((number) => {
-      const workstation = model.getObjectByName(`OFFICE_WORKSTATION_DESK_${number}_ROOT`);
-      const anchor = workstation?.getObjectByName(`D${number}_LIGHT_DESK_ANCHOR`);
-      if (!workstation || !anchor) throw new Error(`desk_${number} LIGHT_DESK_ANCHOR missing from full-office GLB`);
-      return {
-        deskId: `desk_${number}`,
-        position: anchor.getWorldPosition(new Vector3()),
-        direction: new Vector3(0, -1, 0),
-        target: new Object3D(),
-      };
-    });
+    const lamps = resolveVq1cFullOfficeDeskLights(model);
     const validation = validateVq1cFullOfficeRuntimeScene(model);
     return { box, sphere, center, lamps, validation };
   }, [model]);
@@ -158,14 +113,10 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
       environmentIntensity: runtimeScene.environmentIntensity,
       fog: runtimeScene.fog,
     };
-    const pmrem = new PMREMGenerator(gl);
-    const environmentScene = new RoomEnvironment();
-    const environment = pmrem.fromScene(environmentScene, 0.04).texture;
-    environmentScene.dispose();
-    environment.name = "VQ1C_FULL_OFFICE_ROOM_ENVIRONMENT";
+    const environment = createVq1cRoomEnvironment(gl, "VQ1C_FULL_OFFICE_ROOM_ENVIRONMENT");
     gl.outputColorSpace = SRGBColorSpace;
     gl.toneMapping = ACESFilmicToneMapping;
-    runtimeScene.environment = environment;
+    runtimeScene.environment = environment.texture;
     return () => {
       gl.outputColorSpace = previous.outputColorSpace;
       gl.toneMapping = previous.toneMapping;
@@ -175,7 +126,6 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
       runtimeScene.environmentIntensity = previous.environmentIntensity;
       runtimeScene.fog = previous.fog;
       environment.dispose();
-      pmrem.dispose();
     };
   }, [gl, runtimeScene]);
 
@@ -186,13 +136,6 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
     runtimeScene.fog = preset.fog ? new Fog(preset.fog.color, 18, 44) : null;
     gl.shadowMap.needsUpdate = true;
   }, [gl, preset, runtimeScene]);
-
-  useEffect(() => {
-    for (const lamp of modelData.lamps) {
-      lamp.target.position.copy(lamp.position).addScaledVector(lamp.direction, 1.2);
-      lamp.target.updateMatrixWorld(true);
-    }
-  }, [modelData]);
 
   useEffect(() => {
     modeChangesRef.current += 1;
@@ -210,7 +153,7 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
       enabledDeskLights: lights.filter((light) => light.visible && "intensity" in light && Number(light.intensity) > 0).length,
       deskLightPositions: modelData.lamps.map((lamp) => lamp.position.toArray() as [number, number, number]),
       deskLightDirections: modelData.lamps.map((lamp) => lamp.direction.toArray() as [number, number, number]),
-      windowBackdrops: countNamedPrefix(runtimeScene, "VQ1C_FULL_OFFICE_WINDOW_BACKDROP"),
+      windowBackdrops: countNamedObjects(runtimeScene, "VQ1C_FULL_OFFICE_WINDOW_BACKDROP"),
       modeChanges: modeChangesRef.current,
       observedFps: fpsRef.current.value,
       renderer: {

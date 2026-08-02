@@ -20,19 +20,12 @@ export const VQ1C_REQUIRED_ANCHORS = [
 ] as const;
 
 export interface Vq1cRuntimeValidation {
-  ok: boolean;
-  errors: string[];
-  meshes: number;
-  triangles: number;
-  materials: number;
-  roots: number;
-  anchors: number;
+  ok: boolean; errors: string[]; meshes: number; triangles: number;
+  materials: number; roots: number; anchors: number;
 }
 
 function geometryTriangles(geometry: BufferGeometry) {
-  return geometry.index
-    ? geometry.index.count / 3
-    : (geometry.attributes.position?.count ?? 0) / 3;
+  return geometry.index ? geometry.index.count / 3 : (geometry.attributes.position?.count ?? 0) / 3;
 }
 
 export function validateVq1cRuntimeScene(scene: Object3D): Vq1cRuntimeValidation {
@@ -40,7 +33,6 @@ export function validateVq1cRuntimeScene(scene: Object3D): Vq1cRuntimeValidation
   const materials = new Map<string, Material>();
   let meshes = 0;
   let triangles = 0;
-
   scene.traverse((object) => {
     const mesh = object as Mesh;
     if (!mesh.isMesh) return;
@@ -53,7 +45,6 @@ export function validateVq1cRuntimeScene(scene: Object3D): Vq1cRuntimeValidation
     }
     for (const material of assigned) if (material.name) materials.set(material.name, material);
   });
-
   for (const name of VQ1C_REQUIRED_ROOTS) {
     const matches: Object3D[] = [];
     scene.traverse((object) => { if (object.name === name) matches.push(object); });
@@ -64,28 +55,16 @@ export function validateVq1cRuntimeScene(scene: Object3D): Vq1cRuntimeValidation
     if (!anchor) errors.push(`Missing anchor: ${name}`);
     else if ((anchor as Mesh).isMesh) errors.push(`Anchor rendered as mesh: ${name}`);
   }
-  for (const name of VQ1C_EXPECTED_MATERIALS) {
-    if (!materials.has(name)) errors.push(`Missing material: ${name}`);
-  }
-  for (const name of materials.keys()) {
-    if (/clay|preview|temp/i.test(name)) errors.push(`Forbidden production material: ${name}`);
-  }
-
+  for (const name of VQ1C_EXPECTED_MATERIALS) if (!materials.has(name)) errors.push(`Missing material: ${name}`);
+  for (const name of materials.keys()) if (/clay|preview|temp/i.test(name)) errors.push(`Forbidden production material: ${name}`);
   const windowGlass = materials.get("VQ_Window_Glass");
   const screenGlass = materials.get("VQ_Screen_Glass");
-  if (windowGlass && screenGlass && windowGlass === screenGlass) {
-    errors.push("Window glass and screen glass share one material object");
-  }
+  if (windowGlass && screenGlass && windowGlass === screenGlass) errors.push("Window glass and screen glass share one material object");
   if (meshes !== 96) errors.push(`Mesh count ${meshes}, expected 96`);
   if (triangles !== 18_376) errors.push(`Triangle count ${triangles}, expected 18376`);
   if (materials.size !== 16) errors.push(`Material count ${materials.size}, expected 16`);
-
   return {
-    ok: errors.length === 0,
-    errors,
-    meshes,
-    triangles,
-    materials: materials.size,
+    ok: errors.length === 0, errors, meshes, triangles, materials: materials.size,
     roots: VQ1C_REQUIRED_ROOTS.filter((name) => scene.getObjectByName(name)).length,
     anchors: VQ1C_REQUIRED_ANCHORS.filter((name) => scene.getObjectByName(name)).length,
   };
