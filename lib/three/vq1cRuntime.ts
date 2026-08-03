@@ -7,6 +7,22 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 export const VQ1C_PBR_PATH = "/models/vq1/vq1c-hero-corner-pbr.glb";
 export const VQ1C_FULL_OFFICE_PBR_PATH = "/models/vq1/vq1c-officeworld-full-pbr.glb";
 
+/**
+ * Authoritative VP2 statistics for the Full OfficeWorld GLB.
+ * Shared by the QA runtime validator and the runtime diagnostics.
+ */
+export const VQ1C_FULL_OFFICE_EXPECTED = {
+  meshes: 369,
+  triangles: 57_432,
+  materials: 16,
+  textures: 10,
+  boundsMin: [-8.1, -0.41, -6.6] as const,
+  boundsMax: [8.1, 4.5, 6.6] as const,
+  officeAnchors: 16,
+  internalAnchors: 36,
+  workstations: 4,
+} as const;
+
 export interface Vq1cFullOfficeDeskLightTransform {
   deskId: string;
   workstationRoot: Object3D;

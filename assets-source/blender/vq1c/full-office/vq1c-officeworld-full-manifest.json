@@ -9,11 +9,35 @@
     "heightAboveFloor": 4.5
   },
   "floorTopZ": 0.0,
-  "meshCount": 359,
-  "triangleCount": 57312,
+  "floorTextureMode": "unique-full-room-atlas",
+  "floorTextureWorldSize": [
+    16.2,
+    13.2
+  ],
+  "floorUvMetersPerRepeat": 0.0,
+  "floorSeamStats": {
+    "rows": 46,
+    "totalSeams": 408,
+    "minAdjacentRowSeamDistance": 0.301804,
+    "minPairRows": [
+      37,
+      38
+    ],
+    "minPairCoords": [
+      4.548961,
+      4.247158
+    ]
+  },
+  "vp2FloorTextures": [
+    "assets-source/blender/vq1c/full-office/textures/vp2/floor_wood_vp2_basecolor.png",
+    "assets-source/blender/vq1c/full-office/textures/vp2/floor_wood_vp2_normal.png",
+    "assets-source/blender/vq1c/full-office/textures/vp2/floor_wood_vp2_roughness.png"
+  ],
+  "meshCount": 369,
+  "triangleCount": 57432,
   "architecture": {
-    "meshCount": 22,
-    "triangleCount": 264
+    "meshCount": 32,
+    "triangleCount": 384
   },
   "workstations": [
     {
@@ -443,9 +467,9 @@
     "desk_wood_roughness.png",
     "fabric_normal.png",
     "fabric_roughness.png",
-    "floor_wood_basecolor.png",
-    "floor_wood_normal.png",
-    "floor_wood_roughness.png",
+    "floor_wood_vp2_basecolor.png",
+    "floor_wood_vp2_normal.png",
+    "floor_wood_vp2_roughness.png",
     "plaster_normal.png",
     "plaster_roughness.png"
   ],

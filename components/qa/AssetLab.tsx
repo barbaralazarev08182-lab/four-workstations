@@ -252,7 +252,8 @@ export function AssetLab() {
     setFitTarget(null);
     setRuntimeValidation(null);
     setRuntimeDiagnostics(null);
-    if (asset.id === "vq1c-hero-corner-pbr" || asset.id === "vq1c-officeworld-full-pbr") setVq1cMode("clear-day");
+    if (asset.id === "vq1c-hero-corner-pbr") setVq1cMode("clear-day");
+    if (asset.id === "vq1c-officeworld-full-pbr") setVq1cMode("vp2-clear-day");
   }, []);
 
   const handleResetView = useCallback(() => {

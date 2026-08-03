@@ -13,6 +13,7 @@ from mathutils import Matrix, Vector
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = REPO_ROOT / "docs/assets/vq1c-officeworld-coordinate-contract.json"
 PBR_SOURCE = REPO_ROOT / "assets-source/blender/vq1c/pbr/vq1c-hero-corner-pbr.blend"
+VP2_TEXTURE_DIR = REPO_ROOT / "assets-source/blender/vq1c/full-office/textures/vp2"
 OUTPUT_BLEND = REPO_ROOT / "assets-source/blender/vq1c/full-office/vq1c-officeworld-full-pbr.blend"
 OUTPUT_GLB = REPO_ROOT / "public/models/vq1/vq1c-officeworld-full-pbr.glb"
 OUTPUT_MANIFEST = REPO_ROOT / "assets-source/blender/vq1c/full-office/vq1c-officeworld-full-manifest.json"
@@ -49,6 +50,27 @@ def parse_args():
 
 def project_relative(path):
     return Path(path).resolve().relative_to(REPO_ROOT).as_posix()
+
+
+def _floor_seam_stats():
+    """Recompute the deterministic plank layout seam statistics.
+
+    The texture generator owns the single source of truth for the plank
+    layout; this re-imports that module and reports its deterministic stats.
+    """
+    import importlib.util
+    generator_path = REPO_ROOT / "tools/blender/build_vq1c_vp2_floor_textures.py"
+    spec = importlib.util.spec_from_file_location("build_vq1c_vp2_floor_textures", generator_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    row_count, total_seams, min_distance, pair, coords = module.seam_statistics()
+    return {
+        "rows": row_count,
+        "totalSeams": total_seams,
+        "minAdjacentRowSeamDistance": round(float(min_distance), 6),
+        "minPairRows": list(pair) if pair else None,
+        "minPairCoords": [round(float(value), 6) for value in coords] if coords else None,
+    }
 
 
 def load_contract(path):
@@ -174,6 +196,74 @@ def planar_uv(obj, meters_per_repeat=1.5):
             uv_layer.data[loop_index].uv = uv
 
 
+def full_room_atlas_uv(obj, world_width, world_depth):
+    """Map the object to UV [0,1] over its own full extents (no repeat)."""
+    mesh = obj.data
+    uv_layer = mesh.uv_layers.active or mesh.uv_layers.new(name="UVMap")
+    minimum = Vector((float("inf"), float("inf"), float("inf")))
+    maximum = Vector((float("-inf"), float("-inf"), float("-inf")))
+    for vertex in mesh.vertices:
+        for axis in range(3):
+            minimum[axis] = min(minimum[axis], vertex.co[axis])
+            maximum[axis] = max(maximum[axis], vertex.co[axis])
+    size_x = maximum[0] - minimum[0]
+    size_y = maximum[1] - minimum[1]
+    if size_x <= 0.0 or size_y <= 0.0:
+        raise RuntimeError("full_room_atlas_uv requires a non-degenerate XY footprint")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            uv_layer.data[loop_index].uv = ((co.x - minimum[0]) / size_x, (co.y - minimum[1]) / size_y)
+
+
+def apply_vp2_floor_material():
+    """Override the VQ_Floor_Wood material texture images with VP2 derived versions.
+
+    Only the three floor texture nodes are re-pointed; all other PBR materials
+    keep their original source textures.
+    """
+    material = bpy.data.materials.get("VQ_Floor_Wood")
+    if material is None:
+        raise RuntimeError("VQ_Floor_Wood material missing from PBR source")
+    role_map = {"basecolor": "floor_wood_vp2_basecolor.png", "roughness": "floor_wood_vp2_roughness.png", "normal": "floor_wood_vp2_normal.png"}
+    if not VP2_TEXTURE_DIR.is_dir():
+        raise RuntimeError(f"VP2 floor texture directory missing: {VP2_TEXTURE_DIR}")
+    replaced = []
+    for node in material.node_tree.nodes:
+        if node.type != "TEX_IMAGE" or not node.image:
+            continue
+        label = node.label
+        filename = role_map.get(label)
+        if not filename:
+            continue
+        image = bpy.data.images.get(Path(filename).stem)
+        if image is None:
+            image = bpy.data.images.load(str(VP2_TEXTURE_DIR / filename))
+        image.colorspace_settings.name = "sRGB" if label == "basecolor" else "Non-Color"
+        node.image = image
+        node.extension = "EXTEND"  # full-room atlas: no periodic repeat
+        replaced.append(label)
+    if sorted(replaced) != ["basecolor", "normal", "roughness"]:
+        raise RuntimeError(f"VP2 floor material override incomplete: {replaced}")
+    print("VP2_FLOOR_MATERIAL_OVERRIDE", replaced)
+
+
+def apply_vp2_wall_color():
+    """Shift VQ_Wall_Plaster toward a slightly warm off-white (not pure white, not yellow)."""
+    material = bpy.data.materials.get("VQ_Wall_Plaster")
+    if material is None:
+        raise RuntimeError("VQ_Wall_Plaster material missing from PBR source")
+    for node in material.node_tree.nodes:
+        if node.type == "TEX_IMAGE" and node.image:
+            continue  # wall is untextured in PBR base pass; only adjust the BSDF base color
+    bsdf = next((node for node in material.node_tree.nodes if node.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        raise RuntimeError("VQ_Wall_Plaster has no Principled BSDF node")
+    # warm off-white: r/g/b slightly above original, g slightly dominant over r to avoid yellow
+    bsdf.inputs["Base Color"].default_value = (0.82, 0.83, 0.78, 1.0)
+    print("VP2_WALL_COLOR_OVERRIDE", tuple(bsdf.inputs["Base Color"].default_value))
+
+
 def add_box(name, parent, location, size, material, rotation=(0, 0, 0), uv_scale=1.5):
     bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, 0, 0))
     obj = bpy.context.object
@@ -272,8 +362,14 @@ def create_architecture(contract, parent):
     depth = float(room["size"]["depth"])
     height = float(room["size"]["heightAboveFloor"])
     camera_floor_min = float(room["bounds"]["min"][1])
-    floor = add_box("FLOOR", parent, (0, 0, camera_floor_min / 2), (width, depth, -camera_floor_min), "VQ_Floor_Wood", uv_scale=1.35)
+    # VP2-1b: the floor uses a unique full-room atlas (0..1 UV, no repeat).
+    floor = add_box("FLOOR", parent, (0, 0, camera_floor_min / 2), (width, depth, -camera_floor_min), "VQ_Floor_Wood")
+    full_room_atlas_uv(floor, width, depth)
     floor["floor_top_z"] = 0.0
+    floor["floor_uv_meters_per_repeat"] = 0.0  # no repeat: full-room atlas
+    floor["floor_texture_mode"] = "unique-full-room-atlas"
+    floor["floor_texture_world_size"] = [width, depth]
+    floor["vp2_textures"] = True
 
     back = next(wall for wall in room["walls"] if wall["id"] == "back-wall")
     left = next(wall for wall in room["walls"] if wall["id"] == "left-wall")
@@ -314,24 +410,35 @@ def create_architecture(contract, parent):
     add_left_wall_segment(parent, "LEFT_WALL_ENTRANCE_LINTEL", entrance_y_min, entrance_y_max, entrance_height, height, left_center_x, left_thickness)
     add_left_wall_segment(parent, "LEFT_WALL_FRONT", entrance_y_max, left_y_max, 0, height, left_center_x, left_thickness)
 
-    trim_h = 0.14
-    trim_d = 0.08
+    # ---- Baseboards (VP2: full interior runs, warmer tone, 0.09m high) ----
+    trim_h = 0.09
+    trim_d = 0.03
+    # Back wall: three runs separated by the restroom opening and window opening
     add_box("BASEBOARD_BACK_LEFT", parent, ((back_x_min + restroom_x_min) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (restroom_x_min - back_x_min, trim_d, trim_h), "VQ_Trim_Warm")
     add_box("BASEBOARD_BACK_CENTER", parent, ((restroom_x_max + window_x_min) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (window_x_min - restroom_x_max, trim_d, trim_h), "VQ_Trim_Warm")
+    add_box("BASEBOARD_BACK_WINDOW", parent, ((window_x_min + window_x_max) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (window_x_max - window_x_min, trim_d, trim_h), "VQ_Trim_Warm")
     add_box("BASEBOARD_BACK_RIGHT", parent, ((window_x_max + back_x_max) / 2, back_center_y - back_thickness / 2 - trim_d / 2, trim_h / 2), (back_x_max - window_x_max, trim_d, trim_h), "VQ_Trim_Warm")
+    # Left wall: two runs separated by the entrance opening
     add_box("BASEBOARD_LEFT_BACK", parent, (left_center_x + left_thickness / 2 + trim_d / 2, (left_y_min + entrance_y_min) / 2, trim_h / 2), (trim_d, entrance_y_min - left_y_min, trim_h), "VQ_Trim_Warm")
     add_box("BASEBOARD_LEFT_FRONT", parent, (left_center_x + left_thickness / 2 + trim_d / 2, (entrance_y_max + left_y_max) / 2, trim_h / 2), (trim_d, left_y_max - entrance_y_max, trim_h), "VQ_Trim_Warm")
 
-    frame = 0.12
-    frame_depth = 0.16
+    # ---- Window frame with inner return and proper sill connection ----
+    frame = 0.09
+    frame_depth = 0.18
     window_center_y = -float(window["semanticCenter"][2])
     add_box("WINDOW_FRAME_LEFT", parent, (window_x_min + frame / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame, frame_depth, window_z_max - window_z_min), "VQ_Window_Frame")
     add_box("WINDOW_FRAME_RIGHT", parent, (window_x_max - frame / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame, frame_depth, window_z_max - window_z_min), "VQ_Window_Frame")
     add_box("WINDOW_FRAME_BOTTOM", parent, ((window_x_min + window_x_max) / 2, window_center_y, window_z_min + frame / 2), (window_x_max - window_x_min, frame_depth, frame), "VQ_Window_Frame")
     add_box("WINDOW_FRAME_TOP", parent, ((window_x_min + window_x_max) / 2, window_center_y, window_z_max - frame / 2), (window_x_max - window_x_min, frame_depth, frame), "VQ_Window_Frame")
     add_box("WINDOW_FRAME_MULLION", parent, ((window_x_min + window_x_max) / 2, window_center_y, (window_z_min + window_z_max) / 2), (frame * 0.75, frame_depth, window_z_max - window_z_min - 2 * frame), "VQ_Window_Frame")
+    # Inner return (jamb) on the room side, giving the frame visible thickness
+    inner_depth = 0.10
+    add_box("WINDOW_JAMB_LEFT", parent, (window_x_min + frame / 2, window_center_y - frame_depth / 2 + inner_depth / 2, (window_z_min + window_z_max) / 2), (frame, inner_depth, window_z_max - window_z_min - 2 * frame), "VQ_Trim_Warm")
+    add_box("WINDOW_JAMB_RIGHT", parent, (window_x_max - frame / 2, window_center_y - frame_depth / 2 + inner_depth / 2, (window_z_min + window_z_max) / 2), (frame, inner_depth, window_z_max - window_z_min - 2 * frame), "VQ_Trim_Warm")
+    add_box("WINDOW_JAMB_TOP", parent, ((window_x_min + window_x_max) / 2, window_center_y - frame_depth / 2 + inner_depth / 2, window_z_max - frame / 2), (window_x_max - window_x_min - 2 * frame, inner_depth, frame), "VQ_Trim_Warm")
     add_box("WINDOW_GLASS", parent, ((window_x_min + window_x_max) / 2, window_center_y + 0.01, (window_z_min + window_z_max) / 2), (window_x_max - window_x_min - 2 * frame, 0.025, window_z_max - window_z_min - 2 * frame), "VQ_Window_Glass")
-    add_box("WINDOW_SILL", parent, ((window_x_min + window_x_max) / 2, back_center_y - 0.2, window_z_min - 0.04), (window_x_max - window_x_min + 0.18, 0.42, 0.12), "VQ_Trim_Warm")
+    # Sill: connected to the wall, not floating
+    add_box("WINDOW_SILL", parent, ((window_x_min + window_x_max) / 2, back_center_y - back_thickness / 2 - 0.08, window_z_min - 0.03), (window_x_max - window_x_min + 0.14, 0.16, 0.09), "VQ_Trim_Warm")
     return floor
 
 
@@ -362,14 +469,32 @@ def create_coffee(parent):
     add_cylinder("COFFEE_CUP", parent, (0, -0.52, 0.38), 0.16, 0.3, "VQ_Trim_Warm", vertices=12, radius_top=0.13)
 
 
-def create_door(parent, prefix, restroom=False):
+def create_door(parent, prefix, restroom=False, arch_parent=None):
     panel_material = "VQ_Desk_Wood" if restroom else "VQ_Sofa_Fabric_Accent"
     add_box(f"{prefix}_DOOR_PANEL", parent, (0, 0, 1.35), (2.0, 0.10, 2.7), panel_material)
     add_box(f"{prefix}_DOOR_INSET", parent, (0, -0.065, 1.35), (1.5, 0.05, 2.22), "VQ_Trim_Warm")
     add_sphere(f"{prefix}_DOOR_HANDLE", parent, (-0.55, -0.12, 1.35), 0.07, "VQ_Metal_Charcoal")
+    # Outer frame
     add_box(f"{prefix}_FRAME_LEFT", parent, (-1.06, 0, 1.38), (0.12, 0.22, 2.76), "VQ_Window_Frame")
     add_box(f"{prefix}_FRAME_RIGHT", parent, (1.06, 0, 1.38), (0.12, 0.22, 2.76), "VQ_Window_Frame")
     add_box(f"{prefix}_FRAME_TOP", parent, (0, 0, 2.76), (2.24, 0.22, 0.12), "VQ_Window_Frame")
+    # Inner jamb return (visible thickness on the room side).
+    # Jambs are architectural trim and must live under OFFICE_ARCH_ROOT.
+    # Create them under the door facility root, then re-parent to the arch
+    # root while preserving each world matrix. An explicit view-layer update
+    # is required before reading matrix_world so the composite reflects the
+    # door facility root transform (identity otherwise -> jamb at origin).
+    for name, position, size in (
+        (f"{prefix}_JAMB_LEFT", (-1.03, -0.10, 1.38), (0.10, 0.06, 2.70)),
+        (f"{prefix}_JAMB_RIGHT", (1.03, -0.10, 1.38), (0.10, 0.06, 2.70)),
+        (f"{prefix}_JAMB_TOP", (0, -0.10, 2.73), (2.10, 0.06, 0.10)),
+    ):
+        jamb = add_box(name, parent, position, size, "VQ_Trim_Warm")
+        bpy.context.view_layer.update()
+        world = jamb.matrix_world.copy()
+        jamb.parent = arch_parent
+        jamb.matrix_world = world
+        bpy.context.view_layer.update()
 
 
 def create_cat_home(parent, radius):
@@ -505,9 +630,9 @@ def build_facilities(contract, source_sofa, group, anchors_group):
             elif facility_id == "coffee":
                 create_coffee(root)
             elif facility_id == "restroom":
-                create_door(root, "RESTROOM", restroom=True)
+                create_door(root, "RESTROOM", restroom=True, arch_parent=bpy.data.objects[ARCH_ROOT])
             elif facility_id == "entrance":
-                create_door(root, "ENTRANCE", restroom=False)
+                create_door(root, "ENTRANCE", restroom=False, arch_parent=bpy.data.objects[ARCH_ROOT])
             elif facility_id == "cat-home":
                 create_cat_home(root, float(facility["visualRadius"]))
             elif facility_id == "cat-actor-rest":
@@ -636,6 +761,11 @@ def write_manifest(path, contract, workstation_manifest, facility_manifest, rest
         "rootName": FULL_ROOT,
         "roomSize": contract["room"]["size"],
         "floorTopZ": 0.0,
+        "floorTextureMode": "unique-full-room-atlas",
+        "floorTextureWorldSize": [contract["room"]["size"]["width"], contract["room"]["size"]["depth"]],
+        "floorUvMetersPerRepeat": 0.0,
+        "floorSeamStats": _floor_seam_stats(),
+        "vp2FloorTextures": [project_relative(path) for path in sorted(VP2_TEXTURE_DIR.glob("floor_wood_vp2_*.png"))],
         "meshCount": total_stats[0],
         "triangleCount": total_stats[1],
         "architecture": {"meshCount": architecture_stats[0], "triangleCount": architecture_stats[1]},
@@ -782,6 +912,9 @@ def main():
     anchors_root = new_empty(ANCHORS_ROOT, full_root)
     full_root["source_coordinate_contract"] = project_relative(contract_path)
     full_root["source_commit"] = contract["sourceCommit"]
+
+    apply_vp2_floor_material()
+    apply_vp2_wall_color()
 
     workstation_manifest = build_workstations(contract, source_workstation, workstations_root, anchors_root)
     facility_manifest, restroom_distance = build_facilities(contract, source_sofa, amenities_root, anchors_root)

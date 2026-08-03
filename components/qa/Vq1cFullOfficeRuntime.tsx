@@ -62,6 +62,30 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
   const modeChangesRef = useRef(0);
   const fpsRef = useRef({ elapsed: 0, frames: 0, value: 0 });
 
+  // VP2: configure shadow flags once on the cloned model (never per-frame).
+  useMemo(() => {
+    const floor = model.getObjectByName("FLOOR");
+    if (floor) {
+      floor.traverse((object) => {
+        if ((object as unknown as { isMesh?: boolean }).isMesh) {
+          object.receiveShadow = true;
+        }
+      });
+    }
+    model.traverse((object) => {
+      if ((object as unknown as { isMesh?: boolean }).isMesh) {
+        const mesh = object as unknown as { name: string; castShadow: boolean; receiveShadow: boolean };
+        const isFloor = mesh.name === "FLOOR";
+        const isArch = mesh.name.startsWith("BACK_WALL") || mesh.name.startsWith("LEFT_WALL")
+          || mesh.name.startsWith("BASEBOARD") || mesh.name.startsWith("WINDOW_")
+          || mesh.name.startsWith("ENTRANCE_") || mesh.name.startsWith("RESTROOM_");
+        mesh.castShadow = !isFloor && !isArch;
+        if (isArch) mesh.receiveShadow = true;
+      }
+    });
+    return undefined;
+  }, [model]);
+
   useFrame((_, delta) => {
     const sample = fpsRef.current;
     sample.elapsed += delta;
@@ -192,10 +216,12 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
         groundColor={preset.hemisphere.groundColor} intensity={preset.hemisphere.intensity} />
       <directionalLight name="VQ1C_FULL_OFFICE_DIRECTIONAL" color={preset.directional.color}
         intensity={preset.directional.intensity} position={preset.directional.position}
-        castShadow={preset.directional.castShadow} shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024} shadow-camera-left={-10} shadow-camera-right={10}
-        shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5}
-        shadow-camera-far={30} shadow-bias={-0.00015} />
+        castShadow={preset.directional.castShadow} shadow-mapSize-width={preset.shadow?.mapSize ?? 1024}
+        shadow-mapSize-height={preset.shadow?.mapSize ?? 1024} shadow-camera-left={preset.shadow?.left ?? -10}
+        shadow-camera-right={preset.shadow?.right ?? 10} shadow-camera-top={preset.shadow?.top ?? 9}
+        shadow-camera-bottom={preset.shadow?.bottom ?? -9} shadow-camera-near={preset.shadow?.near ?? 0.5}
+        shadow-camera-far={preset.shadow?.far ?? 30} shadow-bias={preset.shadow?.bias ?? -0.00015}
+        shadow-normalBias={preset.shadow?.normalBias ?? 0.02} />
       {modelData.lamps.map((lamp) => (
         <group key={lamp.deskId}>
           <primitive object={lamp.target} />
