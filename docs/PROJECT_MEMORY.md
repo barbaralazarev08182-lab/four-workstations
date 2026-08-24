@@ -957,3 +957,131 @@ This file should be updated whenever any of the following occur:
 - a project sequence/priority changes
 
 The purpose is continuity: future conversations should be able to resume the project without relying on hidden or truncated chat history.
+
+---
+
+# 18. 2026-08-25 — L1R result and permanent-asset priority
+
+## 18.1 L1R result
+
+`Lighting L1R — Match Blender Reference` completed technical validation but did **not** receive full Human Visual PASS.
+
+Reported candidate settings:
+
+- Directional ray `(-0.65, -0.58, -0.49)`
+- intensity `1.55`
+- color `(1.00, 0.93, 0.82)`
+- soft shadows
+- shadow strength `0.86`
+- shadow angle `2.2°`
+- bias / normal bias `0.045 / 0.24`
+- Mixed Lighting `IndirectOnly`
+- Progressive CPU, Combined Directional
+- max lightmap `4096`
+- padding `8 px`
+- resolution `24 texels/m`
+- Direct `48`, Indirect `64`, Environment `24`
+- bounces `2`
+- indirect scale `0.58`
+- albedo boost `0.9`
+- AO distance `0.65`
+- AO direct / indirect `0.22 / 0.30`
+- 1 lightmap
+- 45 Light Probes
+- no post-processing
+- no 256-sample final bake
+
+Human visual judgement:
+
+- Figure 3 sunlight direction: substantially improved / directionally correct
+- long shadow structure: substantially improved
+- contact shadows: substantially improved
+- overall miniature architectural-model mood: closer to target
+- desk color fidelity: still FAIL; the four desk tops remain too dark/gray relative to the approved Figure 3 light warm wood
+- the scene is promising but still visibly not the final desired look
+
+A key diagnostic from Codex:
+
+- `Runtime_Desks` material assignment and BaseColor properties were unchanged
+- the current frozen Unity source Office also shows the desk tops as dark gray without the L1R bake
+- therefore the desk-color mismatch is not reliably solvable by global lighting alone without damaging walls/floor exposure
+
+Implication:
+
+> The desk-color mismatch is now suspected to be a baseline material/albedo fidelity problem, not merely a lighting problem. Because the desks are permanent long-term assets, a narrowly scoped material-fidelity Gate is allowed later; do not fake the target by globally overexposing the scene.
+
+## 18.2 Wall black-rectangle artifact — blocking bug
+
+The L1R screenshot contains clearly visible near-black rectangular blocks on the rear wall.
+
+These blocks are not acceptable as intentional shadow language and should be treated as a **blocking visual bug** until diagnosed.
+
+Important observations:
+
+- their edges are unusually rectangular/hard compared with the intended organic cast-shadow structure
+- they appear on permanent architecture
+- Figure 3 does not establish these pure black rectangles as part of the approved look
+
+Do not blindly tune light intensity/AO to hide them.
+
+Next diagnosis should isolate whether they originate from:
+
+- baked lightmap texels / UV1 island or scale-offset problems
+- renderer lightmap index / lightmapScaleOffset assignment
+- shadowmask / mixed-light interaction
+- occlusion from unintended geometry
+- material/lightmap sampling on specific wall renderer primitives
+- another candidate-only baked-data issue
+
+The fix must be root-cause based and must not alter camera/world orientation or destructively change wall geometry.
+
+## 18.3 Permanent vs replaceable visual assets
+
+User explicitly clarified which current scene assets should be treated as long-term foundations versus temporary/revisable content.
+
+### Permanent / high-priority foundation assets
+
+These are expected to remain and therefore must not carry visible bugs into later development:
+
+- floor
+- walls / architectural shell
+- four main desks
+- dining table
+- meeting table
+
+For these assets, later lighting/material/geometry work must preserve correctness and visual stability. Visible artifacts on them are blocking until understood.
+
+The four desks in particular are long-term assets and will continue to be used. Their current light-warm-wood target should therefore be solved correctly rather than ignored as a temporary prop issue.
+
+### Deferred / expected to be remodeled or repositioned later
+
+Current versions of the following are **not** worth blocking the lighting foundation on unless they cause a larger technical issue:
+
+- small workstation props such as monitors/computers, mugs, desk lamps and similar accessories
+- current placement of those small desk props
+- cat bed / cat feeding area and related pet props, which are incomplete/not yet properly built
+- sofa, which is expected to be revised later
+- other minor props whose modeling/placement is already expected to change
+
+Their current visual oddities can be tolerated temporarily during lighting work.
+
+Permanent rule for visual triage:
+
+> Do not spend current lighting-Gate time polishing temporary props that are already scheduled for remodeling. Prioritize bug-free lighting/material behavior on the architectural shell and long-lived tables/desks first.
+
+## 18.4 Revised next-step order
+
+The next visual work should be narrower than another broad lighting retune:
+
+1. diagnose/fix the rear-wall black-rectangle artifact while preserving the current L1R lighting direction
+2. revalidate floor/walls/desks/dining table/meeting table for lightmap/material correctness
+3. address desk material/albedo fidelity separately if the dark-gray desk baseline is confirmed to be source-material mismatch
+4. only after the permanent foundation surfaces are visually clean, continue fine matching to Figure 3
+5. do not run the final/high-sample bake until those issues are resolved and Human Visual PASS is reached
+6. defer small props, pet props, sofa remodel, and character-animation work
+
+Current recommended Gate name:
+
+> **Lighting L1R-A — Permanent Surface Artifact Diagnosis**
+
+Scope should be diagnosis-first: eliminate the wall black-block bug and prove permanent surfaces are clean before further artistic tuning.
