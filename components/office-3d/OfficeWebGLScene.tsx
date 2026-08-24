@@ -182,6 +182,15 @@ export function OfficeWebGLScene(props: OfficeWebGLSceneProps) {
       data-vq1c-desk-light-positions={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.deskLightPositions) : "pending"}
       data-vq1c-desk-light-directions={vq1cDiagnostics ? JSON.stringify(vq1cDiagnostics.deskLightDirections) : "pending"}
       data-vq1c-window-backdrops={vq1cDiagnostics?.windowBackdrops ?? 0}
+      data-vq1c-runtime-groups={vq1cDiagnostics?.finalValidation.runtimeGroups ?? 0}
+      data-vq1c-primitives={vq1cDiagnostics?.finalValidation.primitives ?? 0}
+      data-vq1c-uv={vq1cDiagnostics?.finalValidation.uvOk ? "true" : "false"}
+      data-vq1c-uv1={vq1cDiagnostics?.finalValidation.uv1Ok ? "true" : "false"}
+      data-vq1c-uv2={vq1cDiagnostics?.finalValidation.uv2Count ?? 0}
+      data-vq1c-lightmap-resolved={vq1cDiagnostics?.lightmapResolved ?? 0}
+      data-vq1c-lightmap-assigned={vq1cDiagnostics?.lightmapAssigned ?? 0}
+      data-vq1c-material-instances={vq1cDiagnostics?.materialInstances ?? 0}
+      data-vq1c-contrast={vq1cDiagnostics?.contrastEnabled ? "true" : "false"}
       data-vq1c-camera-position={vq1cDiagnostics?.cameraPosition.join(",") ?? "pending"}
       data-vq1c-camera-zoom={vq1cDiagnostics?.cameraZoom ?? 0}
       data-vq1c-camera-near={vq1cDiagnostics?.cameraNear ?? 0}

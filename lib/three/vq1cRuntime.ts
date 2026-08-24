@@ -6,6 +6,10 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 
 export const VQ1C_PBR_PATH = "/models/vq1/vq1c-hero-corner-pbr.glb";
 export const VQ1C_FULL_OFFICE_PBR_PATH = "/models/vq1/vq1c-officeworld-full-pbr.glb";
+export const VQ1C_COFFEE_LIGHTMAPPED_GLB_PATH = "/models/vq1/lookdev/vq1c-coffee-corner-lightmapped-r1.glb";
+export const VQ1C_COFFEE_LIGHTMAP_PATH = "/models/vq1/lookdev/vq1c-coffee-corner-lightmap.png";
+export const VQ1C_COFFEE_MANIFEST_PATH = "/models/vq1/lookdev/vq1c-coffee-corner-runtime-manifest-r1.json";
+
 // ---- FR-6 final R5 direct-only lightmapped office (the approved final visual) ----
 export const VQ1C_FINAL_OFFICE_GLB_PATH = "/models/vq1/final-office/office-r5-final.glb";
 export const VQ1C_FINAL_OFFICE_MANIFEST_PATH = "/models/vq1/final-office/office-r5-final-manifest.json";
