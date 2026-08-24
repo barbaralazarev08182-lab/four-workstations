@@ -13,6 +13,7 @@ import { OfficeInteractionLayer } from "@/components/office-3d/OfficeInteraction
 import { WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { Vq1cOfficeWorldScene, type Vq1cOfficeWorldDiagnostics } from "@/components/office-3d/Vq1cOfficeWorldScene";
 import { NewCharacterVisuals } from "@/components/office-3d/NewCharacterVisuals";
+import { NightDeskLamps } from "@/components/office-3d/NightDeskLamps";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 interface OfficeWorldProps {
@@ -87,6 +88,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
       <CameraController zone={cameraZone} controlsRef={controlsRef} />
       <MapControls ref={controlsRef} makeDefault enableRotate={false} enableDamping dampingFactor={0.08} screenSpacePanning minZoom={12} maxZoom={120} maxPolarAngle={Math.PI / 2.4} target={[0, 0.8, 0]} />
       <NewCharacterVisuals users={users} />
+      <NightDeskLamps mode={isNight ? "night" : "day"} />
       <PerformanceReporter onFpsChange={onFpsChange} />
     </>
   );

@@ -222,6 +222,27 @@ export function Vq1cOfficeWorldScene({ mode, onDiagnostics }: {
     };
   }, [model, lighting]);
 
+  // Night Gate 2A: night darkens ONLY the baked lightmap contribution by a
+  // fixed factor (never multiplicative drift); day restores the frozen value.
+  // Renderer exposure is never touched (Character scene shares the renderer).
+  useEffect(() => {
+    const targetIntensity =
+      mode === "night"
+        ? VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY * 0.2
+        : VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY;
+    model.traverse((object) => {
+      if (!(object as Mesh).isMesh) return;
+      const materials = (object as Mesh).material;
+      const list = Array.isArray(materials) ? materials : [materials];
+      for (const material of list) {
+        const standard = material as MeshStandardMaterial;
+        if (standard && standard.lightMap) {
+          standard.lightMapIntensity = targetIntensity;
+        }
+      }
+    });
+  }, [mode, model]);
+
   // renderer + scene state: AgX, exposure 1.0, SRGB; lighting comes entirely
   // from the baked lightmap (environmentIntensity 0, no LookDev lights).
   useEffect(() => {
