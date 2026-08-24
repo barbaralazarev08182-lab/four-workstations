@@ -6,15 +6,48 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 
 export const VQ1C_PBR_PATH = "/models/vq1/vq1c-hero-corner-pbr.glb";
 export const VQ1C_FULL_OFFICE_PBR_PATH = "/models/vq1/vq1c-officeworld-full-pbr.glb";
+// ---- FR-6 final R5 direct-only lightmapped office (the approved final visual) ----
+export const VQ1C_FINAL_OFFICE_GLB_PATH = "/models/vq1/final-office/office-r5-final.glb";
+export const VQ1C_FINAL_OFFICE_MANIFEST_PATH = "/models/vq1/final-office/office-r5-final-manifest.json";
+export const VQ1C_FINAL_OFFICE_LIGHTMAP_0_PATH = "/models/vq1/final-office/office-r5-lightmap-0.png";
+export const VQ1C_FINAL_OFFICE_LIGHTMAP_1_PATH = "/models/vq1/final-office/office-r5-lightmap-1.png";
+/**
+ * Baked atlas normalization intensity (manifest contract) times PI:
+ * Three.js native lightMap feeds irradiance into the Lambert diffuse path
+ * (albedo / PI), so 4.213 * PI ≈ 13.236 reproduces the Blender preview look.
+ */
+export const VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY = 4.213 * Math.PI;
+/**
+ * Final display contrast (FR-6R1): the baked Direct-only lightmap is validated
+ * with an extra contrast look. Kept as a single config point; applied only to
+ * the WebGL canvas element (never to DOM HUD overlays).
+ */
+export const FINAL_OFFICE_CONTRAST = 1.2;
+
+/**
+ * Authoritative statistics for the FR-6 final R3 direct-only office GLB.
+ * 23 Runtime_* groups, 75 primitives, 59,908 triangles, 16 base materials.
+ */
+export const VQ1C_FINAL_OFFICE_EXPECTED = {
+  runtimeGroups: 23,
+  triangles: 59_908,
+  materials: 16,
+  primitives: 75,
+  boundsMin: [-8.1, -0.41, -6.6] as const,
+  boundsMax: [8.1, 4.5, 6.6] as const,
+  officeAnchors: 16,
+  internalAnchors: 36,
+  workstations: 4,
+} as const;
 
 /**
  * Authoritative VP2 statistics for the Full OfficeWorld GLB.
  * Shared by the QA runtime validator and the runtime diagnostics.
  */
 export const VQ1C_FULL_OFFICE_EXPECTED = {
-  meshes: 369,
-  triangles: 57_432,
-  materials: 16,
+  meshes: 416,
+  triangles: 60_536,
+  materials: 19,
   textures: 10,
   boundsMin: [-8.1, -0.41, -6.6] as const,
   boundsMax: [8.1, 4.5, 6.6] as const,

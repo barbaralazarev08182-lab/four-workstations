@@ -8,6 +8,7 @@ export const VQ1C_FULL_OFFICE_EXPECTED_MATERIALS = [
   "VQ_Window_Frame", "VQ_Window_Glass", "VQ_Sofa_Fabric", "VQ_Sofa_Fabric_Accent",
   "VQ_Chair_Fabric", "VQ_Metal_Charcoal", "VQ_Plastic_Dark", "VQ_Keycap",
   "VQ_Screen_Glass", "VQ_Lamp_Shade", "VQ_Lamp_Inner", "VQ_Sofa_Legs",
+  "VQ_Rug_Muted", "VQ_Rug_Sofa_Muted", "VQ_Accent_Terracotta",
 ] as const;
 
 const TOP_LEVEL_GROUPS = [
