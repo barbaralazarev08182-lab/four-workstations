@@ -1085,3 +1085,163 @@ Current recommended Gate name:
 > **Lighting L1R-A — Permanent Surface Artifact Diagnosis**
 
 Scope should be diagnosis-first: eliminate the wall black-block bug and prove permanent surfaces are clean before further artistic tuning.
+
+---
+
+# 19. 2026-08-25 — L1R-A UV1 root cause verified and fixed
+
+## 19.1 Gate status
+
+`Lighting L1R-A — Permanent Surface Artifact Diagnosis`
+
+Status:
+
+> **ROOT CAUSE VERIFIED / MACHINE PASS**
+
+The black rectangular rear-wall artifact was traced to invalid baked-lighting UV usage, not to the L1R sun direction or artistic lighting values.
+
+The overall L1R lighting Gate remains open because desk material fidelity and final Figure 3 matching are not yet complete.
+
+## 19.2 Exact root cause
+
+The rear wall is part of the combined renderer/mesh:
+
+`Runtime_Arch`
+
+Observed bake assignment:
+
+- lightmap index: `0`
+- lightmap scale/offset: `(0.84, 0.83, 0, 0)`
+
+UV1 diagnostics on the affected combined architecture mesh:
+
+- UV1 out-of-range: `0`
+- zero-area polygons: `0`
+- overlapping loops: `38,088`
+- affected polygons: `12,696 / 12,696`
+
+Therefore every architecture polygon participating in that UV1 set was affected by overlap.
+
+Root cause mechanism:
+
+> Overlapping wall/floor UV islands sampled unrelated near-black baked texels. Because the renderer used the overlapping UV1 as a lightmap channel, those unrelated texels appeared as fixed rectangular black regions on the rear wall.
+
+Explicitly ruled out as root causes:
+
+- sunlight direction
+- L1R Directional Light intensity/color
+- Mixed Lighting mode
+- material-slot changes
+- hidden/unintended geometry occluders
+
+This is important because further light-value tuning would only have hidden the symptom and would not have fixed the broken bake receiver data.
+
+## 19.3 Candidate-only fix
+
+An isolated candidate scene was created locally:
+
+`Assets/FourWorkstations/Scenes/Candidates/Office_L1RA_Surface_Fix_Candidate.unity`
+
+Candidate-only valid UV1 meshes were generated for:
+
+- `Runtime_Arch`
+- `Runtime_DiningTable`
+- `Runtime_MeetingTable`
+
+The already validated G1B `Runtime_Desks` UV1 was deliberately preserved rather than regenerated.
+
+The correction used UV seam vertex splits only; visible/spatial triangle geometry was not changed.
+
+Vertex counts:
+
+- Architecture: `25,368 -> 26,284`
+- Dining table: `3,000 -> 3,044`
+- Meeting table: `408 -> 410`
+
+Validation confirmed:
+
+- triangle counts unchanged
+- spatial triangle positions unchanged
+- bounds unchanged
+- camera unchanged
+- transforms unchanged
+- material assignments unchanged
+- L1R sun direction/intensity/color/shadow composition unchanged
+- 4x MSAA unchanged
+- gameplay unchanged
+
+The candidate lightmap was rebuilt with:
+
+- 1 lightmap
+- 45 Light Probes
+
+No 256-sample final bake was performed.
+
+The source `Office.unity` remains unbaked and does not contain candidate static-GI residue.
+
+Historical Web assets remain untouched.
+
+No commit/push was performed for the Unity candidate.
+
+## 19.4 Result
+
+Reported validation after the UV1 correction:
+
+- rear-wall black rectangles: gone
+- wall/floor bake response: continuous
+- no new permanent-surface sampling artifacts
+- four desks: visually stable
+- dining table: stable
+- meeting table: stable
+- Figure 3 sun/shadow direction: preserved
+- Console blocking errors: 0
+- Unity/Blender background processes after validation: 0
+
+This fixes the blocking black-block defect without sacrificing the improved L1R light structure.
+
+## 19.5 Permanent pipeline lesson
+
+This Gate adds a new mandatory baked-lighting validation rule:
+
+> **The existence of UV1 is not enough. Every long-lived lightmap receiver must pass UV1 overlap validation before a baked-lighting candidate can be promoted.**
+
+Especially for combined runtime meshes such as `Runtime_Arch`, validation must check:
+
+- UV1 finite/range
+- zero-area islands/polygons
+- overlap count
+- lightmap index
+- lightmap scale/offset
+- post-bake visual continuity on permanent surfaces
+
+An apparently valid lightmap index and in-range UV1 can still be catastrophically invalid when islands overlap.
+
+For permanent surfaces, UV seam vertex splitting is acceptable when it preserves:
+
+- triangle count
+- world-space triangle positions
+- bounds
+- material assignments
+- intended visible geometry
+
+This is an example of **Pipeline Fidelity**: the geometry can be visually correct while the runtime lightmap UV channel is still structurally broken.
+
+## 19.6 Revised immediate next step
+
+The architecture sampling bug is no longer the main blocker.
+
+Next recommended Gate:
+
+> **Lighting L1R-B — Desk Material Fidelity Diagnosis**
+
+Reason:
+
+- the four main desks are permanent assets
+- their geometry and G1B UV1 are already accepted
+- the current Unity desk tops remain dark gray even without the L1R bake
+- Figure 3 requires light warm wood/beige desk tops
+- global lighting should not be distorted merely to compensate for a source material/albedo mismatch
+
+L1R-B should isolate the authoritative desk material/albedo difference between the historical approved look and the current Unity import, make only the minimum desk-material correction required for fidelity, and leave the L1R sun/shadow structure untouched.
+
+Do not spend this Gate on monitors, mugs, lamps, sofa, pet props, or other already-deferred temporary assets.
