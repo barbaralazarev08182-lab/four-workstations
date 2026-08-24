@@ -35,6 +35,9 @@ interface AnimatedLowPolyCharacterProps {
   rendererKind?: "procedural" | "glb";
   onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
+  /** Gate 2: hide the legacy visual mesh while keeping the business root,
+   *  its Html label and interaction alive. */
+  hiddenVisual?: boolean;
 }
 
 const SKIN_TONES = ["#e8b993", "#f0c6a5", "#d59b77", "#ecc09e"];
@@ -55,6 +58,7 @@ export function AnimatedLowPolyCharacter({
   rendererKind = "procedural",
   onClick,
   interactionEffect,
+  hiddenVisual = false,
 }: AnimatedLowPolyCharacterProps) {
   const [hovered, setHovered] = useState(false);
   useCursor(hovered);
@@ -77,7 +81,8 @@ export function AnimatedLowPolyCharacter({
       scale={hovered ? 1.035 : 1}
       userData={{ rendererKind }}
     >
-      <group ref={bodyGroupRef} name="bodyGroup" position={[0, 1.08, 0]}>
+      <group name="legacyVisualContainer" visible={!hiddenVisual}>
+        <group ref={bodyGroupRef} name="bodyGroup" position={[0, 1.08, 0]}>
         <mesh castShadow>
           <capsuleGeometry args={[0.38, 0.7, 5, 10]} />
           <meshStandardMaterial color={accent} roughness={0.86} transparent />
@@ -146,6 +151,7 @@ export function AnimatedLowPolyCharacter({
           <coneGeometry args={[0.18, 0.3, 6]} />
           <meshStandardMaterial color="#638fa3" roughness={0.82} transparent />
         </mesh>
+      </group>
       </group>
 
       {actionState !== "hidden" ? (

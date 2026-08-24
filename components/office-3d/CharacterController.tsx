@@ -24,6 +24,9 @@ interface CharacterControllerProps {
   debugCommand: CharacterDebugCommand | null;
   onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
+  /** Gate 2: hide the legacy procedural visual (business root stays the
+   *  transform source of truth; the new Two-Scene visual follows it). */
+  hiddenVisual?: boolean;
 }
 
 const DEBUG_DESTINATIONS: CharacterDestinationKey[] = ["desk", "meeting", "dining", "sofa", "coffee", "restroom", "entrance"];
@@ -50,7 +53,7 @@ function updateMaterialOpacity(root: Group, opacity: number) {
   });
 }
 
-export function CharacterController({ user, index, speedMultiplier, debugCommand, onClick, interactionEffect }: CharacterControllerProps) {
+export function CharacterController({ user, index, speedMultiplier, debugCommand, onClick, interactionEffect, hiddenVisual = false }: CharacterControllerProps) {
   const sceneKey = user.sceneKey ?? user.id;
   const initialDestination = getCharacterDestination(sceneKey, getDestinationForStatus(user.status));
   const initialAction = getActionForStatus(user.status);
@@ -283,6 +286,7 @@ export function CharacterController({ user, index, speedMultiplier, debugCommand
         isMoving={moving}
         interactionEffect={interactionEffect}
         onClick={onClick}
+        hiddenVisual={hiddenVisual}
       />
       {showRestroomMarker ? (
         <Html center position={[4.9, 2.65, -5.92]} zIndexRange={[18, 8]}>
