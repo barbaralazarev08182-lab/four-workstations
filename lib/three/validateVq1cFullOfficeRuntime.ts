@@ -1,12 +1,14 @@
 // Shared by the formal OfficeWorld visual layer and the QA runtime.
 import { Box3, Vector3 } from "three";
 import type { BufferGeometry, Material, Mesh, Object3D, Texture } from "three";
+import { VQ1C_FULL_OFFICE_EXPECTED } from "@/lib/three/vq1cRuntime";
 
 export const VQ1C_FULL_OFFICE_EXPECTED_MATERIALS = [
   "VQ_Wall_Plaster", "VQ_Floor_Wood", "VQ_Desk_Wood", "VQ_Trim_Warm",
   "VQ_Window_Frame", "VQ_Window_Glass", "VQ_Sofa_Fabric", "VQ_Sofa_Fabric_Accent",
   "VQ_Chair_Fabric", "VQ_Metal_Charcoal", "VQ_Plastic_Dark", "VQ_Keycap",
   "VQ_Screen_Glass", "VQ_Lamp_Shade", "VQ_Lamp_Inner", "VQ_Sofa_Legs",
+  "VQ_Rug_Muted", "VQ_Rug_Sofa_Muted", "VQ_Accent_Terracotta",
 ] as const;
 
 const TOP_LEVEL_GROUPS = [
@@ -162,8 +164,8 @@ export function validateVq1cFullOfficeRuntimeScene(scene: Object3D): Vq1cFullOff
   }
 
   const bounds = new Box3().setFromObject(root);
-  const expectedMin = new Vector3(-8.1, -0.41, -6.6);
-  const expectedMax = new Vector3(8.1, 4.5, 6.6);
+  const expectedMin = new Vector3(...VQ1C_FULL_OFFICE_EXPECTED.boundsMin);
+  const expectedMax = new Vector3(...VQ1C_FULL_OFFICE_EXPECTED.boundsMax);
   if (bounds.min.distanceTo(expectedMin) > 0.003 || bounds.max.distanceTo(expectedMax) > 0.003) {
     errors.push(`Bounds ${tuple(bounds.min).join(",")}..${tuple(bounds.max).join(",")} differ from contract`);
   }
@@ -233,12 +235,12 @@ export function validateVq1cFullOfficeRuntimeScene(scene: Object3D): Vq1cFullOff
     });
   }
 
-  if (meshes !== 359) errors.push(`Mesh count ${meshes}, expected 359`);
-  if (triangles !== 57_312) errors.push(`Triangle count ${triangles}, expected 57312`);
-  if (materials.size !== 16) errors.push(`Material count ${materials.size}, expected 16`);
-  if (textures.size !== 10) errors.push(`Texture count ${textures.size}, expected 10`);
-  if (officeAnchors !== 16) errors.push(`Required Office anchor count ${officeAnchors}, expected 16`);
-  if (internalAnchors !== 36) errors.push(`Internal anchor count ${internalAnchors}, expected 36`);
+  if (meshes !== VQ1C_FULL_OFFICE_EXPECTED.meshes) errors.push(`Mesh count ${meshes}, expected ${VQ1C_FULL_OFFICE_EXPECTED.meshes}`);
+  if (triangles !== VQ1C_FULL_OFFICE_EXPECTED.triangles) errors.push(`Triangle count ${triangles}, expected ${VQ1C_FULL_OFFICE_EXPECTED.triangles}`);
+  if (materials.size !== VQ1C_FULL_OFFICE_EXPECTED.materials) errors.push(`Material count ${materials.size}, expected ${VQ1C_FULL_OFFICE_EXPECTED.materials}`);
+  if (textures.size !== VQ1C_FULL_OFFICE_EXPECTED.textures) errors.push(`Texture count ${textures.size}, expected ${VQ1C_FULL_OFFICE_EXPECTED.textures}`);
+  if (officeAnchors !== VQ1C_FULL_OFFICE_EXPECTED.officeAnchors) errors.push(`Required Office anchor count ${officeAnchors}, expected ${VQ1C_FULL_OFFICE_EXPECTED.officeAnchors}`);
+  if (internalAnchors !== VQ1C_FULL_OFFICE_EXPECTED.internalAnchors) errors.push(`Internal anchor count ${internalAnchors}, expected ${VQ1C_FULL_OFFICE_EXPECTED.internalAnchors}`);
 
   return {
     ok: errors.length === 0,

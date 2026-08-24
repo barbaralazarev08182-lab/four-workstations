@@ -1,0 +1,120 @@
+{
+  "asset": "vq1c-officeworld-full-lightmapped-r5-final.glb",
+  "version": "R5.2 FINAL (workstation repair) direct-only",
+  "units": "meters",
+  "rootName": "VQ1C_FULL_OFFICE_ROOT",
+  "rootTransform": {
+    "location": [
+      0,
+      0,
+      0
+    ],
+    "rotationEuler": [
+      0,
+      0,
+      0
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  "bake": {
+    "engine": "Cycles",
+    "type": "DIFFUSE direct-only (indirect OFF, color OFF)",
+    "samples": 256,
+    "margin": 8,
+    "resolution": [
+      4096,
+      4096
+    ]
+  },
+  "normalization": {
+    "lightMapIntensity": 4.213,
+    "note": "runtime multiplies by Math.PI separately; no PI in manifest"
+  },
+  "runtimeMeshCount": 23,
+  "runtimeTriangleCount": 59908,
+  "materialCount": 91,
+  "lightmaps": [
+    {
+      "index": 0,
+      "file": "lightmaps/vq1c-officeworld-lightmap-direct-r5-final-0.png",
+      "width": 4096,
+      "height": 4096,
+      "colorSpace": "linear",
+      "uvSet": "TEXCOORD_1",
+      "intensity": 4.213,
+      "content": "structure"
+    },
+    {
+      "index": 1,
+      "file": "lightmaps/vq1c-officeworld-lightmap-direct-r5-final-1.png",
+      "width": 4096,
+      "height": 4096,
+      "colorSpace": "linear",
+      "uvSet": "TEXCOORD_1",
+      "intensity": 4.213,
+      "content": "furniture"
+    }
+  ],
+  "meshLightmapAssignments": {
+    "Runtime_Arch": 0,
+    "Runtime_Desks": 1,
+    "Runtime_Devices": 1,
+    "Runtime_Chairs": 1,
+    "Runtime_Lamps": 1,
+    "Runtime_Rugs": 0,
+    "Runtime_PodShares": 1,
+    "Runtime_MeetingTable": 1,
+    "Runtime_MeetingChairs": 1,
+    "Runtime_MeetingStorage": 1,
+    "Runtime_DiningTable": 1,
+    "Runtime_DiningBenches": 1,
+    "Runtime_DiningCeramics": 1,
+    "Runtime_Sofa": 1,
+    "Runtime_SofaExtras": 1,
+    "Runtime_CoffeeCabinet": 1,
+    "Runtime_CoffeeMachine": 1,
+    "Runtime_CoffeeMenu": 1,
+    "Runtime_CoffeeShelf": 1,
+    "Runtime_CoffeeCups": 1,
+    "Runtime_CoffeeBin": 1,
+    "Runtime_CatHome": 1,
+    "Runtime_CatRest": 1
+  },
+  "runtimeMeshGroups": [
+    "Runtime_Arch",
+    "Runtime_Desks",
+    "Runtime_Devices",
+    "Runtime_Chairs",
+    "Runtime_Lamps",
+    "Runtime_Rugs",
+    "Runtime_PodShares",
+    "Runtime_MeetingTable",
+    "Runtime_MeetingChairs",
+    "Runtime_MeetingStorage",
+    "Runtime_DiningTable",
+    "Runtime_DiningBenches",
+    "Runtime_DiningCeramics",
+    "Runtime_Sofa",
+    "Runtime_SofaExtras",
+    "Runtime_CoffeeCabinet",
+    "Runtime_CoffeeMachine",
+    "Runtime_CoffeeMenu",
+    "Runtime_CoffeeShelf",
+    "Runtime_CoffeeCups",
+    "Runtime_CoffeeBin",
+    "Runtime_CatHome",
+    "Runtime_CatRest"
+  ],
+  "anchorVerification": {
+    "ok": false,
+    "officeAnchors": 16,
+    "internalAnchors": 36
+  },
+  "lightsInGlb": 0,
+  "camerasInGlb": 0,
+  "sourceTemplate": "vq1c-officeworld-full-pbr.template.blend"
+}

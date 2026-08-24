@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 
 /* Runtime state is restored on unmount; cached GLTF geometry and materials are never mutated. */
 /* eslint-disable react-hooks/immutability */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import {
-  ACESFilmicToneMapping, Box3, Color, Fog,
+  ACESFilmicToneMapping, AgXToneMapping, Box3, Color, Fog,
   Object3D, SRGBColorSpace, Sphere, Vector3,
 } from "three";
 import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "@/lib/three/vq1cEnvironmentPresets";
@@ -20,6 +20,11 @@ import {
   validateVq1cFullOfficeRuntimeScene,
   type Vq1cFullOfficeRuntimeValidation,
 } from "@/lib/three/validateVq1cFullOfficeRuntime";
+import { Vq1cFullOfficeShaderLook } from "@/components/qa/Vq1cFullOfficeShaderLook";
+import {
+  Vq1cCoffeeLightmapQaLayer,
+  type Vq1cCoffeeLightmapQaState,
+} from "@/components/qa/Vq1cCoffeeLightmapQaLayer";
 
 export { VQ1C_FULL_OFFICE_PBR_PATH } from "@/lib/three/vq1cRuntime";
 const FULL_OFFICE_DESK_LIGHT_INTENSITY = 7;
@@ -38,6 +43,7 @@ export interface Vq1cFullOfficeRuntimeDiagnostics {
   modeChanges: number;
   observedFps: number;
   renderer: { calls: number; triangles: number; geometries: number; textures: number };
+  coffeeQa: Vq1cCoffeeLightmapQaState | null;
 }
 
 declare global {
@@ -61,6 +67,35 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
   }), []);
   const modeChangesRef = useRef(0);
   const fpsRef = useRef({ elapsed: 0, frames: 0, value: 0 });
+  const [coffeeQaState, setCoffeeQaState] = useState<Vq1cCoffeeLightmapQaState | null>(null);
+  const handleCoffeeQaState = useCallback((state: Vq1cCoffeeLightmapQaState) => {
+    setCoffeeQaState(state);
+  }, []);
+  const isCoffeeLightmapQa = mode === "coffee-lightmap-qa";
+
+  // VP2: configure shadow flags once on the cloned model (never per-frame).
+  useMemo(() => {
+    const floor = model.getObjectByName("FLOOR");
+    if (floor) {
+      floor.traverse((object) => {
+        if ((object as unknown as { isMesh?: boolean }).isMesh) {
+          object.receiveShadow = true;
+        }
+      });
+    }
+    model.traverse((object) => {
+      if ((object as unknown as { isMesh?: boolean }).isMesh) {
+        const mesh = object as unknown as { name: string; castShadow: boolean; receiveShadow: boolean };
+        const isFloor = mesh.name === "FLOOR";
+        const isArch = mesh.name.startsWith("BACK_WALL") || mesh.name.startsWith("LEFT_WALL")
+          || mesh.name.startsWith("BASEBOARD") || mesh.name.startsWith("WINDOW_")
+          || mesh.name.startsWith("ENTRANCE_") || mesh.name.startsWith("RESTROOM_");
+        mesh.castShadow = !isFloor && !isArch;
+        if (isArch) mesh.receiveShadow = true;
+      }
+    });
+    return undefined;
+  }, [model]);
 
   useFrame((_, delta) => {
     const sample = fpsRef.current;
@@ -131,11 +166,13 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
 
   useEffect(() => {
     gl.toneMappingExposure = preset.toneMappingExposure;
+    // Coffee Lightmap QA uses the lookdev contract: AgX + exposure 1.0 (restored on unmount).
+    gl.toneMapping = isCoffeeLightmapQa ? AgXToneMapping : ACESFilmicToneMapping;
     runtimeScene.background = new Color(preset.backgroundColor);
     runtimeScene.environmentIntensity = preset.environmentIntensity;
     runtimeScene.fog = preset.fog ? new Fog(preset.fog.color, 18, 44) : null;
     gl.shadowMap.needsUpdate = true;
-  }, [gl, preset, runtimeScene]);
+  }, [gl, isCoffeeLightmapQa, preset, runtimeScene]);
 
   useEffect(() => {
     modeChangesRef.current += 1;
@@ -162,6 +199,7 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
         geometries: gl.info.memory.geometries,
         textures: gl.info.memory.textures,
       },
+      coffeeQa: coffeeQaState,
     };
     window.__VQ1C_FULL_OFFICE_QA__ = diagnostic;
     onDiagnostics(diagnostic);
@@ -175,7 +213,7 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
         delete window.__VQ1C_FULL_OFFICE_QA__;
       }
     };
-  }, [camera, gl, mode, model, modelData, onDiagnostics, runtimeScene]);
+  }, [camera, coffeeQaState, gl, mode, model, modelData, onDiagnostics, runtimeScene]);
 
   useEffect(() => () => {
     textures.clear.dispose();
@@ -188,14 +226,21 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
   return (
     <>
       <primitive object={model} position={[0, 0, 0]} rotation={[0, 0, 0]} scale={[1, 1, 1]} />
+      <Vq1cCoffeeLightmapQaLayer
+        active={isCoffeeLightmapQa}
+        officeModel={model}
+        onState={handleCoffeeQaState}
+      />
       <hemisphereLight name="VQ1C_FULL_OFFICE_HEMISPHERE" color={preset.hemisphere.skyColor}
         groundColor={preset.hemisphere.groundColor} intensity={preset.hemisphere.intensity} />
       <directionalLight name="VQ1C_FULL_OFFICE_DIRECTIONAL" color={preset.directional.color}
         intensity={preset.directional.intensity} position={preset.directional.position}
-        castShadow={preset.directional.castShadow} shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024} shadow-camera-left={-10} shadow-camera-right={10}
-        shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5}
-        shadow-camera-far={30} shadow-bias={-0.00015} />
+        castShadow={preset.directional.castShadow} shadow-mapSize-width={preset.shadow?.mapSize ?? 1024}
+        shadow-mapSize-height={preset.shadow?.mapSize ?? 1024} shadow-camera-left={preset.shadow?.left ?? -10}
+        shadow-camera-right={preset.shadow?.right ?? 10} shadow-camera-top={preset.shadow?.top ?? 9}
+        shadow-camera-bottom={preset.shadow?.bottom ?? -9} shadow-camera-near={preset.shadow?.near ?? 0.5}
+        shadow-camera-far={preset.shadow?.far ?? 30} shadow-bias={preset.shadow?.bias ?? -0.00015}
+        shadow-normalBias={preset.shadow?.normalBias ?? 0.02} />
       {modelData.lamps.map((lamp) => (
         <group key={lamp.deskId}>
           <primitive object={lamp.target} />
@@ -206,6 +251,9 @@ export function Vq1cFullOfficeRuntime({ mode, showBounds, onBoundsReady, onValid
             visible={rainEnabled} castShadow={false} />
         </group>
       ))}
+      {mode === "shader-day" && (
+        <Vq1cFullOfficeShaderLook exposure={preset.toneMappingExposure} />
+      )}
       <mesh name="VQ1C_FULL_OFFICE_WINDOW_BACKDROP" position={[2.5, 2.6, -6.25]}
         castShadow={false} receiveShadow={false}>
         <planeGeometry args={[3.0, 1.6]} />

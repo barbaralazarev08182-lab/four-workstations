@@ -20,6 +20,7 @@ interface CharacterRendererProps {
   isMoving: boolean;
   onClick: (anchor: InteractionAnchor) => void;
   interactionEffect?: CharacterInteractionEffect;
+  hiddenVisual?: boolean;
 }
 
 export function CharacterRenderer({
@@ -31,6 +32,7 @@ export function CharacterRenderer({
   isMoving,
   onClick,
   interactionEffect,
+  hiddenVisual = false,
 }: CharacterRendererProps) {
   const bodyGroup = useRef<Group>(null);
   const headGroup = useRef<Group>(null);
@@ -82,6 +84,7 @@ export function CharacterRenderer({
       rendererKind={rendererKind}
       onClick={onClick}
       interactionEffect={interactionEffect}
+      hiddenVisual={hiddenVisual}
     />
   );
 }

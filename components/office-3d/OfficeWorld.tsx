@@ -12,6 +12,8 @@ import type { CharacterDebugCommand } from "@/components/office-3d/character-act
 import { OfficeInteractionLayer } from "@/components/office-3d/OfficeInteractionLayer";
 import { WORKSTATION_LAYOUT, type CameraZoneKey, type InteractionAnchor } from "@/components/office-3d/scene-config";
 import { Vq1cOfficeWorldScene, type Vq1cOfficeWorldDiagnostics } from "@/components/office-3d/Vq1cOfficeWorldScene";
+import { NewCharacterVisuals } from "@/components/office-3d/NewCharacterVisuals";
+import { NightDeskLamps } from "@/components/office-3d/NightDeskLamps";
 import { buildDeskSlots } from "@/lib/office/desk-slots";
 
 interface OfficeWorldProps {
@@ -60,15 +62,6 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
     }
   }, [invalidMembers]);
 
-  useEffect(() => {
-    console.info("VQ1C_OFFICEWORLD_BUSINESS_PRESERVED_OK", {
-      deskSlots: slots.length,
-      characters: slots.filter((slot) => slot.member).length,
-      deskBindings: slots.map((slot) => ({ deskKey: slot.deskKey, memberId: slot.member?.id ?? null })),
-      interactionHotspots: 10,
-    });
-  }, [slots]);
-
   return (
     <>
       <Vq1cOfficeWorldScene mode={isNight ? "night" : "day"} onDiagnostics={onVq1cDiagnostics} />
@@ -84,6 +77,7 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
             debugCommand={debugCommand}
             interactionEffect={interactionEffects[member.id]}
             onClick={(anchor) => onCharacterClick(member, anchor)}
+            hiddenVisual
           />
         ) : (
           <Html key={deskKey} position={[layout.position[0], 2.38, layout.position[2]]} center zIndexRange={[14, 6]}>
@@ -93,6 +87,8 @@ export function OfficeWorld({ users, isNight, cameraZone, onCharacterClick, onOb
       })}
       <CameraController zone={cameraZone} controlsRef={controlsRef} />
       <MapControls ref={controlsRef} makeDefault enableRotate={false} enableDamping dampingFactor={0.08} screenSpacePanning minZoom={12} maxZoom={120} maxPolarAngle={Math.PI / 2.4} target={[0, 0.8, 0]} />
+      <NewCharacterVisuals users={users} />
+      <NightDeskLamps mode={isNight ? "night" : "day"} />
       <PerformanceReporter onFpsChange={onFpsChange} />
     </>
   );

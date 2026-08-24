@@ -55,31 +55,41 @@ function getPositions(userId: string): CharacterPositionSet {
   return CHARACTER_POSITIONS[userId] ?? CHARACTER_POSITIONS.ming;
 }
 
+function offsetAwayFromFurniture(position: Vector3Tuple, furniture: Vector3Tuple, distance: number): Vector3Tuple {
+  const x = position[0] - furniture[0];
+  const z = position[2] - furniture[2];
+  const length = Math.hypot(x, z) || 1;
+  return [position[0] + (x / length) * distance, position[1], position[2] + (z / length) * distance];
+}
+
 export function getCharacterDestination(userId: string, key: CharacterDestinationKey): CharacterDestination {
   const positions = getPositions(userId);
 
   if (key === "meeting") {
+    const position = offsetAwayFromFurniture(positions.meetingSeatPosition, FURNITURE_POSITIONS.meetingTable, 0.6);
     return {
       key,
-      position: positions.meetingSeatPosition,
+      position,
       approach: positions.meetingApproachPosition,
-      rotation: rotationToward(positions.meetingSeatPosition, FURNITURE_POSITIONS.meetingTable),
+      rotation: rotationToward(position, FURNITURE_POSITIONS.meetingTable),
     };
   }
   if (key === "dining") {
+    const position = offsetAwayFromFurniture(positions.diningSeatPosition, FURNITURE_POSITIONS.diningTable, 0.55);
     return {
       key,
-      position: positions.diningSeatPosition,
+      position,
       approach: positions.diningApproachPosition,
-      rotation: rotationToward(positions.diningSeatPosition, FURNITURE_POSITIONS.diningTable),
+      rotation: rotationToward(position, FURNITURE_POSITIONS.diningTable),
     };
   }
   if (key === "sofa") {
+    const position: Vector3Tuple = [positions.sofaPosition[0] + 0.85, positions.sofaPosition[1], positions.sofaPosition[2]];
     return {
       key,
-      position: positions.sofaPosition,
+      position,
       approach: positions.sofaApproachPosition,
-      rotation: Math.PI / 2,
+      rotation: rotationToward(position, FURNITURE_POSITIONS.sofa),
     };
   }
   if (key === "coffee") {
@@ -108,15 +118,23 @@ export function getCharacterDestination(userId: string, key: CharacterDestinatio
   }
 
   const isLeftDesk = positions.deskSeatPosition[0] < 0;
+  const deskStandingPosition: Vector3Tuple = [
+    positions.deskSeatPosition[0] + (isLeftDesk ? 0.6 : -0.6),
+    positions.deskSeatPosition[1],
+    positions.deskSeatPosition[2],
+  ];
+  // FR-WS1 desk facing: the seat sits on the +X side of desks 1/3 (left) and
+  // on the -X side of desks 2/4 (right), so the character must face the desk:
+  // left desks -> -X, right desks -> +X.
   const deskFacing: Vector3Tuple = isLeftDesk
-    ? [positions.deskSeatPosition[0] + 2, 0, positions.deskSeatPosition[2]]
-    : [positions.deskSeatPosition[0] - 2, 0, positions.deskSeatPosition[2]];
+    ? [deskStandingPosition[0] - 2, 0, deskStandingPosition[2]]
+    : [deskStandingPosition[0] + 2, 0, deskStandingPosition[2]];
 
   return {
     key: "desk",
-    position: positions.deskSeatPosition,
+    position: deskStandingPosition,
     approach: positions.deskApproachPosition,
-    rotation: rotationToward(positions.deskSeatPosition, deskFacing),
+    rotation: rotationToward(deskStandingPosition, deskFacing),
   };
 }
 

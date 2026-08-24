@@ -11,9 +11,35 @@ import {
   Vq1cFullOfficeRuntime, VQ1C_FULL_OFFICE_PBR_PATH,
   type Vq1cFullOfficeRuntimeDiagnostics,
 } from "./Vq1cFullOfficeRuntime";
+import { Vq1cCharacterQaScene, VQ1C_CHARACTER_QA_GLB_PATH } from "./Vq1cCharacterQaScene";
 import { VQ1C_ENVIRONMENT_PRESETS, type Vq1cEnvironmentMode } from "@/lib/three/vq1cEnvironmentPresets";
 import type { Vq1cRuntimeValidation } from "@/lib/three/validateVq1cRuntimeScene";
 import type { Vq1cFullOfficeRuntimeValidation } from "@/lib/three/validateVq1cFullOfficeRuntime";
+
+/* VP2-4A: official full-office orthographic camera contract (scene-config.ts OFFICE_CAMERA). */
+const OFFICIAL_CAMERA = {
+  position: [10.8, 11.8, 14.5] as const,
+  target: [0, 0.8, 0] as const,
+  zoom: 44,
+  near: 0.1,
+  far: 100,
+};
+/* Fixed detail camera framing the coffee corner (corner center + official offset, zoomed in). */
+const COFFEE_DETAIL_CAMERA = {
+  position: [10.0, 12.2, 9.05] as const,
+  target: [-0.8, 1.2, -5.45] as const,
+  zoom: 337,
+  near: 0.1,
+  far: 100,
+};
+/* Detail camera framing the desk1 / ming workstation (character QA). */
+const CHARACTER_DETAIL_CAMERA = {
+  position: [8.6, 11.8, 12.75] as const,
+  target: [-2.2, 0.9, -1.75] as const,
+  zoom: 130,
+  near: 0.1,
+  far: 100,
+};
 
 // Whitelist of GLB assets in public/models/vq1/
 const GLB_WHITELIST = [
@@ -21,6 +47,7 @@ const GLB_WHITELIST = [
   { id: "vq1c-hero-corner", label: "VQ1C Hero Corner", path: "/models/vq1/vq1c-hero-corner.glb" },
   { id: "vq1c-hero-corner-pbr", label: "VQ-1C Hero Corner PBR", path: VQ1C_PBR_PATH },
   { id: "vq1c-officeworld-full-pbr", label: "VQ-1C Full OfficeWorld PBR", path: VQ1C_FULL_OFFICE_PBR_PATH },
+  { id: "vq1c-character-qa", label: "VQ-1C Character QA (Final Office + 1)", path: VQ1C_CHARACTER_QA_GLB_PATH },
 ];
 
 type LightingMode = "neutral" | "clear-day" | "overcast" | "rain-preview" | "night";
@@ -96,6 +123,125 @@ interface AutoFitTarget {
   sphere: Sphere;
   center: Vector3;
   version: number;
+}
+
+/* VP2-4A: official orthographic camera composition (used for the full-office QA modes). */
+function OfficialCamera({ target }: { target: readonly [number, number, number] }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.lookAt(target[0], target[1], target[2]);
+    camera.updateProjectionMatrix();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera, target.join(",")]);
+  return null;
+}
+
+/* VP2-4A: URL-driven self test — cycles the environment modes 10x and reports stability. */
+interface Vp2QaSelfTestReport {
+  cycles: number;
+  sequence: string[];
+  sceneUuidStable: boolean;
+  cameraUuidStable: boolean;
+  officeMeshCountStable: boolean;
+  coffeeInstanceCount: number;
+  lookdevMeshCount: number;
+  materialsBefore: number;
+  materialsAfter: number;
+  geometriesBefore: number;
+  geometriesAfter: number;
+  texturesBefore: number;
+  texturesAfter: number;
+  glbRequests: number;
+  lightmapRequests: number;
+  manifestRequests: number;
+  oldCoffeeRestoredAfterExit: boolean;
+  lookdevHiddenAfterExit: boolean;
+  allOk: boolean;
+}
+
+function Vp2QaSelfTest({
+  enabled,
+  setMode,
+}: {
+  enabled: boolean;
+  setMode: (m: Vq1cEnvironmentMode) => void;
+}) {
+  const { gl } = useThree();
+  const [report, setReport] = useState<Vp2QaSelfTestReport | null>(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || startedRef.current) return;
+    startedRef.current = true;
+    const sequence: Vq1cEnvironmentMode[] = ["vp2-clear-day", "coffee-lightmap-qa", "rain-mood"];
+    (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const geomsBefore = gl.info.memory.geometries;
+      const texBefore = gl.info.memory.textures;
+      const uuids: string[] = [];
+      const cameraUuids: string[] = [];
+      const meshCounts: number[] = [];
+      for (let i = 0; i < 10; i += 1) {
+        const nextMode = sequence[i % sequence.length];
+        setMode(nextMode);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        const diagnostic = window.__VQ1C_FULL_OFFICE_QA__;
+        if (diagnostic) {
+          uuids.push(diagnostic.sceneUuid);
+          cameraUuids.push(diagnostic.cameraUuid);
+          meshCounts.push(diagnostic.validation.meshes);
+        }
+      }
+      // Exit QA mode: old coffee must be restored, lookdev hidden.
+      setMode("vp2-clear-day");
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const finalDiag = window.__VQ1C_FULL_OFFICE_QA__;
+      const coffeeQa = finalDiag?.coffeeQa ?? null;
+      const geomsAfter = gl.info.memory.geometries;
+      const texAfter = gl.info.memory.textures;
+      const resources = performance.getEntriesByType("resource").map((e) => e.name);
+      const glbRequests = resources.filter((n) => n.includes("lightmapped-r1.glb")).length;
+      const lightmapRequests = resources.filter((n) => n.includes("coffee-corner-lightmap.png")).length;
+      const manifestRequests = resources.filter((n) => n.includes("runtime-manifest-r1.json")).length;
+      const result: Vp2QaSelfTestReport = {
+        cycles: 10,
+        sequence: ["VP2 Clear Day", "Coffee Lightmap QA", "Rain Mood"],
+        sceneUuidStable: uuids.every((u) => u === uuids[0]),
+        cameraUuidStable: cameraUuids.every((u) => u === cameraUuids[0]),
+        officeMeshCountStable: meshCounts.every((m) => m === meshCounts[0]),
+        coffeeInstanceCount: coffeeQa && coffeeQa.lookdevVisible ? 1 : 0,
+        lookdevMeshCount: coffeeQa?.lookdevMeshes ?? 0,
+        materialsBefore: 0,
+        materialsAfter: 0,
+        geometriesBefore: geomsBefore,
+        geometriesAfter: geomsAfter,
+        texturesBefore: texBefore,
+        texturesAfter: texAfter,
+        glbRequests,
+        lightmapRequests,
+        manifestRequests,
+        oldCoffeeRestoredAfterExit: coffeeQa ? coffeeQa.oldCoffeeHidden === false : false,
+        lookdevHiddenAfterExit: coffeeQa ? coffeeQa.lookdevVisible === false : false,
+        allOk: false,
+      };
+      result.allOk = result.sceneUuidStable && result.cameraUuidStable && result.officeMeshCountStable
+        && geomsBefore === geomsAfter && texBefore === texAfter
+        && glbRequests === 1 && lightmapRequests === 1 && manifestRequests === 1
+        && result.oldCoffeeRestoredAfterExit && result.lookdevHiddenAfterExit;
+      setReport(result);
+      document.title = result.allOk ? "VP2_4A_SELFTEST:OK" : "VP2_4A_SELFTEST:FAIL";
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, gl]);
+
+  if (!report) return null;
+  return (
+    <div id="vp2-4a-selftest" style={{ position: "fixed", left: 12, bottom: 12, zIndex: 200, maxWidth: 420,
+      background: "rgba(8,12,18,0.95)", color: "#9fe8a0", padding: 10, borderRadius: 8, fontSize: 11,
+      fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+      {JSON.stringify(report, null, 2)}
+    </div>
+  );
 }
 
 function AutoFit({ target, radiusMultiplier = 2.2 }: { target: AutoFitTarget | null; radiusMultiplier?: number }) {
@@ -234,13 +380,58 @@ export function AssetLab() {
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<Vq1cRuntimeDiagnostics | Vq1cFullOfficeRuntimeDiagnostics | null>(null);
   const fitVersionRef = useRef(0);
 
+  // VP2-4A: URL-driven QA mode (deterministic headless captures / self test).
+  // Applied after hydration (SSR state does not run client-side lazy initializers).
+  const [qaUrl, setQaUrl] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const search = window.location.search;
+      setQaUrl(search);
+      const params = new URLSearchParams(search);
+      const assetId = params.get("vq1cAsset");
+      if (assetId) {
+        const asset = GLB_WHITELIST.find((a) => a.id === assetId);
+        if (asset) setSelectedAsset(asset);
+      }
+      const modeParam = params.get("vq1cMode");
+      if (modeParam && modeParam in VQ1C_ENVIRONMENT_PRESETS) {
+        setVq1cMode(modeParam as Vq1cEnvironmentMode);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const qaParams = new URLSearchParams(qaUrl);
+  const qaClean = qaParams.get("qaClean") === "1";
+  const coffeeDetail = qaParams.get("vq1cCoffeeDetail") === "1";
+  const qaSelfTest = qaParams.get("vq1cQaSelfTest") === "1";
+  const qaStatic = qaParams.get("vq1cStatic") === "1";
+
+  // VP2-4A: gate the Canvas behind hydration so the orthographic camera decision
+  // (URL-driven, client-only) never causes an SSR/CSR hydration mismatch.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setHydrated(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const lighting = LIGHTING_CONFIG[lightingMode];
   const bgColor = BACKGROUND_COLORS[backgroundMode];
   const isVq1cHeroPbr = selectedAsset.id === "vq1c-hero-corner-pbr";
   const isVq1cFullOfficePbr = selectedAsset.id === "vq1c-officeworld-full-pbr";
-  const isVq1cPbr = isVq1cHeroPbr || isVq1cFullOfficePbr;
+  const isCharacterQa = selectedAsset.id === "vq1c-character-qa";
+  const isVq1cPbr = isVq1cHeroPbr || isVq1cFullOfficePbr || isCharacterQa;
+  // VP2-4A: the full office QA context uses the official orthographic camera.
+  const useOfficialCamera = isVq1cFullOfficePbr || isCharacterQa;
+  const activeCamera = useOfficialCamera
+    ? (coffeeDetail
+      ? COFFEE_DETAIL_CAMERA
+      : (isCharacterQa && qaParams.get("vq1cCharacterDetail") === "1")
+        ? CHARACTER_DETAIL_CAMERA
+        : OFFICIAL_CAMERA)
+    : null;
   const heroDiagnostics = runtimeDiagnostics && "anchorPosition" in runtimeDiagnostics ? runtimeDiagnostics : null;
   const fullOfficeDiagnostics = runtimeDiagnostics && "enabledDeskLights" in runtimeDiagnostics ? runtimeDiagnostics : null;
+  const coffeeQaDiagnostics = fullOfficeDiagnostics?.coffeeQa ?? null;
 
   const handleBoundsReady = useCallback((sphere: Sphere, center: Vector3) => {
     fitVersionRef.current += 1;
@@ -252,7 +443,8 @@ export function AssetLab() {
     setFitTarget(null);
     setRuntimeValidation(null);
     setRuntimeDiagnostics(null);
-    if (asset.id === "vq1c-hero-corner-pbr" || asset.id === "vq1c-officeworld-full-pbr") setVq1cMode("clear-day");
+    if (asset.id === "vq1c-hero-corner-pbr") setVq1cMode("clear-day");
+    if (asset.id === "vq1c-officeworld-full-pbr") setVq1cMode("vp2-clear-day");
   }, []);
 
   const handleResetView = useCallback(() => {
@@ -264,6 +456,7 @@ export function AssetLab() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
+      {!qaClean && (
       <div style={{ padding: "10px 14px", background: "#2a2a2a", color: "#fff", display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap", fontSize: 12 }}>
         <strong>Asset Lab</strong>
         <select
@@ -308,13 +501,40 @@ export function AssetLab() {
         <span style={{ color: "#aaa" }}>
           Scene: {sceneStats.triangles.toLocaleString()} tris · {sceneStats.drawCalls} draws · {sceneStats.textures} tex
         </span>
+        {coffeeQaDiagnostics && (
+          <span data-testid="vq1c-coffee-qa"
+            data-old-coffee-meshes={coffeeQaDiagnostics.oldCoffeeMeshes}
+            data-old-coffee-hidden={String(coffeeQaDiagnostics.oldCoffeeHidden)}
+            data-lookdev-visible={String(coffeeQaDiagnostics.lookdevVisible)}
+            data-lookdev-meshes={coffeeQaDiagnostics.lookdevMeshes}
+            data-lookdev-materials={coffeeQaDiagnostics.lookdevMaterials}
+            data-lookdev-triangles={coffeeQaDiagnostics.lookdevTriangles}
+            data-lightmap-intensity={coffeeQaDiagnostics.lightmapIntensity}
+            data-manifest-ok={String(coffeeQaDiagnostics.manifestOk)}
+            data-manifest-error={coffeeQaDiagnostics.manifestError ?? ""}
+            style={{ color: coffeeQaDiagnostics.manifestOk ? "#83d89a" : "#f0b36a" }}>
+            Coffee Lightmap QA: {coffeeQaDiagnostics.lookdevMeshes} meshes · {coffeeQaDiagnostics.lookdevMaterials} mats
+            · {coffeeQaDiagnostics.lookdevTriangles.toLocaleString()} tris · intensity {coffeeQaDiagnostics.lightmapIntensity}
+          </span>
+        )}
       </div>
+      )}
 
       <div style={{ flex: 1, position: "relative" }}>
+        <pre id="vp2-4a-debug" style={{ position: "fixed", left: 8, top: 8, zIndex: 300, margin: 0, padding: 6,
+          background: "rgba(10,12,16,0.85)", color: "#9fd0ff", fontSize: 10, fontFamily: "monospace" }}>
+          {`url=${qaUrl || "(ssr)"} | asset=${selectedAsset.id} | mode=${vq1cMode} | hydrated=${hydrated}`}
+        </pre>
+        {!hydrated && <div style={{ width: "100%", height: "100%", background: "#111" }} />}
+        {hydrated && (
         <Canvas
-          camera={{ position: [0.8, 0.8, 0.8], fov: 50 }}
-          gl={{ toneMapping: 3, toneMappingExposure: 1.0 }}
+          frameloop={qaStatic ? "demand" : "always"}
+          orthographic={Boolean(activeCamera)}
+          camera={activeCamera
+            ? { position: activeCamera.position, zoom: activeCamera.zoom, near: activeCamera.near, far: activeCamera.far }
+            : { position: [0.8, 0.8, 0.8], fov: 50 }}
         >
+          {activeCamera && <OfficialCamera target={activeCamera.target} />}
           {!isVq1cPbr && <color attach="background" args={[bgColor]} />}
           {!isVq1cPbr && <ambientLight intensity={lighting.ambient} />}
           {!isVq1cPbr && <directionalLight position={[5, 5, 5]} intensity={lighting.key} color={lighting.keyColor} castShadow />}
@@ -346,6 +566,8 @@ export function AssetLab() {
                   onValidation={setRuntimeValidation}
                   onDiagnostics={setRuntimeDiagnostics}
                 />
+              ) : isCharacterQa ? (
+                <Vq1cCharacterQaScene />
               ) : (
                 <AssetModel
                   key={selectedAsset.id}
@@ -361,12 +583,17 @@ export function AssetLab() {
           {showGrid && <Grid infiniteGrid fadeDistance={10} />}
           {showAxis && <axesHelper args={[5]} />}
 
-          <AutoFit target={fitTarget} radiusMultiplier={isVq1cFullOfficePbr ? 1.6 : 2.2} />
+          {!useOfficialCamera && <AutoFit target={fitTarget} radiusMultiplier={isVq1cFullOfficePbr ? 1.6 : 2.2} />}
           <SceneStats onStats={setSceneStats} />
           <AssetStatsReader key={selectedAsset.id} path={selectedAsset.path} onStats={setAssetStats} />
+          {qaSelfTest && isVq1cFullOfficePbr && (
+            <Vp2QaSelfTest enabled={qaSelfTest} setMode={setVq1cMode} />
+          )}
         </Canvas>
+        )}
       </div>
 
+      {!qaClean && (
       <div style={{ padding: "10px 14px", background: "#2a2a2a", color: "#fff", display: "flex", gap: "14px", flexWrap: "wrap", fontSize: 12 }}>
         {!isVq1cPbr && <div>
           <strong>Lighting:</strong>{" "}
@@ -405,6 +632,7 @@ export function AssetLab() {
           <label><input type="checkbox" checked={turntable} disabled={isVq1cPbr} onChange={(e) => setTurntable(e.target.checked)} /> Turntable</label>
         </div>
       </div>
+      )}
     </div>
   );
 }

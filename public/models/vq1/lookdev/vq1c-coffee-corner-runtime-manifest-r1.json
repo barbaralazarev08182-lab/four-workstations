@@ -1,0 +1,116 @@
+{
+  "asset": "vq1c-coffee-corner-lightmapped-r1.glb",
+  "version": "LD-3R1",
+  "units": "meters",
+  "rootName": "VQ1C_CoffeeCorner_Runtime",
+  "rootTransform": {
+    "location": [
+      0,
+      0,
+      0
+    ],
+    "rotationEuler": [
+      0,
+      0,
+      0
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  "frontDirection": "-Z",
+  "frontDirectionBlender": "+Y",
+  "groundPlane": {
+    "gltf": "y=0",
+    "blender": "z=0"
+  },
+  "blenderBounds": {
+    "min": [
+      -1.7,
+      -0.14,
+      -0.45
+    ],
+    "max": [
+      1.7,
+      2.6,
+      2.8
+    ]
+  },
+  "expectedThreeBounds": {
+    "min": [
+      -1.7,
+      -0.45,
+      -2.6
+    ],
+    "max": [
+      1.7,
+      2.8,
+      0.14
+    ]
+  },
+  "meshCount": 12,
+  "materialCount": 18,
+  "triangleCount": 3420,
+  "texturesEmbeddedInGlb": 0,
+  "lightmaps": [
+    {
+      "index": 0,
+      "file": "lightmaps/vq1c-coffee-corner-lightmap.png",
+      "width": 2048,
+      "height": 2048,
+      "colorSpace": "linear",
+      "uvSet": "TEXCOORD_1",
+      "intensity": 4.213
+    }
+  ],
+  "meshLightmapAssignments": {
+    "Runtime_BackgroundPlate": 0,
+    "Runtime_CoffeeMachine": 0,
+    "Runtime_Countertop": 0,
+    "Runtime_Cups": 0,
+    "Runtime_MainCabinet": 0,
+    "Runtime_MenuBoard": 0,
+    "Runtime_OpenShelf": 0,
+    "Runtime_Packaging": 0,
+    "Runtime_SideRack": 0,
+    "Runtime_TrashBin": 0,
+    "Runtime_WallGround": 0,
+    "Runtime_WallLight": 0
+  },
+  "texcoord0Present": true,
+  "texcoord1Present": true,
+  "lightsInGlb": 0,
+  "camerasInGlb": 0,
+  "blenderUvLayers": {
+    "base": "UV",
+    "lightmap": "UV2"
+  },
+  "threeJsUvAttributes": {
+    "TEXCOORD_0": "geometry.attributes.uv",
+    "TEXCOORD_1": "geometry.attributes.uv1 (verify at integration)"
+  },
+  "sourceBlendLd2": "vq1c-coffee-corner-lightmap-prototype.blend",
+  "sourceBlendLd2Sha256": "d5fe83c5a35652d854986d14a8896bdd3c1a3061429aad2e4bfed0606e6ce9af",
+  "sourceBlendLd3": "vq1c-coffee-corner-runtime-export.blend",
+  "sourceBlendLd3Sha256": "f7925fee7496295dd15a8ea4412356abd065a4bb2266293958931a63993e87e9",
+  "bake": {
+    "engine": "Cycles",
+    "type": "COMBINED direct+indirect (no albedo/emit)",
+    "samples": 512
+  },
+  "atlasGapPx": 12,
+  "atlasMarginPx": 8,
+  "atlasNonBlackFraction": 0.449,
+  "uvIslandBbox": {
+    "u": [
+      0.001,
+      0.999
+    ],
+    "v": [
+      0.0029,
+      0.9916
+    ]
+  }
+}

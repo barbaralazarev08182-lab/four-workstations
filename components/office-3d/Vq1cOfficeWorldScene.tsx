@@ -1,26 +1,41 @@
 "use client";
 
-/* Three.js renderer and scene state are intentionally restored when this visual layer unmounts. */
+/* FR-6 final R3 direct-only lightmapped office (the approved final visual).
+ * Replaces the legacy VP2 office GLB visual while keeping the component's
+ * external API (mode, onDiagnostics) and the camera contract untouched.
+ * Three.js renderer and scene state are intentionally restored on unmount. */
 /* eslint-disable react-hooks/immutability */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { ACESFilmicToneMapping, Color, Fog, Object3D, SRGBColorSpace } from "three";
+import {
+  AgXToneMapping,
+  ClampToEdgeWrapping,
+  Color,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  LinearSRGBColorSpace,
+  SRGBColorSpace,
+  TextureLoader,
+} from "three";
+import type { Mesh, MeshStandardMaterial, Texture } from "three";
 import { clone as cloneScene } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { OFFICE_CAMERA } from "@/components/office-3d/scene-config";
-import { VQ1C_ENVIRONMENT_PRESETS } from "@/lib/three/vq1cEnvironmentPresets";
 import {
-  countNamedObjects,
-  createVq1cBackdropTexture,
-  createVq1cRoomEnvironment,
-  resolveVq1cFullOfficeDeskLights,
-  VQ1C_FULL_OFFICE_PBR_PATH,
+  FINAL_OFFICE_CONTRAST,
+  VQ1C_FINAL_OFFICE_GLB_PATH,
+  VQ1C_FINAL_OFFICE_LIGHTMAP_0_PATH,
+  VQ1C_FINAL_OFFICE_LIGHTMAP_1_PATH,
+  VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY,
+  VQ1C_FINAL_OFFICE_MANIFEST_PATH,
 } from "@/lib/three/vq1cRuntime";
 import {
-  validateVq1cFullOfficeRuntimeScene,
-  type Vq1cFullOfficeRuntimeValidation,
-} from "@/lib/three/validateVq1cFullOfficeRuntime";
+  validateVq1cFinalOfficeScene,
+  VQ1C_FINAL_OFFICE_WORKSTATIONS,
+  type Vq1cFinalOfficeValidation,
+} from "@/lib/three/validateVq1cFinalOfficeRuntime";
+import type { Vq1cFullOfficeRuntimeValidation } from "@/lib/three/validateVq1cFullOfficeRuntime";
 
 export type Vq1cOfficeWorldMode = "day" | "night";
 
@@ -29,6 +44,11 @@ export interface Vq1cOfficeWorldDiagnostics {
   sourceSceneUuid: string;
   cloneUuid: string;
   validation: Vq1cFullOfficeRuntimeValidation;
+  finalValidation: Vq1cFinalOfficeValidation;
+  lightmapResolved: number;
+  lightmapAssigned: number;
+  materialInstances: number;
+  contrastEnabled: boolean;
   cameraPosition: [number, number, number];
   cameraZoom: number;
   cameraNear: number;
@@ -45,8 +65,6 @@ export interface Vq1cOfficeWorldDiagnostics {
   };
 }
 
-const FORMAL_DESK_LIGHT_INTENSITY = 7;
-
 function cameraMatchesContract(camera: {
   position: { toArray: () => number[] };
   zoom?: number;
@@ -60,44 +78,173 @@ function cameraMatchesContract(camera: {
     && Math.abs(camera.far - OFFICE_CAMERA.far) <= 0.00001;
 }
 
+function toLegacyValidation(validation: Vq1cFinalOfficeValidation): Vq1cFullOfficeRuntimeValidation {
+  return {
+    ok: validation.ok,
+    errors: validation.errors,
+    rootCount: 1,
+    meshes: validation.sceneMeshes,
+    triangles: validation.triangles,
+    materials: validation.materials,
+    textures: 0,
+    bounds: validation.bounds,
+    officeAnchors: validation.officeAnchors,
+    internalAnchors: validation.internalAnchors,
+    workstations: VQ1C_FINAL_OFFICE_WORKSTATIONS.map((workstation) => ({
+      id: `desk_${workstation.number}`,
+      meshes: 0,
+      triangles: 0,
+      position: [...workstation.position],
+      facing: [0, 0, 0],
+      internalAnchors: 0,
+      deviceAlignmentMaxError: 0,
+    })),
+  };
+}
+
+// Module-level cache: the manifest + lightmap textures are loaded once and
+// shared by every mount (mirrors drei useGLTF caching). Repeated
+// mount/unmount must not reload the atlases nor grow texture count.
+let finalOfficeLightingPromise: Promise<{
+  assignments: Record<string, number>;
+  lightmaps: [Texture, Texture];
+} | null> | null = null;
+
+function loadFinalOfficeLighting() {
+  if (finalOfficeLightingPromise === null) {
+    finalOfficeLightingPromise = (async () => {
+      const manifest = await (await fetch(VQ1C_FINAL_OFFICE_MANIFEST_PATH)).json();
+      const loader = new TextureLoader();
+      const [lightmap0, lightmap1] = await Promise.all([
+        loader.loadAsync(VQ1C_FINAL_OFFICE_LIGHTMAP_0_PATH),
+        loader.loadAsync(VQ1C_FINAL_OFFICE_LIGHTMAP_1_PATH),
+      ]);
+      for (const texture of [lightmap0, lightmap1]) {
+        texture.flipY = false;
+        texture.colorSpace = LinearSRGBColorSpace;
+        texture.channel = 1;
+        texture.wrapS = ClampToEdgeWrapping;
+        texture.wrapT = ClampToEdgeWrapping;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.magFilter = LinearFilter;
+        texture.generateMipmaps = true;
+        texture.anisotropy = 8;
+        texture.needsUpdate = true;
+      }
+      return {
+        assignments: (manifest as { meshLightmapAssignments: Record<string, number> }).meshLightmapAssignments,
+        lightmaps: [lightmap0, lightmap1] as [Texture, Texture],
+      };
+    })().catch((error) => {
+      console.error("VQ1C_FINAL_OFFICE_LIGHTMAPS_LOAD_FAIL", error);
+      return null;
+    });
+  }
+  return finalOfficeLightingPromise;
+}
+
 export function Vq1cOfficeWorldScene({ mode, onDiagnostics }: {
   mode: Vq1cOfficeWorldMode;
   onDiagnostics: (diagnostics: Vq1cOfficeWorldDiagnostics) => void;
 }) {
-  const { scene: sourceScene } = useGLTF(VQ1C_FULL_OFFICE_PBR_PATH);
+  const { scene: sourceScene } = useGLTF(VQ1C_FINAL_OFFICE_GLB_PATH);
   const model = useMemo(() => cloneScene(sourceScene), [sourceScene]);
   const { camera, gl, scene: runtimeScene } = useThree();
-  const preset = VQ1C_ENVIRONMENT_PRESETS[mode === "night" ? "rain-mood" : "clear-day"];
-  const textures = useMemo(() => ({
-    clear: createVq1cBackdropTexture("clear", "VQ1C_OFFICEWORLD_CLEAR_BACKDROP"),
-    rain: createVq1cBackdropTexture("rain", "VQ1C_OFFICEWORLD_NIGHT_BACKDROP"),
-  }), []);
 
-  const modelData = useMemo(() => {
-    model.updateMatrixWorld(true);
-    const validation = validateVq1cFullOfficeRuntimeScene(model);
-    const root = model.getObjectByName("VQ1C_FULL_OFFICE_ROOT");
-    if (!root) throw new Error("VQ1C_FULL_OFFICE_ROOT missing from cloned OfficeWorld model");
-    const lamps = resolveVq1cFullOfficeDeskLights(model);
-    return {
-      validation,
-      lamps,
-      rootTransform: {
-        position: root.position.toArray() as [number, number, number],
-        rotation: [root.rotation.x, root.rotation.y, root.rotation.z] as [number, number, number],
-        scale: root.scale.toArray() as [number, number, number],
-      },
-    };
-  }, [model]);
+  const [lighting, setLighting] = useState<{
+    assignments: Record<string, number>;
+    lightmaps: [Texture, Texture];
+  } | null>(null);
+  const [resolution, setResolution] = useState<{ resolved: number; assigned: number; materialInstances: number } | null>(null);
+  const [contrastEnabled] = useState(
+    () => typeof window === "undefined" || new URLSearchParams(window.location.search).get("finalContrast") !== "0",
+  );
 
+  // load manifest + lightmaps (cached module-level; frozen contract:
+  // channel 1, flipY false, LinearSRGB, ClampToEdge, mipmaps, anisotropy <= 8)
   useEffect(() => {
-    if (modelData.validation.ok) {
-      console.info("VQ1C_OFFICEWORLD_FULL_MODEL_VALIDATE_OK", modelData.validation);
-    } else {
-      console.error("VQ1C_OFFICEWORLD_FULL_MODEL_VALIDATE_FAIL", modelData.validation.errors);
-    }
-  }, [modelData]);
+    let disposed = false;
+    (async () => {
+      const data = await loadFinalOfficeLighting();
+      if (!disposed && data) setLighting(data);
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
+  // apply lightmaps to cloned materials only; resolve the runtime group by
+  // walking the parent chain; a mesh without an assignment is a contract error.
+  useEffect(() => {
+    if (!lighting) return;
+    let disposed = false;
+    (async () => {
+      await Promise.resolve();
+      if (disposed) return;
+      const { assignments, lightmaps } = lighting;
+      const clonedByKey = new Map<string, MeshStandardMaterial>();
+      let resolved = 0;
+      model.traverse((object) => {
+        if (!(object as Mesh).isMesh) return;
+        const mesh = object as Mesh;
+        let node: { name: string; parent: typeof node | null } = object as never;
+        let group: string | null = null;
+        while (node) {
+          if (node.name && assignments[node.name] !== undefined) {
+            group = node.name;
+            break;
+          }
+          node = node.parent as never;
+        }
+        if (!group) throw new Error(`VQ1C_FINAL_OFFICE: no runtime group assignment for mesh "${object.name}"`);
+        resolved += 1;
+        const atlasIndex = assignments[group];
+        const rawMaterials = mesh.material;
+        const materialList = Array.isArray(rawMaterials) ? rawMaterials : [rawMaterials];
+        const replaced = materialList.map((material) => {
+          if (!material) return material;
+          const key = `${material.uuid}|${atlasIndex}`;
+          let clone = clonedByKey.get(key);
+          if (!clone) {
+            clone = material.clone() as MeshStandardMaterial;
+            clone.lightMap = lightmaps[atlasIndex];
+            clone.lightMapIntensity = VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY;
+            clone.needsUpdate = true;
+            clonedByKey.set(key, clone);
+          }          return clone;
+        });
+        mesh.material = materialList.length === 1 ? replaced[0] : replaced;
+      });
+      if (!disposed) setResolution({ resolved, assigned: resolved, materialInstances: clonedByKey.size });
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, [model, lighting]);
+
+  // Night Gate 2A: night darkens ONLY the baked lightmap contribution by a
+  // fixed factor (never multiplicative drift); day restores the frozen value.
+  // Renderer exposure is never touched (Character scene shares the renderer).
+  useEffect(() => {
+    const targetIntensity =
+      mode === "night"
+        ? VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY * 0.2
+        : VQ1C_FINAL_OFFICE_LIGHTMAP_INTENSITY;
+    model.traverse((object) => {
+      if (!(object as Mesh).isMesh) return;
+      const materials = (object as Mesh).material;
+      const list = Array.isArray(materials) ? materials : [materials];
+      for (const material of list) {
+        const standard = material as MeshStandardMaterial;
+        if (standard && standard.lightMap) {
+          standard.lightMapIntensity = targetIntensity;
+        }
+      }
+    });
+  }, [mode, model]);
+
+  // renderer + scene state: AgX, exposure 1.0, SRGB; lighting comes entirely
+  // from the baked lightmap (environmentIntensity 0, no LookDev lights).
   useEffect(() => {
     const previous = {
       outputColorSpace: gl.outputColorSpace,
@@ -108,10 +255,12 @@ export function Vq1cOfficeWorldScene({ mode, onDiagnostics }: {
       environmentIntensity: runtimeScene.environmentIntensity,
       fog: runtimeScene.fog,
     };
-    const environment = createVq1cRoomEnvironment(gl, "VQ1C_OFFICEWORLD_ROOM_ENVIRONMENT");
     gl.outputColorSpace = SRGBColorSpace;
-    gl.toneMapping = ACESFilmicToneMapping;
-    runtimeScene.environment = environment.texture;
+    gl.toneMapping = AgXToneMapping;
+    gl.toneMappingExposure = 1.0;
+    runtimeScene.background = new Color(0x2e3847);
+    runtimeScene.environmentIntensity = 0;
+    runtimeScene.fog = null;
     return () => {
       gl.outputColorSpace = previous.outputColorSpace;
       gl.toneMapping = previous.toneMapping;
@@ -120,81 +269,75 @@ export function Vq1cOfficeWorldScene({ mode, onDiagnostics }: {
       runtimeScene.environment = previous.environment;
       runtimeScene.environmentIntensity = previous.environmentIntensity;
       runtimeScene.fog = previous.fog;
-      environment.dispose();
     };
   }, [gl, runtimeScene]);
 
+  // display contrast applied to the WebGL canvas element only; DOM HUD
+  // overlays are never filtered.
   useEffect(() => {
-    gl.toneMappingExposure = preset.toneMappingExposure;
-    runtimeScene.background = new Color(preset.backgroundColor);
-    runtimeScene.environmentIntensity = preset.environmentIntensity;
-    runtimeScene.fog = mode === "night" ? new Fog(preset.backgroundColor, 18, 44) : null;
-    gl.shadowMap.needsUpdate = true;
-  }, [gl, mode, preset, runtimeScene]);
+    const canvas = gl.domElement;
+    canvas.style.filter = contrastEnabled ? `contrast(${FINAL_OFFICE_CONTRAST})` : "";
+    return () => {
+      canvas.style.filter = "";
+    };
+  }, [gl, contrastEnabled]);
+
+  const modelData = useMemo(() => {
+    model.updateMatrixWorld(true);
+    const validation = validateVq1cFinalOfficeScene(model);
+    const root = model.getObjectByName("VQ1C_FULL_OFFICE_ROOT");
+    if (!root) throw new Error("VQ1C_FULL_OFFICE_ROOT missing from cloned OfficeWorld model");
+    return {
+      validation,
+      rootTransform: {
+        position: root.position.toArray() as [number, number, number],
+        rotation: [root.rotation.x, root.rotation.y, root.rotation.z] as [number, number, number],
+        scale: root.scale.toArray() as [number, number, number],
+      },
+    };
+  }, [model]);
 
   useEffect(() => {
-    const lights: Object3D[] = [];
-    runtimeScene.traverse((object) => {
-      if (object.name === "VQ1C_OFFICEWORLD_DESK_LIGHT") lights.push(object);
-    });
+    if (modelData.validation.ok) {
+      console.info("VQ1C_FINAL_OFFICE_VALIDATE_OK", modelData.validation);
+    } else {
+      console.error("VQ1C_FINAL_OFFICE_VALIDATE_FAIL", modelData.validation.errors);
+    }
+  }, [modelData]);
+
+  useEffect(() => {
     const diagnostics: Vq1cOfficeWorldDiagnostics = {
       mode,
       sourceSceneUuid: sourceScene.uuid,
       cloneUuid: model.uuid,
-      validation: modelData.validation,
+      validation: toLegacyValidation(modelData.validation),
+      finalValidation: modelData.validation,
+      lightmapResolved: resolution?.resolved ?? 0,
+      lightmapAssigned: resolution?.assigned ?? 0,
+      materialInstances: resolution?.materialInstances ?? 0,
+      contrastEnabled,
       cameraPosition: camera.position.toArray() as [number, number, number],
       cameraZoom: "zoom" in camera ? camera.zoom : OFFICE_CAMERA.zoom,
       cameraNear: camera.near,
       cameraFar: camera.far,
-      deskLights: lights.length,
-      enabledDeskLights: lights.filter((light) => light.visible && "intensity" in light && Number(light.intensity) > 0).length,
-      deskLightPositions: modelData.lamps.map((lamp) => lamp.position.toArray() as [number, number, number]),
-      deskLightDirections: modelData.lamps.map((lamp) => lamp.direction.toArray() as [number, number, number]),
-      windowBackdrops: countNamedObjects(runtimeScene, "VQ1C_OFFICEWORLD_WINDOW_BACKDROP"),
+      deskLights: 0,
+      enabledDeskLights: 0,
+      deskLightPositions: [],
+      deskLightDirections: [],
+      windowBackdrops: 0,
       rootTransform: modelData.rootTransform,
     };
     onDiagnostics(diagnostics);
     if (modelData.validation.ok && cameraMatchesContract(camera)) {
-      console.info("VQ1C_OFFICEWORLD_FULL_CAMERA_PRESERVED_OK", diagnostics.cameraPosition);
+      console.info("VQ1C_FINAL_OFFICE_CAMERA_PRESERVED_OK", diagnostics.cameraPosition);
     }
-  }, [camera, mode, model, modelData, onDiagnostics, runtimeScene, sourceScene]);
-
-  useEffect(() => () => {
-    textures.clear.dispose();
-    textures.rain.dispose();
-    for (const lamp of modelData.lamps) lamp.target.removeFromParent();
-  }, [modelData, textures]);
-
-  const nightEnabled = mode === "night";
+  }, [camera, contrastEnabled, mode, model, modelData, onDiagnostics, resolution, sourceScene]);
 
   return (
     <group name="VQ1C_OFFICEWORLD_VISUAL">
       <primitive object={model} position={[0, 0, 0]} rotation={[0, 0, 0]} scale={[1, 1, 1]} />
-      <hemisphereLight name="VQ1C_OFFICEWORLD_HEMISPHERE" color={preset.hemisphere.skyColor}
-        groundColor={preset.hemisphere.groundColor} intensity={preset.hemisphere.intensity} />
-      <directionalLight name="VQ1C_OFFICEWORLD_DIRECTIONAL" color={preset.directional.color}
-        intensity={preset.directional.intensity} position={preset.directional.position}
-        castShadow={preset.directional.castShadow} shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024} shadow-camera-left={-10} shadow-camera-right={10}
-        shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5}
-        shadow-camera-far={30} shadow-bias={-0.00015} />
-      {modelData.lamps.map((lamp) => (
-        <group key={lamp.deskId}>
-          <primitive object={lamp.target} />
-          <spotLight name="VQ1C_OFFICEWORLD_DESK_LIGHT" userData={{ deskId: lamp.deskId }}
-            position={lamp.position} target={lamp.target} color={preset.deskLamp.color}
-            intensity={nightEnabled ? FORMAL_DESK_LIGHT_INTENSITY : 0}
-            distance={2.1} angle={Math.PI / 6} penumbra={0.78}
-            visible={nightEnabled} castShadow={false} />
-        </group>
-      ))}
-      <mesh name="VQ1C_OFFICEWORLD_WINDOW_BACKDROP" position={[2.5, 2.6, -6.25]}
-        castShadow={false} receiveShadow={false}>
-        <planeGeometry args={[3.0, 1.6]} />
-        <meshBasicMaterial map={textures[mode === "night" ? "rain" : "clear"]} toneMapped={false} />
-      </mesh>
     </group>
   );
 }
 
-useGLTF.preload(VQ1C_FULL_OFFICE_PBR_PATH);
+useGLTF.preload(VQ1C_FINAL_OFFICE_GLB_PATH);

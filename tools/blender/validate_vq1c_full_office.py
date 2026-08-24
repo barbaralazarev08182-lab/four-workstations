@@ -27,6 +27,7 @@ REQUIRED_MATERIALS = {
     "VQ_Window_Frame", "VQ_Window_Glass", "VQ_Sofa_Fabric", "VQ_Sofa_Fabric_Accent",
     "VQ_Chair_Fabric", "VQ_Metal_Charcoal", "VQ_Plastic_Dark", "VQ_Keycap",
     "VQ_Screen_Glass", "VQ_Lamp_Shade", "VQ_Lamp_Inner", "VQ_Sofa_Legs",
+    "VQ_Rug_Muted", "VQ_Rug_Sofa_Muted", "VQ_Accent_Terracotta",
 }
 FORBIDDEN_ROOTS = {"VQ1C_POLISHED_HERO_ROOT", "HERO_ARCH_ROOT", "POLISHED_WORKSTATION_ROOT", "POLISHED_SOFA_ROOT"}
 
@@ -333,6 +334,214 @@ def validate_architecture(contract, failures):
     missing = required - set(bpy.data.objects.keys())
     if missing:
         failures.append(f"architecture opening/frame objects missing: {sorted(missing)}")
+    # VP2 additions: baseboards, door jambs, window jambs
+    vp2_required = {
+        "BASEBOARD_BACK_LEFT", "BASEBOARD_BACK_CENTER", "BASEBOARD_BACK_RIGHT",
+        "BASEBOARD_BACK_WINDOW", "BASEBOARD_LEFT_BACK", "BASEBOARD_LEFT_FRONT",
+        "WINDOW_JAMB_LEFT", "WINDOW_JAMB_RIGHT", "WINDOW_JAMB_TOP",
+        "ENTRANCE_JAMB_LEFT", "ENTRANCE_JAMB_RIGHT", "ENTRANCE_JAMB_TOP",
+        "RESTROOM_JAMB_LEFT", "RESTROOM_JAMB_RIGHT", "RESTROOM_JAMB_TOP",
+    }
+    vp2_missing = vp2_required - set(bpy.data.objects.keys())
+    if vp2_missing:
+        failures.append(f"VP2 architecture trim objects missing: {sorted(vp2_missing)}")
+    # VP2-1b: floor must use the unique full-room atlas with 0..1 UV (no repeat)
+    mode = floor.get("floor_texture_mode")
+    if mode != "unique-full-room-atlas":
+        failures.append(f"FLOOR texture mode is {mode}, expected unique-full-room-atlas")
+    world_size = floor.get("floor_texture_world_size")
+    if world_size is None or abs(world_size[0] - contract["room"]["size"]["width"]) > 0.001 or abs(world_size[1] - contract["room"]["size"]["depth"]) > 0.001:
+        failures.append(f"FLOOR atlas world size differs: {world_size}")
+    uv_scale = floor.get("floor_uv_meters_per_repeat")
+    if uv_scale is not None and uv_scale != 0.0:
+        failures.append(f"FLOOR still uses repeating UV: meters_per_repeat={uv_scale}")
+    # UV range must cover [0,1] over the full floor
+    if floor.data.uv_layers.active is None:
+        failures.append("FLOOR has no UV layer")
+    else:
+        min_u, max_u, min_v, max_v = 1.0, 0.0, 1.0, 0.0
+        for loop in floor.data.uv_layers.active.data:
+            min_u = min(min_u, loop.uv[0]); max_u = max(max_u, loop.uv[0])
+            min_v = min(min_v, loop.uv[1]); max_v = max(max_v, loop.uv[1])
+        print("VALIDATE_FLOOR_UV", "u", round(min_u, 6), round(max_u, 6), "v", round(min_v, 6), round(max_v, 6))
+        if min_u < -0.001 or max_u > 1.001 or min_v < -0.001 or max_v > 1.001:
+            failures.append("FLOOR UV exceeds the 0..1 atlas range")
+
+
+def validate_floor_seam_stats(manifest, failures):
+    """Verify the deterministic plank layout keeps adjacent-row short-end seams apart."""
+    import importlib.util
+    from pathlib import Path as _Path
+    repo = _Path(__file__).resolve().parents[2]
+    generator_path = repo / "tools/blender/build_vq1c_vp2_floor_textures.py"
+    spec = importlib.util.spec_from_file_location("build_vq1c_vp2_floor_textures", str(generator_path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    row_count, total_seams, min_distance, pair, coords = module.seam_statistics()
+    print("VALIDATE_SEAM_STATS", "rows", row_count, "seams", total_seams, "min_adjacent", round(min_distance, 6), "pair", pair, "coords", coords)
+    if min_distance < 0.30:
+        failures.append(f"Adjacent-row seam distance {min_distance:.6f} below 0.30m")
+    recorded = manifest.get("floorSeamStats")
+    if not recorded:
+        failures.append("Manifest missing floorSeamStats")
+        return
+    if recorded.get("minAdjacentRowSeamDistance") != round(min_distance, 6):
+        failures.append("Manifest seam distance differs from recomputed layout")
+    if recorded.get("totalSeams") != total_seams:
+        failures.append("Manifest totalSeams differs from recomputed layout")
+
+
+def validate_vp2_floor(mode, failures):
+    """VP2 Gate 1: FLOOR must use the derived VP2 floor textures, not originals."""
+    floor = bpy.data.objects.get("FLOOR")
+    if floor is None:
+        failures.append("VP2: FLOOR missing")
+        return
+    if not floor.data.materials or floor.data.materials[0] is None:
+        failures.append("VP2: FLOOR has no material")
+        return
+    material = floor.data.materials[0]
+    if material.name != "VQ_Floor_Wood":
+        failures.append(f"VP2: FLOOR material is {material.name}, expected VQ_Floor_Wood")
+        return
+    texture_filenames = set()
+    if material.use_nodes:
+        for node in material.node_tree.nodes:
+            if node.type == "TEX_IMAGE" and node.image:
+                raw = bpy.path.abspath(node.image.filepath) if node.image.filepath else node.image.name
+                texture_filenames.add(Path(raw).stem)
+    expected = {
+        "floor_wood_vp2_basecolor",
+        "floor_wood_vp2_roughness",
+        "floor_wood_vp2_normal",
+    }
+    print("VP2_FLOOR_TEXTURES", sorted(texture_filenames))
+    if expected - texture_filenames:
+        failures.append(f"VP2: FLOOR does not use all VP2 derived textures: missing {sorted(expected - texture_filenames)}")
+    originals = {"floor_wood_basecolor", "floor_wood_roughness", "floor_wood_normal"}
+    if originals.intersection(texture_filenames):
+        failures.append("VP2: FLOOR still references original floor textures")
+
+
+def validate_vp2_spatial(contract, manifest, failures):
+    """VP2 Gate 2B spatial rules: pod rugs, central wooden channel, zone
+    footprints, landings, aisle clearance, and low cat furniture."""
+    room_width = contract["room"]["size"]["width"]
+    room_depth = contract["room"]["size"]["depth"]
+    half_w = room_width / 2
+    half_d = room_depth / 2
+
+    def within_room(name, minimum, maximum):
+        if abs(minimum.x) > half_w + 0.001 or abs(maximum.x) > half_w + 0.001:
+            failures.append(f"VP2-2B: {name} exceeds room width")
+        if abs(minimum.y) > half_d + 0.001 or abs(maximum.y) > half_d + 0.001:
+            failures.append(f"VP2-2B: {name} exceeds room depth")
+        if minimum.z < -0.001:
+            failures.append(f"VP2-2B: {name} penetrates floor: {minimum.z}")
+
+    def rug_checks(name, material_name, max_thickness=0.016):
+        rug = bpy.data.objects.get(name)
+        if rug is None:
+            failures.append(f"VP2-2B: {name} missing")
+            return None
+        rug_bounds = bounds(descendants(rug, include_root=True))
+        minimum, maximum = rug_bounds
+        print("VALIDATE_RUG", name, rounded(minimum), rounded(maximum))
+        if minimum.z < -0.001:
+            failures.append(f"VP2-2B: {name} penetrates floor: {minimum.z}")
+        if maximum.z - minimum.z > max_thickness:
+            failures.append(f"VP2-2B: {name} too thick: {maximum.z - minimum.z}")
+        within_room(name, minimum, maximum)
+        if not rug.data.materials or rug.data.materials[0].name != material_name:
+            failures.append(f"VP2-2B: {name} material is not {material_name}")
+        return (minimum, maximum)
+
+    left_rug = rug_checks("WORK_POD_RUG_LEFT", "VQ_Rug_Muted")
+    right_rug = rug_checks("WORK_POD_RUG_RIGHT", "VQ_Rug_Muted")
+    sofa_rug = rug_checks("SOFA_RUG", "VQ_Rug_Sofa_Muted")
+
+    if left_rug is not None and right_rug is not None:
+        if aabb_intersects(left_rug, right_rug):
+            failures.append("VP2-2B: pod rugs overlap")
+        channel = right_rug[0].x - left_rug[1].x
+        print("VALIDATE_CENTRAL_CHANNEL", f"{channel:.6f}")
+        if channel < 1.8 or channel > 2.2:
+            failures.append(f"VP2-2B: central wooden channel {channel:.3f}m outside 1.8..2.2m")
+    if left_rug is not None and sofa_rug is not None and aabb_intersects(left_rug, sofa_rug):
+        failures.append("VP2-2B: sofa rug overlaps left pod rug")
+    if right_rug is not None and sofa_rug is not None and aabb_intersects(right_rug, sofa_rug):
+        failures.append("VP2-2B: sofa rug overlaps right pod rug")
+
+    zone_pairs = [("meeting", "dining"), ("meeting", "sofa"), ("dining", "sofa"),
+                  ("meeting", "coffee"), ("dining", "coffee"), ("sofa", "coffee")]
+    zone_bounds = {}
+    for facility_id in ("meeting", "dining", "sofa", "coffee"):
+        root = bpy.data.objects.get(facility_root_name(facility_id))
+        if root is None:
+            failures.append(f"VP2-2B: zone root missing: {facility_id}")
+            continue
+        zone_bounds[facility_id] = bounds(descendants(root, include_root=True))
+        minimum, maximum = zone_bounds[facility_id]
+        within_room(facility_id, minimum, maximum)
+        print("VALIDATE_ZONE", facility_id, rounded(minimum), rounded(maximum))
+        # Pod rugs must stay clear of every zone; the sofa rug may sit under
+        # the sofa itself, so it is only checked against the other zones.
+        for label, rug_bounds in (("left pod rug", left_rug), ("right pod rug", right_rug)):
+            if rug_bounds is not None and aabb_intersects(rug_bounds, (minimum, maximum)):
+                failures.append(f"VP2-2B: {label} overlaps {facility_id} zone")
+        if facility_id != "sofa" and sofa_rug is not None and aabb_intersects(sofa_rug, (minimum, maximum)):
+            failures.append(f"VP2-2B: sofa rug overlaps {facility_id} zone")
+    for first, second in zone_pairs:
+        if first in zone_bounds and second in zone_bounds:
+            if aabb_intersects(zone_bounds[first], zone_bounds[second]):
+                failures.append(f"VP2-2B: {first}/{second} footprints intersect")
+
+    for prefix in ("MEETING_CHAIR_", "DINING_BENCH_"):
+        roots = [obj for obj in bpy.data.objects if obj.parent is not None and obj.name.startswith(prefix) and obj.type == "EMPTY"]
+        for root in roots:
+            minimum, _ = bounds(descendants(root, include_root=True))
+            if minimum.z < -0.001:
+                failures.append(f"VP2-2B: {root.name} does not land: {minimum.z}")
+
+    # Cat furniture must stay clearly below table height (0.75m table tops).
+    for name in ("OFFICE_CAT_HOME_ROOT", "OFFICE_CAT_ACTOR_REST_ROOT"):
+        root = bpy.data.objects.get(name)
+        if root is None:
+            continue
+        minimum, maximum = bounds(descendants(root, include_root=True))
+        print("VALIDATE_CAT_ZONE", name, rounded(minimum), rounded(maximum))
+        if maximum.z > 0.45:
+            failures.append(f"VP2-2B: {name} too tall for a cat rest: {maximum.z}")
+
+    # Central aisle: the open wooden corridor between the two pod rugs must stay clear.
+    if left_rug is not None and right_rug is not None:
+        aisle_min_x = left_rug[1].x
+        aisle_max_x = right_rug[0].x
+    else:
+        aisle_min_x, aisle_max_x = -1.1, 1.1
+    aisle = (Vector((aisle_min_x, -3.2, 0.02)), Vector((aisle_max_x, 3.2, 4.5)))
+    for obj in bpy.data.objects:
+        if obj.type != "MESH":
+            continue
+        if obj.name.startswith("WORK_POD_RUG") or obj.name == "SOFA_RUG":
+            continue
+        try:
+            obj_bounds = bounds([obj])
+        except RuntimeError:
+            continue
+        if aabb_intersects(aisle, obj_bounds):
+            failures.append(f"VP2-2B: central aisle blocked by {obj.name}")
+
+    # The sofa coffee table must not sit on the central aisle.
+    table = bpy.data.objects.get("SOFA_COFFEE_TABLE_TOP")
+    if table is None:
+        failures.append("VP2-2B: SOFA_COFFEE_TABLE_TOP missing")
+    else:
+        table_bounds = bounds([table])
+        print("VALIDATE_SOFA_COFFEE_TABLE", rounded(table_bounds[0]), rounded(table_bounds[1]))
+        within_room("SOFA_COFFEE_TABLE", *table_bounds)
+        if aabb_intersects(aisle, table_bounds):
+            failures.append("VP2-2B: sofa coffee table blocks the central aisle")
 
 
 def main():
@@ -383,6 +592,34 @@ def main():
     validate_architecture(contract, failures)
     workstation_totals = validate_workstations(contract, failures)
     validate_facilities(contract, manifest, failures)
+    validate_vp2_spatial(contract, manifest, failures)
+
+    # Group-sum invariant: arch + workstations + amenities + anchors must equal the total,
+    # and no mesh may live directly under the full root.
+    full_root = bpy.data.objects.get(FULL_ROOT)
+    arch_group = bpy.data.objects.get("OFFICE_ARCH_ROOT")
+    ws_group = bpy.data.objects.get("OFFICE_WORKSTATIONS_ROOT")
+    amenities_group = bpy.data.objects.get("OFFICE_AMENITIES_ROOT")
+    anchors_group = bpy.data.objects.get("OFFICE_ANCHORS_ROOT")
+    direct_meshes = [o.name for o in full_root.children if o.type == "MESH"] if full_root else []
+    if direct_meshes:
+        failures.append(f"meshes directly under {FULL_ROOT}: {direct_meshes}")
+    if anchors_group is not None:
+        anchor_stats = stats(descendants(anchors_group, include_root=True))
+        if anchor_stats[0] != 0:
+            failures.append(f"OFFICE_ANCHORS_ROOT contains meshes: {anchor_stats}")
+    group_stats = {
+        "arch": stats(descendants(arch_group, include_root=True)) if arch_group else (0, 0, []),
+        "workstations": stats(descendants(ws_group, include_root=True)) if ws_group else (0, 0, []),
+        "amenities": stats(descendants(amenities_group, include_root=True)) if amenities_group else (0, 0, []),
+        "anchors": anchor_stats if anchors_group is not None else (0, 0, []),
+    }
+    group_meshes = sum(item[0] for item in group_stats.values())
+    group_triangles = sum(item[1] for item in group_stats.values())
+    print("VALIDATE_GROUP_SUMS", {key: (item[0], item[1]) for key, item in group_stats.items()},
+          "group_meshes", group_meshes, "group_triangles", group_triangles)
+    if group_meshes != manifest["meshCount"] or group_triangles != manifest["triangleCount"]:
+        failures.append(f"group sums ({group_meshes}/{group_triangles}) differ from manifest total ({manifest['meshCount']}/{manifest['triangleCount']})")
 
     full_objects = descendants(root, include_root=True) if root else list(bpy.context.scene.objects)
     total_stats = stats(full_objects)
@@ -414,6 +651,8 @@ def main():
     if set(manifest["materialNames"]) != used_materials:
         failures.append("used material set differs from manifest")
     validate_textures(args.mode, manifest, failures)
+    validate_vp2_floor(mode=args.mode, failures=failures)
+    validate_floor_seam_stats(manifest, failures)
 
     marker = "VQ1C_FULL_OFFICE_BLEND_VALIDATE_OK" if args.mode == "blend" else "VQ1C_FULL_OFFICE_GLB_REIMPORT_VALIDATE_OK"
     if failures:
