@@ -1,6 +1,6 @@
 # Four Workstations — Character Animation Research Memory
 
-> Status: LIVING / A2 FOUNDATION PASS / SEATANCHOR OPEN  
+> Status: LIVING / A3 SEATANCHOR CONTRACT PASS / CROSS-AVATAR CALIBRATION OPEN  
 > Established: 2026-08-25  
 > Purpose: preserve character-animation capability findings, external reusable sources, retargeting constraints, and future implementation decisions for new ChatGPT conversations.
 
@@ -105,7 +105,7 @@ Do not choose Root Motion globally before locomotion architecture is defined.
 
 Quaternius currently provides both Root Motion and non-Root-Motion variants, so the project can test both without reauthoring animations.
 
-Current default after A1/A2:
+Current default after A1/A2/A3:
 
 - production candidates remain `applyRootMotion=false`
 - stationary emotes/sitting should prefer non-Root-Motion clips
@@ -477,54 +477,176 @@ The next meaningful risk is **physical world alignment**.
 
 ---
 
-# 11. Recommended next animation Gate — A3 SeatAnchor
+# 11. A3 — SeatAnchor + Real Chair Sit Alignment
+
+Status:
+
+> **Character Animation A3 — SEATANCHOR CONTRACT PASS / SINGLE-CHARACTER SINGLE-CHAIR VALIDATED**
+
+A3 tested Ming on the real D2 workstation chair and proved that the project can align a reusable Humanoid Sit animation to real Office geometry using explicit interaction data and Unity Animation Rigging rather than animation reauthoring or hidden scene offsets.
+
+Production `Office` remained unchanged.
+
+## 11.1 SeatAnchor contract
+
+The validated `SeatAnchor` explicitly contains:
+
+- `ApproachRoot`
+- `SeatedRoot`
+- `Facing`
+- `SeatHeight`
+- `PelvisTarget`
+- `LeftFootTarget`
+- `RightFootTarget`
+- `LeftKneeHint`
+- `RightKneeHint`
+- `GroundHeight`
+
+This confirms the architecture principle that seat interaction data belongs to the seat/world contract, not to arbitrary Animator offsets.
+
+## 11.2 Exact D2/Ming alignment measurements
+
+Validated measurements:
+
+- Approach root `(2.464194, 0, -1.811420)`
+- Seated root `(2.144194, 0.017824, -1.811420)`
+- entry distance `0.320496 m`
+- entry transition time `0.7 s`
+- Facing `(+1, 0, 0)`
+- physical seat-surface height `0.445 m`
+- Pelvis target `(2.080299, 0.700000, -1.825001)`
+- Left foot target `(2.446271, 0.035000, -1.773488)`
+- Right foot target `(2.681856, 0.035000, -1.863099)`
+- Ground height `0 m`
+- maximum single-frame root movement `0.019555 m`
+- character scale remained `(1,1,1)`
+
+These coordinates are evidence for the validated candidate, not a recommendation to hardcode this D2 world-space position as a universal seat implementation. Future seats should author the same data relative to their own anchor/root.
+
+## 11.3 Unity Animation Rigging setup
+
+A3 reused official Unity Animation Rigging instead of building a custom IK solver.
+
+Validated setup:
+
+- pelvis correction: `MultiPositionConstraint`
+- left leg: `TwoBoneIKConstraint`
+- right leg: `TwoBoneIKConstraint`
+- foot position weight `1.0`
+- foot rotation weight `0`
+- knee hint weight `0.65`
+- `applyRootMotion=false`
+
+Important principle:
+
+> Use the source Sit animation for body motion and Animation Rigging/IK only for world-contact correction.
+
+Do not bake chair-specific corrections back into the source animation unless a future case proves the generic rigging approach insufficient.
+
+## 11.4 PlayMode contact validation
+
+Measured PlayMode result:
+
+- pelvis target error `0.00000006 m`
+- left foot target error `0.0000415 m`
+- right foot target error `0.0000340 m`
+- left-foot horizontal sliding over 1 second `0 m`
+- right-foot horizontal sliding over 1 second `0 m`
+- blocking Console errors `0`
+
+This is strong evidence that the SeatAnchor + IK contract can provide stable seated contact without Root Motion or a custom solver.
+
+## 11.5 Known A3 limitation
+
+The tested Sit clip leaves the arms relatively open/wide.
+
+A3 explicitly did not include hand/arm IK, so this is not considered a failure of the seat-contact contract.
+
+Some feet are visually occluded by desk geometry from the project camera, but the target-error and sliding measurements passed.
+
+Hand/keyboard alignment should be solved only when a real seated-desk action such as Type requires it.
+
+## 11.6 Local A3 implementation artifacts
+
+Reported local files:
+
+- `Assets/FourWorkstations/Scripts/Characters/SeatAnchor.cs`
+- `Assets/FourWorkstations/Scripts/Characters/SeatSitController.cs`
+- `Assets/FourWorkstations/Scripts/Characters/AnimationA3PlayModeValidator.cs`
+- `Assets/FourWorkstations/Scripts/Editor/AnimationA3SeatCandidate.cs`
+- `Assets/FourWorkstations/Scenes/Candidates/AnimationA3Seat.unity`
+- Unity Animation Rigging `1.4.1` package in local project
+- corresponding `manifest.json` / `packages-lock.json` changes
+
+Evidence screenshots:
+
+- `outputs/unity-animation-a3/01-sit-entry.png`
+- `outputs/unity-animation-a3/02-sit-result.png`
+
+No production character replacement and no Unity code/assets commit/push occurred in A3.
+
+## 11.7 What A3 changes strategically
+
+The project has now validated three distinct layers:
+
+1. reusable external Humanoid animation is viable
+2. all four bodies can share one adapter/controller architecture
+3. at least one real furniture interaction can be aligned accurately with explicit world anchors + official Unity rig constraints
+
+Therefore sitting is no longer an unknown technical capability.
+
+The remaining question is **generalization**, not feasibility.
+
+The next useful test should determine whether the same SeatAnchor schema works across all four body proportions without turning into four manually bespoke animation systems.
+
+---
+
+# 12. Recommended next animation Gate — A4 Cross-Avatar Seat Calibration
 
 Next Gate:
 
-> **Character Animation A3 — SeatAnchor + Real Chair Sit Alignment**
+> **Character Animation A4 — Cross-Avatar Seat Calibration**
 
 Goal:
 
-Take one real workstation chair and one character first, and prove that the retargeted Sit animation can make believable physical contact with the actual Office geometry.
+Run Ming / Hong / Jie / Qixi through the same D2 SeatAnchor contract and quantify the minimum per-avatar calibration required.
 
-Why only one chair/one character first:
+Why this is the correct next test:
 
-- the alignment system matters more than duplicating the same experiment four times
-- once the contract is correct, apply it across all four characters/chairs and measure body-proportion differences
-- this avoids per-character hand-tuned offsets becoming the architecture
+- A1 already showed body proportions differ slightly, especially hip height
+- A3 proved the seat contract on Ming
+- the architecture should now distinguish **seat-authored data** from **avatar/body calibration data**
+- it is better to discover the calibration model now than to hand-tune every seat/character pair later
 
-Required `SeatAnchor` data should be explicit and reusable, not hidden as magic Animator offsets:
+The test should start from the exact same D2 SeatAnchor and shared Sit clip.
 
-- seat/root approach position
-- facing/orientation
-- seat surface height
-- pelvis/hip target or calibrated offset
-- left/right foot targets or foot-ground reference
-- optional exit/stand anchor if needed later
+Measure for each character:
 
-Recommended Unity-native correction path:
+- seated pelvis error / required pelvis offset
+- left/right foot target error
+- knee behavior
+- visible thigh/seat or foot/floor penetration
+- root/scale drift
+- foot sliding
+- whether facing/approach data can remain identical
 
-- use the already validated Humanoid Sit clip as the base motion
-- use Unity Animation Rigging only for contact correction rather than reauthoring the source animation
-- Two Bone IK is a suitable candidate for foot/leg target correction; Unity Animation Rigging is released for Unity 6 and should be evaluated in an isolated candidate before production adoption
-- do not add hand IK until a seated desk interaction actually needs it
+Preferred architecture if differences exist:
 
-A3 acceptance should focus on:
+`SeatAnchor (seat-specific world contract) + CharacterSeatProfile (small avatar-specific calibration)`
 
-- pelvis visually lands on the seat instead of floating/intersecting
-- feet reach believable ground/contact positions
-- facing aligns with the desk/chair contract
-- no visible root teleport during Sit entry
-- no scale drift
-- no severe foot sliding in PlayMode
-- the solution uses reusable anchor data, not character-specific hardcoded scene coordinates
+A `CharacterSeatProfile` may contain small normalized offsets such as pelvis-height correction or leg/foot calibration, but should not duplicate full seat coordinates for every character.
 
 Do not yet:
 
-- implement typing/drinking
-- add hand/keyboard IK
-- integrate the full animation library
-- replace all production characters before the single-chair contract is proven
-- change Office lighting/geometry merely to make the pose fit
+- implement typing or hand IK
+- test every chair in the Office
+- import more animation packs
+- replace production characters
+- convert seat calibration into per-character hardcoded world-space coordinates
+- change Office geometry or lighting
 
-After the one-chair contract passes, expand to all four current characters and quantify the necessary per-avatar calibration, if any.
+A4 should answer one narrow question:
+
+> Can one seat contract serve all four current characters with only small body-profile calibration?
+
+If yes, the seating architecture is ready to become a reusable interaction foundation. If no, identify exactly which body/constraint dimension breaks the shared contract before expanding further.
