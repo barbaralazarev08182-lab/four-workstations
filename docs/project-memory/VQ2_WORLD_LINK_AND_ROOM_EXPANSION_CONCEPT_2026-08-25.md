@@ -29,30 +29,58 @@ This remains compatible with the existing 1–4 player rule: additional players 
 
 ## 1.2 Important new long-term function
 
-At a sufficiently advanced construction stage, the central platform should gain the ability to display a **miniature model of another player's room**.
+At a sufficiently advanced construction stage, the central platform should gain the ability to display a **miniature model of another room belonging to a random stranger**.
 
 The intended experience is:
 
 - the player remains inside their own room;
 - the central structure presents another room as a miniature spatial model;
+- the target room is not selected from a friend list;
+- the target belongs to a stranger in the wider Four Workstations world;
 - the player can visually observe that room and what is happening there;
-- the observed room represents another real player / room state rather than being only decorative fiction.
+- the observed room represents another real room state rather than being only decorative fiction.
 
-The purpose of this idea is to connect players and rooms without requiring everyone to occupy the same physical game space.
+The purpose of this idea is to connect otherwise unrelated player rooms into one larger world structure without requiring everyone to occupy the same physical game space.
 
 This is currently one of the most important long-term product concepts under discussion.
 
 ---
 
-# 2. Room-to-room observation: first interaction boundary
+# 2. Anonymous room chain — Ouroboros topology
 
-## 2.1 Current first-stage rule
+## 2.1 Current topology idea
+
+The intended social/world structure is **not a friend graph**.
+
+The current user-stated direction is:
+
+> Rooms belonging to strangers are linked together globally like a snake biting its own tail — an Ouroboros-like closed chain.
+
+The important properties currently intended are:
+
+- the connected room belongs to a **stranger**, not a chosen friend;
+- room discovery should contain randomness / unpredictability;
+- players do not manually choose a known social target as the core behavior;
+- all participating rooms conceptually belong to one continuous closed world-link structure;
+- following the chain far enough would conceptually return to the starting point.
+
+This creates a very different social feeling from a conventional friend list, guild, lobby, or public MMO map.
+
+The current concept is closer to:
+
+`Room A -> Room B -> Room C -> ... -> Room N -> Room A`
+
+where the rooms are occupied by otherwise unrelated players / groups.
+
+The exact technical graph implementation is **not frozen** yet. The diagram above records the intended mental model: a global closed chain rather than a friendship network.
+
+## 2.2 First interaction boundary
 
 The first version of room-to-room connection should be **observation only**.
 
 At this stage the observing player may:
 
-- see another player's miniature room;
+- see the linked stranger room as a miniature;
 - observe its visible state;
 - observe what is happening there to the degree later supported by the system.
 
@@ -65,20 +93,42 @@ At this stage the observing player may **not**:
 
 This boundary is intentional. Deeper interaction can be designed later.
 
-## 2.2 Open questions
+## 2.3 Why anonymity matters
 
-The following are not decided yet:
+The current concept should not be interpreted as “friends, but selected randomly.”
 
-- how another room is selected;
-- whether the target is a friend, a known room, a random room, or another relationship;
-- whether one or several miniature rooms can be viewed;
-- whether the observed room must currently be online;
-- how live the representation should be;
+The anonymity / stranger relationship is part of the idea itself.
+
+Potential experiential qualities to protect during later design discussion include:
+
+- curiosity about an unknown room;
+- accidental discovery;
+- awareness that many other small rooms exist beyond one's own;
+- a sense that one's room is one node in a much larger continuous world;
+- indirect social presence without requiring prior relationships.
+
+These are design intentions to investigate, not yet measurable acceptance criteria.
+
+## 2.4 Open questions
+
+The following are still undecided:
+
+- whether every room has exactly one outgoing and one incoming room link;
+- whether the chain is directional or can be traversed/observed both ways;
+- whether the random stranger assignment is persistent or periodically reshuffled;
+- when reshuffling, if any, should happen;
+- how new rooms enter the closed chain;
+- how deleted/inactive rooms leave the chain;
+- whether offline rooms remain observable;
+- whether the system links player accounts or room instances as the canonical node;
+- whether one central platform can ever reveal more than the immediate linked room;
+- how live the miniature representation should be;
 - what exact room state is important enough to synchronize;
-- what later interaction between rooms should exist;
-- whether future systems allow messages, visits, gifts, exchanges, cooperative actions, or other forms of contact.
+- whether identity is hidden, partially visible, or eventually discoverable;
+- what later interaction between neighboring stranger rooms should exist;
+- whether future systems allow messages, gifts, exchanges, visits, cooperative actions, or other forms of contact.
 
-Do not treat any of those possibilities as approved features yet.
+Do not silently turn any of these open questions into implementation requirements.
 
 ---
 
@@ -227,7 +277,7 @@ Because these questions can affect major technical and visual architecture, no i
 
 Without freezing any world lore, the current concepts already create a useful spatial division:
 
-- **Center** — shared construction and future observation of other rooms.
+- **Center** — shared construction and anonymous connection to another room in the global chain.
 - **Open edge A** — character rest / edge sitting.
 - **Open edge B** — interaction with an unknown space through the fishing-like action.
 - **Walls** — physical access point for tasks/messages/information.
@@ -249,7 +299,8 @@ Already present:
 
 - shared construction;
 - visible physical progression;
-- later observation of another room.
+- later observation of a linked stranger room;
+- physical manifestation of the fact that the player's room belongs to a larger anonymous world-chain.
 
 Still open:
 
@@ -257,19 +308,41 @@ Still open:
 - how much of the game's room-to-room relationship should pass through it;
 - how construction stages relate to newly unlocked capabilities.
 
-## 8.2 What makes observing another room repeatedly interesting?
+## 8.2 What makes observing a stranger room repeatedly interesting?
 
-The project must eventually identify which visible changes carry social value.
+This question is now more specific than “what makes social observation interesting?” because the target is intentionally unknown.
 
-Possible categories to investigate later include room activity, construction state, player presence, room expansion, decoration/state changes, or other persistent differences.
+The project must eventually identify which visible changes make an unfamiliar room worth checking again.
+
+Possible categories to investigate later include room activity, construction state, player presence, room expansion, decoration/state changes, unusual events, or other persistent differences.
 
 These are research directions, not approved requirements.
 
 The key question is:
 
-> What does a player genuinely want to notice when looking at another real player's miniature room?
+> When a player looks into a stranger's miniature room, what creates enough curiosity to make that unknown room feel memorable rather than disposable?
 
-## 8.3 What is outside the room?
+A second related question is:
+
+> Should the same stranger room persist long enough for the player to gradually recognize it, or should the system emphasize repeated encounters with different unknown rooms?
+
+This remains open and is likely central to the eventual emotional identity of the feature.
+
+## 8.3 What does the Ouroboros chain mean to the player?
+
+The global closed-chain idea can exist as backend topology, as visible world lore, or both.
+
+Still open:
+
+- whether players know explicitly that all rooms form a closed loop;
+- whether they can ever perceive rooms beyond their immediate neighbor;
+- whether moving through/along the chain becomes possible later;
+- whether the chain has direction;
+- whether the closed-loop structure has any gameplay consequence beyond matchmaking/observation.
+
+The Ouroboros structure itself is now part of the current design direction; its player-facing expression is not yet frozen.
+
+## 8.4 What is outside the room?
 
 A complete lore answer is not currently required.
 
@@ -279,11 +352,12 @@ However, future design will eventually need enough spatial logic to support seve
 - sitting at those edges;
 - lowering a line into an unseen space;
 - expanding platforms outward;
-- observing other rooms from the central structure.
+- observing other rooms through the central structure;
+- the concept that many separated rooms still belong to one connected world structure.
 
 No answer is frozen yet.
 
-## 8.4 How should the room visually grow over months of use?
+## 8.5 How should the room visually grow over months of use?
 
 Two different forms of growth are now visible:
 
@@ -300,11 +374,11 @@ Existing VQ2 planning described Project Atlas primarily as the central shared co
 
 This discussion adds an important possible long-term destination:
 
-> The shared central construction may eventually become the mechanism through which a room can visually observe another player's miniature room.
+> The shared central construction may eventually become the mechanism through which each room observes another randomly linked stranger room in a global Ouroboros-like chain of rooms.
 
 This should be treated as a meaningful extension of the Atlas concept, but **not yet as an implementation specification**.
 
-The existing near-term Atlas Greybox work should therefore not automatically implement room networking, realtime observation, Supabase room mirroring, final art, or deep social interaction merely because this concept now exists.
+The existing near-term Atlas Greybox work should therefore not automatically implement global room topology, matchmaking, room networking, realtime observation, Supabase room mirroring, final art, or deep social interaction merely because this concept now exists.
 
 The concept needs further product discussion first.
 
@@ -340,7 +414,8 @@ Treat the following as the current strongest ideas:
 
 - shared gradual construction of the central platform;
 - solo-compatible construction;
-- later miniature observation of another player's room;
+- later miniature observation of a **random stranger room**, not a friend room;
+- all rooms conceptually linked into an **Ouroboros-like closed chain** rather than a friendship graph;
 - observation-only as the first room-to-room interaction stage;
 - replacing sofa-style rest with sitting on an open floor edge;
 - exploring a fishing-like action into the unknown from the other edge;
@@ -349,8 +424,14 @@ Treat the following as the current strongest ideas:
 
 ### B. Open design space
 
-All exact rules for networking, rewards, lore, expansion topology, room selection, messages, visiting, object transfer, and retrieved items remain open.
+Exact rules for chain direction, persistence/reshuffling, room identity exposure, offline behavior, networking, rewards, lore, expansion topology, messages, visiting, object transfer, and retrieved items remain open.
 
-### C. Implementation
+### C. Explicitly superseded interpretation
+
+Do **not** describe the room-observation system as a friend-world viewer or friend-list extension.
+
+The intended structure is anonymous/random stranger linkage within a global closed room chain.
+
+### D. Implementation
 
 No implementation work should begin from this concept document until a later discussion explicitly promotes a subset of these ideas into an implementation Gate.
