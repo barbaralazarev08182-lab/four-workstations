@@ -1,6 +1,6 @@
 # Four Workstations — Character Animation Research Memory
 
-> Status: LIVING / A1 AUDIT PASS / PRODUCTION ADAPTER OPEN  
+> Status: LIVING / A2 FOUNDATION PASS / SEATANCHOR OPEN  
 > Established: 2026-08-25  
 > Purpose: preserve character-animation capability findings, external reusable sources, retargeting constraints, and future implementation decisions for new ChatGPT conversations.
 
@@ -105,9 +105,9 @@ Do not choose Root Motion globally before locomotion architecture is defined.
 
 Quaternius currently provides both Root Motion and non-Root-Motion variants, so the project can test both without reauthoring animations.
 
-Current default after A1:
+Current default after A1/A2:
 
-- production characters remain `applyRootMotion=false`
+- production candidates remain `applyRootMotion=false`
 - stationary emotes/sitting should prefer non-Root-Motion clips
 - click-to-move/pathfinding should likely let gameplay/navigation own translation, with in-place locomotion animation
 - Root Motion can be evaluated later for isolated authored interactions if it provides a clear benefit
@@ -358,32 +358,173 @@ Do not estimate a workstation interaction only by the animation clip cost.
 
 ---
 
-# 10. Recommended next animation Gate
+# 10. A2 — Production Humanoid Adapter Foundation
 
-Next recommended Gate:
+Status:
 
-> **Character Animation A2 — Production Humanoid Adapter Foundation**
+> **Character Animation A2 — FOUNDATION PASS / PRODUCTION REPLACEMENT NOT YET DONE**
+
+A2 turned the audit-only concept into a reusable isolated production candidate without replacing the live production Prefabs or Office characters.
+
+## 10.1 Four-character Avatar result
+
+Ming / Hong / Jie / Qixi all produced Humanoid Avatars with:
+
+- `valid=true`
+- `human=true`
+
+All four use the same deterministic hierarchy-repair and bone-mapping rules.
+
+Preserved across all candidates:
+
+- visual appearance
+- root scale `(1,1,1)`
+- orientation
+
+Production character Prefabs and Office instances were deliberately not replaced in this Gate.
+
+## 10.2 Idle / Walk regression result
+
+The shared animation architecture preserved the existing locomotion contract:
+
+- shared `Speed` parameter
+- Idle <-> Walk transition behavior retained
+- `CharacterAnimationDriver` contract retained
+- root delta `0` for all four characters
+- scale drift `0`
+- `applyRootMotion=false`
+
+The isolated candidate uses Quaternius Humanoid Idle/Walk clips only for validation; the full animation library was not imported.
+
+Conclusion:
+
+> The Humanoid adapter does not require abandoning the existing gameplay-facing `Speed` animation contract.
+
+## 10.3 Interact / Sit result
+
+`Interact`:
+
+- 4/4 PASS
+- no obvious shoulder/elbow/wrist failure
+- no obvious hip/knee failure
+- no obvious mesh deformation regression
+
+`Sit`:
+
+- 4/4 retarget PASS
+- still intentionally lacks `SeatAnchor` / IK
+- suspension/seat-alignment problems remain expected and are not an A2 failure
+
+This confirms that the shared Adapter + shared Controller architecture works for both locomotion and isolated full-body/emote actions.
+
+## 10.4 Shared Controller candidate
+
+Current candidate structure:
+
+`Base Locomotion + Candidate Actions`
+
+Parameters:
+
+- `Speed`
+- `Interact`
+- `Sit`
+
+States:
+
+- Idle
+- Walk
+- Interact
+- Sit
+
+All four candidate characters share the same Controller.
+
+Interact/Sit return to Idle after completion.
+
+This is intentionally still small. Do not import or wire the full external animation library simply because the architecture now supports it.
+
+## 10.5 A2 implementation artifacts
+
+Local candidate files reported:
+
+- `Assets/FourWorkstations/Scripts/Characters/CharacterHumanoidAdapter.cs`
+- `Assets/FourWorkstations/Scripts/Editor/AnimationA2Candidate.cs`
+- `Assets/FourWorkstations/Audit/AnimationA2`
+- `Assets/FourWorkstations/Prefabs/Characters/Candidates`
+- `tools/blender/extract_animation_a1_clips.py`
+
+Validation screenshots:
+
+- `outputs/unity-animation-a2/01-interact.png`
+- `outputs/unity-animation-a2/02-sit.png`
+
+Console/script validation:
+
+- script compilation PASS
+- blocking Console errors `0`
+- no commit/push
+
+## 10.6 What A2 actually solves
+
+A2 closes the architecture uncertainty around reusable humanoid animation.
+
+The project now has evidence for the following chain:
+
+`shared deterministic hierarchy Adapter -> 4 valid Humanoid Avatars -> shared Controller -> shared external Humanoid clips`
+
+Therefore the next meaningful risk is no longer retargeting architecture.
+
+The next meaningful risk is **physical world alignment**.
+
+---
+
+# 11. Recommended next animation Gate — A3 SeatAnchor
+
+Next Gate:
+
+> **Character Animation A3 — SeatAnchor + Real Chair Sit Alignment**
 
 Goal:
 
-Turn the proven audit-only adapter strategy into a small reusable production foundation without yet building a large animation feature set.
+Take one real workstation chair and one character first, and prove that the retargeted Sit animation can make believable physical contact with the actual Office geometry.
 
-A2 should:
+Why only one chair/one character first:
 
-- implement one deterministic shared adapter rule set for all four existing characters
-- generate/assign valid Humanoid Avatars for all four in an isolated production candidate path
-- preserve current appearance, scale, orientation and Idle/Walk behavior
-- prepare one shared base Animator Controller architecture
-- integrate only a tiny verified animation set for validation (for example Interact + Sit)
-- keep `applyRootMotion=false`
-- avoid SeatAnchor/IK gameplay implementation until the adapter foundation itself is proven stable
+- the alignment system matters more than duplicating the same experiment four times
+- once the contract is correct, apply it across all four characters/chairs and measure body-proportion differences
+- this avoids per-character hand-tuned offsets becoming the architecture
 
-A2 should not:
+Required `SeatAnchor` data should be explicit and reusable, not hidden as magic Animator offsets:
 
-- import the entire Quaternius library
-- rewrite locomotion gameplay
-- alter Office geometry/lighting
-- permanently replace production character assets before visual/behavior validation
-- commit/push before review
+- seat/root approach position
+- facing/orientation
+- seat surface height
+- pelvis/hip target or calibrated offset
+- left/right foot targets or foot-ground reference
+- optional exit/stand anchor if needed later
 
-After A2 passes, the next interaction-focused step should be a real `SeatAnchor` test on one workstation/chair, because Sit already proved that spatial alignment — not clip retargeting — is the next meaningful problem.
+Recommended Unity-native correction path:
+
+- use the already validated Humanoid Sit clip as the base motion
+- use Unity Animation Rigging only for contact correction rather than reauthoring the source animation
+- Two Bone IK is a suitable candidate for foot/leg target correction; Unity Animation Rigging is released for Unity 6 and should be evaluated in an isolated candidate before production adoption
+- do not add hand IK until a seated desk interaction actually needs it
+
+A3 acceptance should focus on:
+
+- pelvis visually lands on the seat instead of floating/intersecting
+- feet reach believable ground/contact positions
+- facing aligns with the desk/chair contract
+- no visible root teleport during Sit entry
+- no scale drift
+- no severe foot sliding in PlayMode
+- the solution uses reusable anchor data, not character-specific hardcoded scene coordinates
+
+Do not yet:
+
+- implement typing/drinking
+- add hand/keyboard IK
+- integrate the full animation library
+- replace all production characters before the single-chair contract is proven
+- change Office lighting/geometry merely to make the pose fit
+
+After the one-chair contract passes, expand to all four current characters and quantify the necessary per-avatar calibration, if any.
