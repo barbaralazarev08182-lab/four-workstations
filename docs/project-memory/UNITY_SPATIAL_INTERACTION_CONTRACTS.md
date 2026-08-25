@@ -266,7 +266,48 @@ These require more advanced rigging, warping, IK, or bespoke animation support.
 
 ---
 
-# 11. Permanent acceptance principle
+# 11. Speed / efficiency baseline for simple placement tasks
+
+The project should treat simple deterministic placement as a **fast machine task**, not a visual iteration task.
+
+Examples:
+
+- add a flower pot to a specific desk;
+- place a cup on a tabletop;
+- place a lamp on a known surface;
+- attach a prop to an existing socket.
+
+Once the scene is loaded and the asset is already imported/normalized, the expected Agent workflow should normally be a single short pass:
+
+`identify target -> query geometry/socket -> calculate transform -> place -> validate contact`
+
+For this class of task, the working benchmark is **seconds-level to very short execution**, potentially on the order of tens of seconds when the necessary geometric data is already available. The project should not accept repeated screenshot-driven XYZ tuning as normal work for such cases.
+
+Important distinction:
+
+- editor startup, asset download/import, shader compilation, or first-time asset normalization are separate costs;
+- the **placement itself** should remain deterministic and cheap.
+
+If a supposedly simple placement takes repeated iterations, the Agent should first diagnose the missing contract:
+
+- no usable collider;
+- bad pivot/origin;
+- missing `BottomContact` / `TopSurface` / socket;
+- merged geometry without semantic target;
+- local/world transform confusion;
+- scale/orientation mismatch.
+
+The preferred fix is to create or expose the missing reusable spatial contract once, then reuse it for all later placements.
+
+Permanent efficiency principle:
+
+> Do not spend human review cycles solving a coordinate problem that the scene geometry can solve numerically.
+
+This speed baseline should be reflected in future Agent/Codex prompts for modeling, prop placement, scene assembly, and interaction setup.
+
+---
+
+# 12. Permanent acceptance principle
 
 > If a task has a physically meaningful contact relation, the project should define and validate that relation numerically before judging it visually.
 
