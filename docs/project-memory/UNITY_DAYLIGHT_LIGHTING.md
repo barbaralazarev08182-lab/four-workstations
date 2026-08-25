@@ -392,3 +392,42 @@ After production integration, verify a production 1920x1080 screenshot against t
 > **Unity Day Lighting — FINAL / FROZEN**
 
 `FINAL / FROZEN` remains a baseline-management term, not a permanent prohibition on future changes. Future lighting variants or improvements may reopen a new explicit Lighting Gate while preserving this baseline as the rollback/reference point.
+
+## 10. Production promotion — complete
+
+`Lighting L1R-PROMOTE — PASS`
+
+The validated L1R-FINAL high-quality Day lighting has been promoted into the production scene:
+
+`Assets/FourWorkstations/Scenes/Office/Office.unity`
+
+Promotion verification:
+
+- production `Office.unity` and the approved Final Candidate are pixel-identical: `mean difference = 0`
+- rear-wall black rectangle artifacts did not return
+- all four permanent desk tops remain light warm wood/beige
+- Console blocking errors: `0`
+- no rebake was performed during promotion
+- no artistic/technical parameter was retuned during promotion
+- no geometry, UV, material, camera, transform, AA, or gameplay changes were introduced
+- Unity production changes remain uncommitted/unpushed unless explicitly authorized later
+
+Final status:
+
+> **Unity Day Lighting — FINAL / FROZEN**
+
+This closes the current Day-lighting migration work. No further Day-lighting task is required unless a future explicit Lighting Gate is opened for a new artistic direction, weather/time-of-day variant, new permanent asset integration, or a verified regression.
+
+The frozen baseline includes the full chain of verified contracts:
+
+- approved whole-world orientation and camera
+- 4x MSAA edge-quality baseline
+- G1B polished workstation geometry and valid desk UV1
+- L1R-A corrected non-overlapping UV1 for `Runtime_Arch`, `Runtime_DiningTable`, and `Runtime_MeetingTable`
+- L1R-B desk ordered material-slot mapping `[wood, metal, dark]`
+- L1R-C approved Day artistic settings
+- L1R-FINAL 256/256/256 high-quality bake
+- 45 valid Light Probes
+- artifact-free permanent surfaces in production `Office.unity`
+
+`FINAL / FROZEN` is a rollback/reference baseline, not a prohibition on future improvement. Future changes must be deliberate and compared against this known-good production state.
