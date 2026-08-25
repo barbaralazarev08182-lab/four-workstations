@@ -27,9 +27,25 @@ Key rules currently intended:
 
 This remains compatible with the existing 1–4 player rule: additional players may accelerate or enrich progress, but solo play must remain viable.
 
-## 1.2 Important new long-term function
+## 1.2 Observation must be earned through construction
 
-At a sufficiently advanced construction stage, the central platform should gain the ability to display a **miniature model of another room belonging to a stranger**.
+The linked stranger room should **not be visible from the beginning**.
+
+Current intended progression:
+
+1. The room begins with an incomplete central platform / device.
+2. Players gradually construct and refine it.
+3. Only after the platform reaches a sufficient construction stage does the ability to reveal another world become available.
+4. At first, the newly revealed external-room function is **observation only**.
+5. At later construction/progression stages, the project may unlock ways to influence the linked world.
+
+This means the first appearance of another real player's world is itself a progression reward and a major world-expansion moment, rather than a default menu feature available on day one.
+
+The exact construction threshold, number of stages, pacing, and resource requirements are still open.
+
+## 1.3 Important long-term function
+
+At the observation-unlock stage, the central platform should display a **miniature model of another room belonging to a stranger**.
 
 The intended experience is:
 
@@ -77,9 +93,9 @@ where the rooms are occupied by otherwise unrelated players / groups, and the ne
 
 The exact technical graph implementation is **not frozen** yet. The diagram above records the intended mental model: a global closed chain with persistent stranger adjacency rather than a friendship network or a rotating random-room feed.
 
-## 2.2 First interaction boundary
+## 2.2 First interaction boundary — observation only
 
-The first version of room-to-room connection should be **observation only**.
+When the external-room function first unlocks, it should be **observation only**.
 
 At this stage the observing player may:
 
@@ -94,9 +110,26 @@ At this stage the observing player may **not**:
 - directly transmit information to that room through this system;
 - otherwise interfere with the other player's space.
 
-This boundary is intentional. Deeper interaction can be designed later.
+This boundary is intentional. Deeper interaction belongs to later progression.
 
-## 2.3 Why anonymity + persistence matter
+## 2.3 The observed room knows it is being observed, but not by whom
+
+A new explicit rule is now part of the current design direction:
+
+> When one room is actively observing another room through the world-link system, the observed room can know that it is being observed, but it does not know the identity of the observer.
+
+Therefore:
+
+- observation is **not invisible surveillance**;
+- the target receives some form of awareness that an external room is currently looking in / connected through observation;
+- the observer's account, room identity, name, or exact origin is not revealed at this stage;
+- anonymity remains preserved even though observation itself is perceptible.
+
+The exact visual/audio/UI expression of “someone is observing this room” is not decided yet.
+
+This rule reinforces the ring concept: each room exists inside a larger connected structure, but the people occupying adjacent nodes do not begin with conventional social identity disclosure.
+
+## 2.4 Why anonymity + persistence matter
 
 The current concept should not be interpreted as “friends, but selected randomly.”
 
@@ -114,27 +147,56 @@ Potential experiential qualities to protect during later design discussion inclu
 - noticing long-term changes in that room;
 - awareness that many other small rooms exist beyond one's own;
 - a sense that one's room is one fixed node in a much larger continuous world;
-- indirect social presence without requiring prior relationships.
+- indirect social presence without requiring prior relationships;
+- the subtle tension of knowing that an unknown room may also be aware when observation is happening.
 
 These are design intentions to investigate, not yet measurable acceptance criteria.
 
-## 2.4 Open questions
+## 2.5 Later progression: costly influence on another world
+
+The project now has another explicit long-term direction:
+
+> After observation has existed as the initial room-to-room capability, later progression should eventually allow a player/room to **influence the linked stranger world** in some way.
+
+This influence is **not free**.
+
+A fundamental rule is:
+
+> Affecting another world must require a meaningful cost, sacrifice, resource expenditure, risk, cooldown, opportunity cost, or other form of price.
+
+The reason for the cost is not yet formalized, but the design intent is clear: influencing another person's persistent room should feel consequential rather than becoming frictionless spam.
+
+At this point, the following are **not decided**:
+
+- what “influence” actually means;
+- whether influence is always helpful, neutral, ambiguous, or can have negative consequences;
+- whether it changes objects, environment, events, resources, temporary states, or something else;
+- whether the effect is immediate or delayed;
+- whether the target can refuse, resist, redirect, or respond;
+- whether repeated influence creates a relationship over time;
+- what exact cost is paid;
+- whether the cost comes from Coins, Build Charge, a new scarce resource, time, progression, a constructed device, or another system;
+- whether influence reveals any additional information about the observer.
+
+Do not infer conventional messaging, gifting, griefing, PvP, or direct object editing from the word “influence.” Those remain separate possibilities and are not approved.
+
+## 2.6 Open topology/system questions
 
 The following are still undecided:
 
 - whether every room has exactly one outgoing and one incoming room link;
-- whether the chain is directional or can be traversed/observed both ways;
+- whether the chain is directional or can be observed/influenced both ways;
 - how new rooms enter the closed chain while preserving persistent adjacency;
 - how deleted or permanently inactive rooms leave the chain;
 - what happens to neighboring links when a room must be removed from the chain;
 - whether offline rooms remain observable;
+- whether influence can occur while the target is offline;
 - whether the system links player accounts or room instances as the canonical node;
 - whether one central platform can ever reveal more than the immediate linked room;
 - how live the miniature representation should be;
 - what exact room state is important enough to synchronize;
-- whether identity is hidden, partially visible, or eventually discoverable;
-- what later interaction between neighboring stranger rooms should exist;
-- whether future systems allow messages, gifts, exchanges, visits, cooperative actions, or other forms of contact.
+- whether identity is always hidden, partially visible later, or eventually discoverable;
+- what later interaction between neighboring stranger rooms should exist beyond the general “costly influence” direction.
 
 Do not silently turn any of these open questions into implementation requirements.
 
@@ -285,7 +347,7 @@ Because these questions can affect major technical and visual architecture, no i
 
 Without freezing any world lore, the current concepts already create a useful spatial division:
 
-- **Center** — shared construction and persistent anonymous connection to another room in the global chain.
+- **Center** — shared construction; later unlock of persistent anonymous observation; eventually possible costly influence on the linked room.
 - **Open edge A** — character rest / edge sitting.
 - **Open edge B** — interaction with an unknown space through the fishing-like action.
 - **Walls** — physical access point for tasks/messages/information.
@@ -307,18 +369,23 @@ Already present:
 
 - shared construction;
 - visible physical progression;
+- observation only unlocks after sufficient construction;
 - later observation of a fixed linked stranger room;
-- physical manifestation of the fact that the player's room belongs to a larger anonymous world-chain.
+- the target knows it is being observed but does not know who the observer is;
+- later progression should support some form of costly influence on the linked world;
+- the device physically manifests the fact that the player's room belongs to a larger anonymous world-chain.
 
 Still open:
 
 - whether it is the primary long-term progression object of the whole room;
+- exact construction stages;
+- how quickly the first external world becomes visible;
 - how much of the game's room-to-room relationship should pass through it;
-- how construction stages relate to newly unlocked capabilities.
+- which later capabilities unlock from additional construction stages.
 
 ## 8.2 What makes observing the same stranger room repeatedly interesting?
 
-This question is now specifically about **persistent familiarity with an initially unknown room**.
+This question is specifically about **persistent familiarity with an initially unknown room**.
 
 The player is not expected to receive a disposable new random room every day. Instead, the same linked stranger room remains present long enough for its identity and changes to accumulate meaning.
 
@@ -332,7 +399,46 @@ The key question is:
 
 > What can change in a fixed stranger room so that the player gradually recognizes it and becomes curious about its continuing life, without turning the relationship into a conventional friend system?
 
-## 8.3 What does the Ouroboros chain mean to the player?
+## 8.3 What should “being observed” feel like?
+
+The target is explicitly aware of observation, while observer identity remains hidden.
+
+Future design needs to determine the emotional tone of that awareness.
+
+It could feel:
+
+- curious;
+- slightly mysterious;
+- socially present;
+- potentially tense;
+- reassuring that another world is out there.
+
+No exact presentation is approved yet.
+
+Important constraint:
+
+> The awareness mechanic should communicate connection without accidentally making the system feel like covert surveillance or harassment.
+
+## 8.4 What kind of influence is worth paying for?
+
+Because later cross-world influence must have a cost, the effect needs enough meaning to justify that cost.
+
+Future design should compare categories such as:
+
+- subtle environmental changes;
+- temporary events;
+- beneficial assistance;
+- ambiguous surprises;
+- persistent traces;
+- changes that create a response opportunity.
+
+These are discussion categories only.
+
+The core unresolved question is:
+
+> What can one anonymous neighboring room do to another that feels meaningful, visible, and worth a price, while still respecting ownership of the target room?
+
+## 8.5 What does the Ouroboros chain mean to the player?
 
 The global closed-chain idea can exist as backend topology, as visible world lore, or both.
 
@@ -342,11 +448,12 @@ Still open:
 - whether they can ever perceive rooms beyond their immediate neighbor;
 - whether moving through/along the chain becomes possible later;
 - whether the chain has direction;
-- whether the closed-loop structure has any gameplay consequence beyond fixed adjacency/observation.
+- whether influence follows the same direction as observation;
+- whether the closed-loop structure has any gameplay consequence beyond fixed adjacency/observation/influence.
 
 The Ouroboros structure itself and persistent stranger adjacency are now part of the current design direction; their player-facing expression is not yet frozen.
 
-## 8.4 What is outside the room?
+## 8.6 What is outside the room?
 
 A complete lore answer is not currently required.
 
@@ -361,7 +468,7 @@ However, future design will eventually need enough spatial logic to support seve
 
 No answer is frozen yet.
 
-## 8.5 How should the room visually grow over months of use?
+## 8.7 How should the room visually grow over months of use?
 
 Two different forms of growth are now visible:
 
@@ -376,13 +483,17 @@ The balance between these two forms of long-term growth remains open.
 
 Existing VQ2 planning described Project Atlas primarily as the central shared construction project.
 
-This discussion adds an important possible long-term destination:
+This discussion adds an important long-term progression path:
 
-> The shared central construction may eventually become the mechanism through which each room observes a persistently linked stranger room in a global Ouroboros-like chain. The stranger adjacency is assigned without a pre-existing social relationship and then remains fixed.
+> Build the shared central structure -> reach a sufficient stage -> reveal a persistently linked stranger room -> initially observe only -> later unlock a costly ability to influence that linked world.
+
+The stranger adjacency is assigned without a pre-existing social relationship and then remains fixed.
+
+The observed room knows that observation is occurring, while the observer's identity remains hidden.
 
 This should be treated as a meaningful extension of the Atlas concept, but **not yet as an implementation specification**.
 
-The existing near-term Atlas Greybox work should therefore not automatically implement global room topology, matchmaking, room networking, realtime observation, Supabase room mirroring, final art, or deep social interaction merely because this concept now exists.
+The existing near-term Atlas Greybox work should therefore not automatically implement global room topology, matchmaking, room networking, realtime observation, observation notifications, cross-world influence, Supabase room mirroring, final art, or deep social interaction merely because this concept now exists.
 
 The concept needs further product discussion first.
 
@@ -418,10 +529,14 @@ Treat the following as the current strongest ideas:
 
 - shared gradual construction of the central platform;
 - solo-compatible construction;
+- **another world does not appear immediately; the platform must first be built to a sufficient stage**;
 - later miniature observation of a **stranger room**, not a friend room;
 - the stranger-room adjacency is **randomly assigned initially, then fixed/persistent**;
 - all rooms conceptually linked into an **Ouroboros-like closed chain** rather than a friendship graph or rotating discovery feed;
-- observation-only as the first room-to-room interaction stage;
+- the first unlocked cross-world capability is **observation only**;
+- the **observed room knows it is being observed, but does not know who the observer is**;
+- later progression should unlock **some way to influence the linked stranger world**;
+- **cross-world influence must carry a meaningful cost**;
 - replacing sofa-style rest with sitting on an open floor edge;
 - exploring a fishing-like action into the unknown from the other edge;
 - physical wall board for tasks/messages/information;
@@ -429,13 +544,13 @@ Treat the following as the current strongest ideas:
 
 ### B. Open design space
 
-Exact rules for chain direction, chain insertion/removal, room identity exposure, offline behavior, networking, rewards, lore, expansion topology, messages, visiting, object transfer, and retrieved items remain open.
+Exact rules for construction thresholds, chain direction, chain insertion/removal, observation presentation, room identity exposure, offline behavior, networking, the form/cost/consequences of influence, rewards, lore, expansion topology, messages, visiting, object transfer, and retrieved items remain open.
 
 ### C. Explicitly superseded interpretation
 
-Do **not** describe the room-observation system as a friend-world viewer, friend-list extension, or a random room that refreshes every day/session.
+Do **not** describe the room-observation system as a friend-world viewer, friend-list extension, a random room that refreshes every day/session, or an anonymous observation system in which the target has no awareness of being watched.
 
-The intended structure is anonymous stranger linkage with persistent adjacency inside a global closed room chain.
+The intended structure is anonymous stranger linkage with persistent adjacency inside a global closed room chain, with visible awareness of observation but hidden observer identity.
 
 ### D. Implementation
 
