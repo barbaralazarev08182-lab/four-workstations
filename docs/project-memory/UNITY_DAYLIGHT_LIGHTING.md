@@ -304,3 +304,91 @@ Rules for final bake:
 - compare final 1920x1080 screenshot directly against the approved L1R-C candidate
 - if the high-quality bake materially changes brightness, shadow composition, desk color, or surface continuity, do not auto-promote; diagnose the bake difference
 - only after final Human Visual PASS may Day Lighting be marked FINAL/FROZEN
+
+## 9. L1R-FINAL — high-quality bake Human Visual PASS
+
+`Lighting L1R-FINAL — MACHINE PASS / HUMAN VISUAL PASS`
+
+The high-quality candidate retained the approved L1R-C visual direction without material drift or artifact regression.
+
+Final candidate bake quality:
+
+- Direct `256` samples
+- Indirect `256` samples
+- Environment `256` samples
+- max lightmap `4096`
+- padding `8 px`
+- resolution `24 texels/m`
+- bounces `2`
+- lightmaps `1`
+- Light Probes `45`, valid
+
+The approved L1R-C artistic settings remained unchanged:
+
+- Sun intensity `1.38`
+- Sun color `(1.00, 0.975, 0.94)`
+- Ambient Sky `(0.49, 0.50, 0.50)`
+- Ambient Equator `(0.33, 0.33, 0.32)`
+- Ambient Ground `(0.16, 0.16, 0.155)`
+- Figure 3-aligned sun direction and long-shadow composition preserved
+
+Reported comparison against the approved L1R-C screenshot:
+
+- mean absolute pixel difference `0.635 / 255`
+- pixels with difference greater than `8`: `1.85%`
+- no material change in brightness hierarchy, shadow structure, desk color, or permanent-surface continuity
+
+Human visual review of the supplied 1920x1080 FINAL candidate confirms:
+
+- the image is visually consistent with the approved L1R-C candidate
+- left-side sunlight remains clean and restrained
+- rear/right shaded region remains readable and neutral enough for gameplay
+- long directional shadows remain intact
+- furniture/ground contact depth remains intact
+- all four permanent desk tops remain light warm wood/beige
+- rear-wall black rectangles do not return
+- floor, walls, desks, dining table and meeting table show no new visible bake artifact
+- the intended architectural-miniature/model-photography character remains intact
+
+Therefore the Day lighting **visual and bake-quality Gate is complete**.
+
+### Promotion state
+
+The validated high-quality candidate scene is:
+
+`Assets/FourWorkstations/Scenes/Candidates/Office_L1R_Final_High_Quality_Candidate.unity`
+
+At the time of this review, production `Office.unity` has **not yet been overwritten/promoted** and the Unity candidate has not been committed/pushed.
+
+So use the following precise status:
+
+> **Unity Day Lighting — FINAL VISUAL BASELINE APPROVED / PRODUCTION PROMOTION PENDING**
+
+Do not call production Day lighting `FROZEN` until the exact validated candidate is promoted into the intended production scene/assets and verified one final time with no drift.
+
+### Promotion Gate rules
+
+Next Gate should be a narrow promotion-only step:
+
+`Lighting L1R-PROMOTE — Production Integration`
+
+Must preserve exactly:
+
+- all L1R-C artistic values
+- 256/256/256 final bake quality
+- L1R-A corrected permanent-surface UV1
+- L1R-B ordered desk material-slot mapping `[wood, metal, dark]`
+- G1B workstation geometry/UV1
+- camera/world orientation
+- transforms
+- materials
+- 4x MSAA
+- gameplay
+
+Promotion must not include new artistic tuning.
+
+After production integration, verify a production 1920x1080 screenshot against this approved FINAL candidate. If visually equivalent and Console blocking errors remain zero, then mark:
+
+> **Unity Day Lighting — FINAL / FROZEN**
+
+`FINAL / FROZEN` remains a baseline-management term, not a permanent prohibition on future changes. Future lighting variants or improvements may reopen a new explicit Lighting Gate while preserving this baseline as the rollback/reference point.
