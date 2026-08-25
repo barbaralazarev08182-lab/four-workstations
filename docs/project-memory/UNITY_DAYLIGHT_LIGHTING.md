@@ -243,3 +243,64 @@ Potential review axes:
 Do not change several parameters at once without before/after evidence.
 
 A 256-sample final bake remains deferred until L1R-C receives Human Visual PASS.
+
+## 8. L1R-C — Figure 3 fine match
+
+`Lighting L1R-C — HUMAN VISUAL PASS FOR DAYLIGHT DIRECTION`
+
+Only the following lighting values changed from the previous accepted L1R-B candidate:
+
+- Sun intensity `1.55 -> 1.38`
+- Sun color `(1.00, 0.93, 0.82) -> (1.00, 0.975, 0.94)`
+- Ambient Sky `(0.46, 0.48, 0.48) -> (0.49, 0.50, 0.50)`
+- Ambient Equator `(0.29, 0.29, 0.27) -> (0.33, 0.33, 0.32)`
+- Ambient Ground `(0.13, 0.12, 0.105) -> (0.16, 0.16, 0.155)`
+
+Everything else remained contractually fixed:
+
+- camera/world orientation
+- G1B workstation geometry and UV1
+- L1R-A corrected permanent-surface UV1
+- L1R-B desk material-slot mapping
+- materials
+- transforms
+- 4x MSAA
+- gameplay
+
+Reported technical validation:
+
+- low-cost bake only
+- no 256-sample final bake
+- Console blocking errors `0`
+- no commit/push of the Unity candidate
+
+Human visual review of the supplied 1920x1080 candidate:
+
+- left-wall/floor direct-light region is less yellow and less clipped than L1R-B
+- rear/right shaded region is more neutral and more readable without becoming flat
+- long directional cast shadows remain intact
+- furniture/ground contact depth remains intact
+- four desk tops retain the accepted light warm wood/beige appearance
+- rear-wall black rectangles do not return
+- floor/walls/desks/dining table/meeting table show no new visible bake artifact
+- overall image still reads as the intended architectural-miniature/model-photography daylight
+
+Compared with the historical Figure 3 reference, L1R-C is slightly softer/more filled in the dark region, but this is accepted because it improves in-game readability without losing the reference's defining sunlight direction, long-shadow structure, contrast hierarchy, or material identity.
+
+Therefore the low-cost Day lighting direction is visually approved.
+
+The **final Day Lighting baseline is not yet frozen** until the same direction survives the final high-quality bake without visual drift or artifact regression.
+
+Next Gate:
+
+`Lighting L1R-FINAL — High-Quality Bake and Promotion`
+
+Rules for final bake:
+
+- preserve the exact L1R-C artistic settings; do not continue creative retuning during the final bake Gate
+- raise bake quality/samples only
+- preserve all verified UV/material/geometry/camera contracts
+- validate permanent surfaces for artifact regression
+- compare final 1920x1080 screenshot directly against the approved L1R-C candidate
+- if the high-quality bake materially changes brightness, shadow composition, desk color, or surface continuity, do not auto-promote; diagnose the bake difference
+- only after final Human Visual PASS may Day Lighting be marked FINAL/FROZEN
