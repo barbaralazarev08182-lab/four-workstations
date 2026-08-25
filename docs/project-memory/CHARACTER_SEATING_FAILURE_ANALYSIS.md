@@ -1,8 +1,8 @@
 # Four Workstations — Seating Failure Analysis and Corrective Rules
 
-> Status: LIVING / CORRECTIVE MEMORY  
+> Status: LIVING / A3R ROOT CAUSE VERIFIED / FIXES OPEN  
 > Established: 2026-08-25  
-> Purpose: preserve the failure analysis after A3/A3.5 so future conversations do not repeat the mistake of treating low constraint error as proof of a visually correct seated interaction.
+> Purpose: preserve the failure analysis after A3/A3.5/A3R so future conversations do not repeat the mistake of treating low constraint error as proof of a visually correct seated interaction.
 
 ## 1. Correction to prior interpretation
 
@@ -52,10 +52,10 @@ A pelvis/hips bone is an internal skeletal reference point, not the visible lowe
 
 In A3:
 
-- physical seat surface height: `0.445 m`
-- pelvis target Y: `0.700 m`
+- nominal `seatHeight` was treated as `0.445 m`
+- pelvis target Y was `0.700 m`
 
-A near-zero pelvis error only proves that the pelvis bone reached `0.700 m`; it does not prove that the rendered body surface touched the seat at `0.445 m`.
+A near-zero pelvis error only proves that the pelvis bone reached its requested target; it does not prove that the rendered body surface touched the actual seat cushion.
 
 The visible contact offset depends on the avatar's bind pose, body proportions, skin weights, seated hip rotation, and the source clip pose.
 
@@ -69,8 +69,9 @@ The A3 contract contains approach, seated root, facing, seat height, pelvis targ
 
 That is sufficient to control a root/pelvis/feet skeleton solution, but it does not explicitly encode:
 
-- seat plane / usable seat depth
-- front edge / rear edge of seat
+- actual seat top plane
+- usable seat depth
+- front/rear seat edges
 - chair-back plane
 - desired pelvis rotation
 - desired spine lean
@@ -98,9 +99,9 @@ This is expected behavior; the validation mistake was interpreting endpoint accu
 
 A valid Humanoid Avatar proves Unity accepts the mapping. It does not prove that the retarget result has ideal visual quality.
 
-Unity Humanoid retargeting uses a `HumanDescription` / muscle-space representation that includes arm/leg stretch and twist distribution parameters. These parameters, along with the generated avatar's reference pose and bone axes, affect how source poses appear on the target body.
+Unity Humanoid retargeting depends on the reference pose, HumanDescription mapping, bone axes, finger mapping, and stretch/twist settings.
 
-For the Four Workstations adapter, future validation must inspect more than `isValid/isHuman`:
+Future validation must inspect more than `isValid/isHuman`:
 
 - reference/T-pose quality
 - local bone axes after hierarchy repair
@@ -108,8 +109,6 @@ For the Four Workstations adapter, future validation must inspect more than `isV
 - stretch values
 - hand/finger mapping and finger rest pose
 - pelvis/hip orientation in the generated Humanoid avatar
-
-If hand/finger deformation persists across unrelated source clips, treat it as a retarget/avatar calibration problem rather than repeatedly rejecting animation clips.
 
 ### 3.5 Source clip suitability and retarget quality are separate questions
 
@@ -122,7 +121,7 @@ UAL findings so far:
 - `Sitting_Talking_Loop`: more alive but arms occupy the workspace and conflict with future typing/drinking overlays
 - `Sitting_Exit`: exit transition, not a base idle
 
-However, the visible hand/finger problems must not automatically be blamed on UAL until the Humanoid avatar/reference-pose calibration is independently checked.
+The visible hand/finger failures must not automatically be blamed on UAL; A3R established that the current adapter does not map Humanoid fingers at all.
 
 ## 4. Revised validation hierarchy
 
@@ -152,8 +151,9 @@ If neutral diagnostics are already deformed, stop: the Avatar/adapter is the roo
 
 Measure/author:
 
-- seat plane height
+- seat top plane height
 - seat depth and usable center
+- front/rear seat edges
 - backrest plane
 - desired pelvis position and rotation
 - avatar butt-surface offset relative to Hips
@@ -184,34 +184,192 @@ Typing, drinking, desk-item use, etc. should add:
 
 Do not use Layer D to compensate for broken Layer A or B.
 
-## 5. Immediate revised next step
+---
 
-Do **not** proceed to A4 cross-avatar calibration yet.
+# 5. A3R — Humanoid Pose + Seat Contact Root-Cause Audit
 
-Do **not** keep cycling seated clips as the only variable.
+Status:
 
-First run a focused diagnostic Gate:
+> **A3R — ROOT CAUSE VERIFIED / TWO INDEPENDENT FAILURES IDENTIFIED**
 
-> **A3R — Humanoid Pose + Seat Contact Root-Cause Audit**
+A3R used Ming and the same D2 chair without modifying production Office, lighting, A3 SeatAnchor assets, or production character assets.
 
-A3R should use Ming only and the same D2 chair.
+## 5.1 Avatar / retarget quality verdict
 
-Required tests:
+Verdict:
 
-1. Neutral Humanoid diagnostic pose with hands/fingers fully visible.
-2. Compare target avatar reference pose/bone axes against source expectations.
-3. Inspect `HumanDescription` arm/leg stretch and twist parameters generated by `CharacterHumanoidAdapter`.
-4. Determine whether hand/finger distortion occurs in neutral/simple non-seated clips.
-5. Measure the rendered body's Hips-to-butt-bottom offset in a neutral seated pose.
-6. Extend the seat contract temporarily with seat plane/depth/backrest visualization gizmos and verify visible butt contact.
-7. Separate three verdicts:
-   - Avatar/retarget quality
-   - Seat geometry/contact quality
-   - source clip suitability
+> **Body Humanoid retargeting is basically valid, but the hand Avatar mapping is incomplete.**
 
-Only after the first two are PASS should external seated animation selection resume (Mixamo or another licensed source).
+Findings:
 
-## 6. Corrective project lesson
+- Avatar valid/human: PASS
+- current adapter maps only `20` body Humanoid bones
+- Ming physically contains a complete finger skeleton
+- all `30` Humanoid finger slots are currently unmapped
+- Neutral Idle and all tested Sitting clips preserve the same original finger rest rotations
+- therefore the visible finger/hand problem is not a temporary seated-animation artifact; the adapter never gave Unity a Humanoid finger mapping to retarget
+- major limb axes are broadly consistent; child-bone direction is mainly local `+Y`
+- no obvious left/right arm axis inversion was found
+- `upper/lower arm twist = 0.5`
+- `upper/lower leg twist = 0.5`
+- `arm/leg stretch = 0.05`
+- those twist/stretch values are conventional and are not the main root cause
+
+Permanent conclusion:
+
+> The shared body adapter remains viable, but the Avatar is not production-quality for hands until all supported finger bones are explicitly mapped and the Humanoid reference pose is revalidated.
+
+Do not classify hand deformation as a source-clip problem until finger mapping is fixed.
+
+## 5.2 Seat geometry / visible contact verdict
+
+Verdict:
+
+> **Pelvis-target accuracy PASS; visible butt-to-seat contact FAIL.**
+
+Measured D2 geometry/contact:
+
+- current `SeatAnchor.seatHeight`: `0.445 m`
+- actual cushion bottom: approximately `0.455 m`
+- actual cushion top / usable seat surface: approximately `0.517 m`
+- pelvis target Y: `0.700 m`
+- `Sitting_Idle_Loop` lowest visible butt vertex: `0.652627 m`
+- `Sitting_Talking_Loop` lowest visible butt vertex: `0.653160 m`
+- vertical visible butt-to-seat-top gap: approximately `135.6–136.2 mm`
+
+This establishes the main geometric bug:
+
+> A3's `seatHeight` was derived from `chair.position.y` / chair-root height rather than the actual seat-surface top plane.
+
+A fixed `+0.255 m` pelvis offset was then built on top of that incorrect reference.
+
+Therefore a near-zero pelvis constraint error only proves that Hips hit a **wrongly defined target**.
+
+Seat depth measurements:
+
+- usable cushion extent along facing X: approximately `1.786–2.374 m`
+- current visible butt rear edge X: approximately `1.878 m`
+
+The butt remains within the seat-depth range, but there is also about `99 mm` gap to the main backrest front plane.
+
+Thus:
+
+- primary failure: vertical contact
+- secondary weakness: insufficient backrest contact / too-forward body placement
+
+## 5.3 Source animation suitability verdict
+
+Verdict:
+
+> **Current UAL seated clips are poor neutral-office candidates, but they are not the root cause of hand deformation or floating.**
+
+`Sitting_Idle_Loop`:
+
+- torso broadly usable
+- arms/hands remain too externally spread for neutral office idle
+
+`Sitting_Talking_Loop`:
+
+- clearly communicates talking
+- arms occupy the torso/workspace and conflict with future typing/drinking overlay
+
+Important evidence:
+
+- lowest visible butt position differs by only about `0.53 mm` between the two seated clips
+- both float by about `136 mm`
+- therefore the large floating error is seat-contract geometry, not a single bad source clip
+- both seated clips and Neutral Idle preserve identical finger rest rotations
+- therefore the recurring hand issue is Avatar finger mapping, not UAL-specific seated animation deformation
+
+## 5.4 A3R changes to earlier conclusions
+
+A3R narrows previous claims:
+
+- A1/A2 body retarget strategy remains valid
+- A3 constraint/IK mechanics remain valid
+- A3 visible seating does **not** pass
+- A3.5 correctly rejected the available UAL seated clips as office-idle bases, but external animation selection must wait until the adapter/seat geometry bugs are fixed
+- A4 cross-avatar calibration remains blocked
+
+The project now has two separate correction tasks, and they must not be mixed:
+
+1. **Avatar completeness fix** — map/validate fingers and reference pose
+2. **Seat geometry fix** — define actual seat surface/contact geometry and calibrate visible butt contact
+
+---
+
+# 6. Corrected next-step order
+
+Do not proceed to A4 yet.
+
+Do not switch to Mixamo yet.
+
+Do not add hand IK to hide an incomplete Humanoid Avatar.
+
+Do not lower the pelvis blindly until the mesh appears to touch the chair.
+
+Next work should be split into two narrow Gates.
+
+## A3R-F1 — Humanoid Finger Mapping Fix
+
+Goal:
+
+Complete Ming's Humanoid hand/finger mapping using the existing finger skeleton, then prove the hand retarget is correct on neutral/simple clips before returning to seated animation selection.
+
+Must:
+
+- map all available Unity Humanoid finger slots deterministically
+- verify reference/T-pose after mapping
+- test Neutral Idle + one simple hand/arm action with fingers fully visible
+- verify fingers no longer remain frozen in the original rest pose when the source animation contains finger motion
+- preserve existing body mapping, root scale/orientation, locomotion contract, Office, and lighting
+
+Do not:
+
+- add hand IK
+- modify seated anchors
+- test more seated libraries yet
+- commit/push before review
+
+Acceptance:
+
+- valid Human Avatar remains
+- body retarget remains stable
+- finger mapping is complete/explicit
+- no finger explosion, inversion, or obviously broken spread in neutral diagnostics
+
+## A3R-F2 — Seat Surface + Butt Contact Fix
+
+Goal:
+
+Replace the incorrect chair-root-based seat reference with a real D2 seat-surface geometry contract and achieve visible butt-to-seat contact on Ming without hiding the problem through arbitrary whole-body translation.
+
+Must explicitly represent/measure:
+
+- seat top plane (`~0.517 m` on current D2 candidate)
+- seat depth/front/rear usable region
+- backrest front plane
+- desired seated pelvis position/rotation
+- Ming Hips-to-visible-butt-bottom offset for the selected diagnostic seated pose
+- thigh clearance/contact
+- foot targets/ground reference
+
+Acceptance must include:
+
+- visible butt-to-seat gap approximately closed within a small visual/metric tolerance
+- no major butt/thigh penetration
+- body remains within usable seat depth
+- back relationship is believable
+- feet remain stable
+- no scale/root drift
+
+The seat contract should be defined relative to the chair/anchor, not hardcoded as universal world coordinates.
+
+Only after A3R-F1 and A3R-F2 both PASS should the project resume external seated-animation selection (Mixamo or another licensed source) and then perform A4 cross-avatar calibration.
+
+---
+
+# 7. Corrective project lesson
 
 The repeated mistake was not primarily “choosing the wrong sitting animation.”
 
@@ -219,8 +377,14 @@ It was an evaluation-design mistake:
 
 > Numerical constraint success was treated as visual/physical success.
 
+A3R now establishes the exact causes:
+
+- hand/finger failure = incomplete Humanoid finger mapping in `CharacterHumanoidAdapter`
+- floating failure = incorrect seat-height reference + under-specified seat/contact geometry
+- awkward arm poses = source animation suitability problem, separate from the two bugs above
+
 For character interaction, project QA must always distinguish:
 
-`bone target accuracy != mesh contact accuracy != animation suitability`.
+`Avatar/retarget integrity != bone target accuracy != mesh contact accuracy != animation suitability`.
 
-Human Visual Review must remain authoritative for visible interaction quality, especially when skeletal reference points do not coincide with rendered surface contact points.
+Human Visual Review remains authoritative for visible interaction quality, especially when skeletal reference points do not coincide with rendered surface contact points.
