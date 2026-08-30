@@ -144,8 +144,8 @@ rug assignments, and whole-world Unity Y=180 degree orientation correction
 remain unchanged. No lighting rebake or geometry regeneration is part of the
 Gate 0B repository snapshot.
 
-The authoritative Unity migration snapshot commit is pending Gate 0B creation
-and will be recorded here after the local snapshot commit is verified.
+The authoritative Unity migration snapshot commit is
+`59991823fca6e11b667ecff894b1f66f74b57a3e`.
 
 ## Scenes and boot
 
