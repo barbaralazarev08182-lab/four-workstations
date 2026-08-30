@@ -1,0 +1,26 @@
+{
+  "asset": "Office_R5_Final.glb",
+  "baseline": "Geometry G1B",
+  "sourceOfTruth": "assets-source/blender/vq1c/full-office/vq1c-officeworld-full-pbr.blend",
+  "runtimeGroups": {
+    "Runtime_Desks": 4944,
+    "Runtime_Chairs": 24000,
+    "Runtime_Devices": 16848,
+    "Runtime_Lamps": 4384
+  },
+  "workstationTriangles": 50176,
+  "topologyReduction": false,
+  "atlas1": {
+    "asset": "Office_G1B_Atlas1.png",
+    "resolution": [4096, 4096],
+    "uvSet": "TEXCOORD_1",
+    "bake": "Cycles OptiX diffuse direct-only, 64 samples, 8 px margin",
+    "status": "provisional; not pixel-identical to historical Web R5 FINAL lighting"
+  },
+  "protected": {
+    "historicalWebR5": true,
+    "architecture": true,
+    "rugs": true,
+    "atlas0": true
+  }
+}

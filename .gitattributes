@@ -1,0 +1,16 @@
+unity/FourWorkstations/Assets/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.glb filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.bin filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.blend filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.psd filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.exr filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.hdr filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.tga filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.wav filter=lfs diff=lfs merge=lfs -text
+unity/FourWorkstations/Assets/**/*.flac filter=lfs diff=lfs merge=lfs -text
+
+*.meta text eol=lf
+*.cs text eol=lf
+*.json text eol=lf
+*.gltf text eol=lf
+*.md text eol=lf

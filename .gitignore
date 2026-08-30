@@ -30,3 +30,23 @@ assets-source/blender/*.blend1
 assets-source/blender/*_autosave*
 assets-source/blender/cache/
 tools/blender/__pycache__/
+
+# Unity project generated state
+unity/FourWorkstations/[Ll]ibrary/
+unity/FourWorkstations/[Tt]emp/
+unity/FourWorkstations/[Oo]bj/
+unity/FourWorkstations/[Bb]uild/
+unity/FourWorkstations/[Bb]uilds/
+unity/FourWorkstations/[Ll]ogs/
+unity/FourWorkstations/[Uu]serSettings/
+unity/FourWorkstations/MemoryCaptures/
+unity/FourWorkstations/Recordings/
+unity/FourWorkstations/*.csproj
+unity/FourWorkstations/*.sln
+unity/FourWorkstations/*.suo
+unity/FourWorkstations/*.user
+unity/FourWorkstations/.vs/
+
+# Unity migration local automation logs and QA captures
+unity-*.log
+outputs/unity-migration/
