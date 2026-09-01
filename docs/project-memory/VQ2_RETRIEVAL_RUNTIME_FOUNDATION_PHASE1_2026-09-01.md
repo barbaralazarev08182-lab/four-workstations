@@ -48,6 +48,48 @@ It functions more like a **powered umbilical / electrical cable**:
 
 For the current prototype, the cable may still use a procedural LineRenderer curve, but its behavior should visually read as a flexible powered cable rather than a gravity-dominated fishing line.
 
+## Long-reach cable direction — LOCKED FOR FUTURE
+
+The current `18 m` maximum cable length is only a prototype/debug value and is **not** the final design limit.
+
+The production system must support a configurable cable length large enough for the Orb to travel fully outside the player's current screen view and continue operating beyond the visible room frame.
+
+Implementation should therefore avoid architecture that assumes a short in-room tether. Cable sampling, deployment state, retrieval state, and maximum-reach logic must remain stable at much larger distances.
+
+Do not force a final numeric maximum yet; keep the maximum reach configurable.
+
+## Guide arm articulation — FUTURE DIRECTION
+
+The long guide arm may later become an active mechanical part of the Retrieval Station.
+
+Intended future motion:
+
+- vertical aiming / pitch: arm can raise and lower;
+- horizontal aiming / yaw: arm can sweep left and right;
+- the terminal guide head remains the cable origin while the arm moves.
+
+Do not force this motion in Phase 1 if the current imported mesh/pivots are not suitable. Do not destructively alter the Station model merely to animate it.
+
+When this feature is implemented later, use safe runtime pivots or a non-destructive hierarchy solution and preserve the accepted visible Station geometry.
+
+## Orb light direction — LOCKED VISUAL INTENT
+
+The Orb is intended to visibly glow while powered.
+
+Visual target:
+
+- warm off-white / ivory / beige-yellow light;
+- slightly yellow, not pure white;
+- restrained slow breathing/pulsing intensity;
+- soft, calm powered-device feeling;
+- no saturated neon yellow;
+- no aggressive strobe;
+- no cyberpunk glow-strip treatment.
+
+The light should support the fiction that the powered tether is energizing the Orb.
+
+Exact emission intensity, bloom, pulse curve, and whether a small real Light component is needed remain tunable in a later visual pass.
+
 ## Stored state — LOCKED
 
 When the Retrieval device is not being used:
