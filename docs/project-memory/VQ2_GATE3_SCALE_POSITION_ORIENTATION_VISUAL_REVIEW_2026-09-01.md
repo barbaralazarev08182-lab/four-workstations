@@ -87,23 +87,52 @@ The user marked two obsolete room elements for removal.
 
 Remove the isolated/unused green rug visible on the left side of the room, near the door/front-left workstation area.
 
-Rules:
+Ownership audit result from the current local Unity candidate:
 
-- remove or disable the actual scene object/renderers if it is an independent object;
-- if the rug is part of a merged protected mesh/renderer group, inspect the source hierarchy/submeshes first;
-- do not destructively cut or rewrite an unrelated protected merged mesh merely to remove this rug;
-- if destructive editing would be required, stop and report the exact renderer/mesh/submesh ownership rather than guessing.
+- Object: `Runtime_Rugs`
+- Hierarchy: `OfficeWorldRoot/Office_R5_Final/OFFICE_WORKSTATIONS_ROOT/Runtime_Rugs`
+- Mesh: `POD_RUG_LEFT`
+- Renderer: one `MeshRenderer`
+- Submeshes: `1`
+- Materials: `1`
+- Vertices: `648`
+- Triangles: `420`
+- World bounds center: `(-1.18, 0.01, -0.92)`
+- World bounds extents: `(5.33, 0.01, 3.38)`
 
-Goal: the visible green rug circled by the user must no longer appear in the candidate.
+The renderer covers the unwanted left-side rug together with other workstation rugs, so it cannot be removed by disabling the GameObject, Renderer, material slot, or submesh without also removing valid rugs.
+
+### Runtime_Rugs derivative-split authorization — EXPLICITLY AUTHORIZED
+
+The user authorizes a **local, non-destructive connected-component derivative split** of `Runtime_Rugs` for the isolated candidate.
+
+This authorization is narrow and must obey all of the following:
+
+1. Preserve the original `Runtime_Rugs` mesh asset byte-for-byte. Do not overwrite or destructively edit the authoritative merged mesh.
+2. Create a new **derived candidate mesh** from the existing merged mesh data.
+3. Split/select by actual connected geometry/components, not by arbitrary world-space triangle deletion.
+4. Identify the connected component that corresponds to the user-circled unused green rug.
+5. Remove only that component from the **derived candidate mesh**.
+6. Preserve all other valid workstation-rug components with their geometry, UVs, normals, tangents, material assignment, transform, and appearance unchanged.
+7. The derivative must remain candidate-only until Human Visual approval.
+8. Record the source mesh SHA/hash if practical and the derived mesh statistics before/after: vertices, triangles, component count, bounds.
+9. Provide evidence that the remaining workstation rugs visually match the original candidate and that only the circled rug disappeared.
+10. If connected-component analysis shows the unwanted rug is physically welded to valid rug geometry rather than a separable component, **stop again** and report the topology; do not begin manual face surgery without new authorization.
+
+This derivative split is not authorization for general room-mesh cleanup or remodeling.
+
+Goal: the visible green rug circled by the user must no longer appear in the candidate while all valid rugs remain intact.
 
 ### B. Right-side dining set
 
 Remove the entire user-circled dining set:
 
-- dining table;
-- all dining chairs;
-- bench/seating associated with that table;
-- tabletop plates/cups/place-setting props that only belong to that dining set.
+- `Runtime_DiningTable` — reported 1,500 tris;
+- `Runtime_DiningBenches` — reported 3,000 tris;
+- `Runtime_DiningCeramics` — reported 124 tris;
+- any other independently identified dining chairs/seating/props that belong exclusively to that set.
+
+The audit confirms these can be independently disabled/removed in the candidate, so the prior stop condition no longer blocks this cleanup.
 
 Do not replace the dining set with new furniture or decoration in this pass.
 
@@ -142,11 +171,14 @@ Do not change:
 - Retrieval Orb current world size/docking;
 - current Retrieval edge-side working direction;
 - protected source FBX files;
+- original authoritative `Runtime_Rugs` mesh asset;
 - Atlas baseline;
 - Production Office/N1R authoritative files directly;
-- mesh topology/triangle counts of the user assets;
+- mesh topology/triangle counts of the user-authored FBX assets;
 - pivots/sockets;
 - gameplay, runtime tether, animation, physics, or Atlas polish.
+
+Allowed topology change is limited to the new **candidate-only derivative of `Runtime_Rugs`** described above.
 
 Material/texture binding is explicitly allowed only to restore the existing user-authored PBR appearance; it is not authorization for a material redesign.
 
@@ -154,22 +186,23 @@ This remains an isolated candidate until Human Visual approval.
 
 ## Required next evidence
 
-After applying Seat x2.0, edge re-snap, authorized cleanup, and material restoration, provide:
+After applying Seat x2.0, edge re-snap, authorized cleanup, derivative rug split, and material restoration, provide:
 
 1. canonical full-room Day screenshot with restored user-asset materials;
 2. Rest Edge close screenshot showing all four x2.0 seats, their real material, and the real floor edge;
 3. Retrieval Edge close screenshot showing the unchanged Station + Orb transforms, restored materials, and the real floor edge;
-4. screenshot/clear evidence showing the left green rug removed;
+4. screenshot/clear evidence showing the left green rug removed while the valid workstation rugs remain;
 5. screenshot/clear evidence showing the right dining table + associated seating/props removed;
 6. exact final Seat presentation/root/local scale and world bounds;
 7. Rest seat edge-to-floor-boundary distance after compensation, expected effectively `0 m`;
 8. exact Seat position delta introduced only by edge-snap compensation;
 9. confirmation that Station/Orb transforms and scales are unchanged from the current accepted candidate;
-10. material inventory per user asset: material name, shader, BaseColor path, Normal path, Metallic path, Roughness/source path, and any generated smoothness/packed map path;
-11. before/after explanation of why the prior import appeared white and how the URP binding was repaired;
-12. compile / PlayMode / Console blocking status;
-13. protected Office / N1R / Atlas / source FBX hashes unchanged;
-14. if either cleanup target belongs to a merged protected mesh, report ownership and the non-destructive handling choice explicitly.
+10. `Runtime_Rugs` source-vs-derived report: source mesh identity/hash, connected-component count, removed component statistics, derived mesh vertices/triangles/bounds, and proof that the source asset was not modified;
+11. material inventory per user asset: material name, shader, BaseColor path, Normal path, Metallic path, Roughness/source path, and any generated smoothness/packed map path;
+12. before/after explanation of why the prior import appeared white and how the URP binding was repaired;
+13. compile / PlayMode / Console blocking status;
+14. protected Office / N1R / Atlas / source FBX hashes unchanged;
+15. staged files / commit status; do not commit or promote yet.
 
 Do not commit or promote this candidate until the user visually reviews the screenshots.
 
