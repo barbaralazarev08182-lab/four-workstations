@@ -1,112 +1,131 @@
 # VQ2 Retrieval Tether — Runtime Contract
 
-> Date: 2026-09-01  
-> Status: CURRENT TECHNICAL DIRECTION / NOT YET GAMEPLAY AUTHORIZATION
+> Date: 2026-09-01
+> Status: CURRENT TECHNICAL DIRECTION
 
 ## Purpose
 
-Define the ownership boundary and preferred Unity implementation for the Retrieval tether/line so the user does not waste time modeling a flexible cable that should be runtime-driven.
+Define the ownership boundary and preferred Unity implementation for the Retrieval tether/cable.
 
 ## Locked responsibility split
 
 User-authored 3D assets:
 
 - Retrieval Station visible geometry;
-- steerable guide arm / reel housing / guide eye geometry;
+- steerable guide arm / reel housing / visible terminal guide head;
 - Retrieval Orb visible geometry;
-- visible hard attachment hardware that belongs to those meshes.
+- visible hard attachment hardware.
 
 Codex/runtime responsibility:
 
-- the flexible tether/line itself;
-- runtime line length;
+- the flexible powered tether/cable itself;
+- runtime cable length;
 - reel-out / reel-in behavior;
 - slack / tension appearance;
-- line response while the Orb moves upward, downward, horizontally, or diagonally;
-- contact-state vibration / disturbance;
-- future line physics, collision, and failure/stability behavior as explicitly authorized.
+- cable response while the Orb moves upward, downward, horizontally, or diagonally;
+- future disturbance/interaction behavior as explicitly authorized.
 
-Do not require the user to author a long flexible line mesh in Hunyuan3D.
+Do not require the user to author a long flexible cable mesh.
 
-## Asset socket contract
+## Physical endpoint contract — LOCKED
 
-The final Station / Orb asset family should expose or permit Codex to add these transforms without changing visible geometry:
+The free cable must originate from the **very end of the Station's long guide arm / rod**, at the visible terminal guide head.
 
-- `Tether_ReelExit` — where the flexible line leaves the reel/housing;
-- `Tether_GuideTip` — final guide-eye / arm exit point before the line enters free space;
-- `Orb_TetherAttach` — physical tether attachment point on the Orb.
+It must not visually originate from:
 
-Optional later transforms:
+- the Station body;
+- yaw assembly;
+- reel housing;
+- arm base;
+- an approximate point near the center of the Station.
 
-- `Orb_Dock` / `Orb_Cradle` — stored Orb pose;
-- intermediate guide/socket points if the final apparatus routes the line through more than one visible eyelet.
+Required transforms:
+
+- `Tether_GuideTip` — exactly aligned to the visible terminal head at the far end of the long guide arm;
+- `Orb_TetherAttach` — physical cable attachment point on the Orb;
+- `Orb_CradleSocket` — stored Orb pose in the Station's front circular basket/cradle.
+
+If the existing `Tether_GuideTip` socket is misplaced, a runtime/socket correction is authorized without changing visible Station geometry.
+
+## Powered-tether meaning — LOCKED
+
+The tether is not primarily a passive fishing line.
+
+It is a **powered umbilical / electrical cable** supplying the Orb with the energy required to remain active outside the stable room space.
+
+Therefore:
+
+- the Orb is active and self-directed while connected;
+- the cable does not suspend the Orb as a passive weight;
+- the Orb can travel upward, downward, horizontally, and diagonally;
+- the cable follows and constrains maximum reach but should not force pendulum/bobber behavior;
+- the eventual maximum cable length should allow the Orb to travel beyond the player's visible screen into the Outside space, temporarily referred to as the "universe".
+
+## Stored state — LOCKED
+
+When unused, the Orb is stored in the **front circular basket/cradle on the Station base**.
+
+It must not:
+
+- hang from the rod tip;
+- remain floating beside the Station;
+- be stored on the rod itself.
+
+Retrieval ends with the Orb returning precisely to `Orb_CradleSocket` in that front basket/cradle.
+
+For the current prototype, the cable may remain connected while Stored, showing only the short flexible run from the rod-end guide tip to the docked Orb. Automatic plug/unplug behavior is deferred.
 
 ## Preferred implementation strategy
 
 Do not begin with a fully simulated industrial rope.
 
-Preferred architecture is a hybrid procedural tether:
+Preferred architecture:
 
-1. Unity `LineRenderer` or equivalent procedural tube/spline is the visible line;
+1. Unity `LineRenderer` or equivalent procedural spline/curve is the visible cable;
 2. endpoints follow `Tether_GuideTip` and `Orb_TetherAttach`;
-3. a small sampled curve creates natural slack instead of a perfectly straight laser-like line;
-4. slack/tension changes the curve shape dynamically;
-5. when tension increases, the line straightens and may show restrained high-frequency vibration;
-6. when slack increases, the line forms a smooth sag / loose curve;
-7. reel-out/reel-in changes permitted tether length rather than scaling a modeled mesh.
+3. a small sampled curve creates flexible cable shape;
+4. slack/tension changes the curve dynamically;
+5. tension straightens the cable;
+6. slack allows a restrained curve, but gravity should not dominate the Orb's motion;
+7. reel-out/reel-in changes permitted cable length rather than scaling a modeled mesh.
 
-A later physics layer may use a lightweight constrained-particle / Verlet-style rope representation if visual interaction requires it. Full per-segment rigidbody chains are not the default because they are more prone to jitter, collision instability, and unnecessary complexity.
+A later physics layer may use lightweight constrained particles / Verlet-style rope if interaction requires it. Full per-segment rigidbody chains are not the default.
 
 ## Directional Retrieval requirement
 
-The tether must support:
+The powered Orb must structurally support:
 
-- upward contact;
-- downward contact;
-- horizontal contact;
-- diagonal contact.
+- upward travel;
+- downward travel;
+- horizontal travel;
+- diagonal travel.
 
-Its behavior must not assume the Orb always hangs below the room under ordinary gravity.
+The system must not assume the Orb always hangs below the room under ordinary gravity.
 
-Recommended world-rule presentation:
+## Runtime state vocabulary
 
-- the short segment still inside/near the room stable frame may retain mild ordinary slack/gravity behavior;
-- after the tether crosses the open boundary, its shape may become more correspondence-driven and less conventionally gravitational;
-- this allows an Orb cast upward to remain above/outside rather than being visually forced back into an ordinary fishing-line pendulum.
+- `Stored` — Orb in the front basket/cradle;
+- `Deploying` — Orb leaves the cradle and cable length increases;
+- `Holding` — Orb actively maintains a target position;
+- `Contact` — future outside interaction state;
+- `Tension` — cable approaches permitted length and straightens;
+- `Heavy Tension` — later stronger tension feedback;
+- `Retrieving` — permitted cable length decreases and Orb returns;
+- `Docking` — Orb returns into the front basket/cradle;
+- `Stored` — exact cradle pose restored.
 
-Exact fiction/physics blending remains tunable during a later gameplay/visual prototype.
+## Current prototype rule
 
-## Visual state vocabulary
+Prioritize:
 
-Potential tether states, to be proven later rather than implemented blindly:
+- correct rod-tip origin;
+- correct front-cradle storage;
+- readable powered-cable behavior;
+- stable long-distance deploy/retrieve;
+- no drift.
 
-- `Stored` — Orb docked, little/no exposed free tether;
-- `Deploying` — line length increasing smoothly;
-- `Free / Calm` — mild slack and restrained motion;
-- `Contact` — localized directional disturbance / pulse;
-- `Tension` — line becomes visibly straighter;
-- `Heavy Tension` — stronger straightening plus subtle vibration;
-- `Unstable` — irregular lateral wave/disturbance;
-- `Retrieving` — permitted length decreases while the line remains continuous;
-- `Docking` — Orb returns to cradle/socket.
-
-Avoid exaggerated whipping, glowing laser-cable behavior, or arcade fishing-bobber motion unless later gameplay evidence supports it.
-
-## Practical visual defaults for first prototype
-
-These are prototype values, not locked final tuning:
-
-- line width should remain very thin relative to the 1.15 m PEBBLE body, roughly cable/string scale rather than hose scale;
-- use enough spline/line samples to avoid visible polygonal kinks in the frozen Office camera;
-- avoid expensive collision along every segment in the first visual prototype;
-- prioritize continuity, readable tension, and stable motion over physically exact rope simulation.
-
-## Gate rule
-
-At current Gate 3, Codex may prepare sockets, a static/procedural visual tether preview, and clearance/pose tests only when explicitly requested.
-
-Do not use this document as authorization to start the full Retrieval gameplay loop.
+Do not add attraction content, loot, economy, QTEs, or full rope collision physics yet.
 
 ## One-line ownership rule
 
-> User models the Station and Orb; Codex generates and animates the actual flexible tether in Unity at runtime.
+> User models the Station and Orb; Codex generates the powered flexible cable and its runtime behavior in Unity.
