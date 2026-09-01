@@ -1,10 +1,10 @@
-# VQ2 Gate 3 — Scale / Position / Orientation Visual Review
+# VQ2 Gate 3 — Scale / Position / Orientation / Material Visual Review
 
 > Date: 2026-09-01
 > Status: ACTIVE VISUAL REVISION / LATEST USER DECISION
-> Scope: Rest Edge seat scale refinement, locked Retrieval Station/Orb composition, and authorized room cleanup.
+> Scope: Rest Edge seat scale refinement, locked Retrieval Station/Orb composition, authorized room cleanup, and restoration of the user assets' original materials/textures in Unity.
 
-## Latest user decision — supersedes prior 2.5-seat recommendation
+## Latest user decision — supersedes prior seat-scale recommendations
 
 The latest Human Visual direction supersedes all earlier recommendations in this file where they conflict.
 
@@ -16,9 +16,10 @@ Current authoritative next-candidate values and composition rules:
 - Retrieval Station: **current scale, current position, current Y=180 orientation, and current edge placement are accepted for now and must remain unchanged**.
 - Retrieval Orb: **current reduced size and current docking relationship are accepted for now and must remain unchanged**.
 - Remove the user-circled **unused green floor rug at the left side of the room**.
-- Remove the user-circled **right-side dining set in full: dining table plus all associated dining seating/bench/chairs**.
+- Remove the user-circled **right-side dining set in full: dining table plus all associated dining seating/bench/chairs and dependent tabletop place-setting props**.
+- The current white appearance of the imported user assets is **not** a valid final visual state. Their existing source textures/material information must now be correctly restored/bound in Unity before the next meaningful Human Visual review.
 
-The room-cleanup deletions are explicitly authorized for the next isolated candidate.
+The room-cleanup deletions and material-binding restoration are explicitly authorized for the next isolated candidate.
 
 ## Edge-contact invariant — LOCKED
 
@@ -68,7 +69,7 @@ The user explicitly states that the Retrieval Station and Orb are currently visu
 Therefore in this pass:
 
 - do not change Retrieval Station presentation scale;
-- do not change Retrieval Station position;
+- do not change Retrieval Station position except if an existing candidate-build script would otherwise accidentally move it; preserve the current accepted world transform;
 - keep Y rotation at **180 degrees**;
 - keep the Station base flush with the Retrieval floor edge;
 - keep Guide Arm direction toward Outside;
@@ -102,49 +103,77 @@ Remove the entire user-circled dining set:
 - dining table;
 - all dining chairs;
 - bench/seating associated with that table;
-- table-top place settings/props only if they belong to the dining-set group and are no longer meaningful once the table is removed.
+- tabletop plates/cups/place-setting props that only belong to that dining set.
 
 Do not replace the dining set with new furniture or decoration in this pass.
 
 Goal: preserve deliberate negative space around the Retrieval Edge rather than filling the area with replacement props.
 
+## Material / texture binding — NOW AUTHORIZED
+
+The previous intake report established that the user FBX assets contain embedded/source texture data including 4096x4096 BaseColor, Normal, Metallic, and Roughness maps, but Unity did not correctly connect those maps to the URP materials. The white candidate appearance is therefore a material-import/binding blocker, not the intended visual design.
+
+For the next isolated candidate, after applying the seat-scale and room-cleanup changes above, restore the actual user-authored material appearance without redesigning it.
+
+Required material rules:
+
+1. Preserve every protected source FBX byte-for-byte.
+2. Extract/copy embedded texture assets into a controlled Unity asset location if Unity requires explicit external texture files.
+3. Preserve source texture identity and report hashes/paths for extracted textures where practical.
+4. Create or repair Unity URP materials that bind the existing source channels correctly.
+5. BaseColor/albedo -> URP Base Map.
+6. Normal -> URP Normal Map with correct texture import type.
+7. Metallic -> URP Metallic input.
+8. Roughness must be converted/bound correctly for URP smoothness semantics (`smoothness = 1 - roughness`) rather than used unmodified as smoothness.
+9. Do not repaint, recolor, regenerate, or AI-replace any user texture.
+10. Do not invent a new material style because a channel is inconvenient to import.
+11. Seat, Station, Orb, and Returning Piece should retain their original authored texture appearance to the maximum extent supported by the source files.
+12. If a source FBX uses a single material for visually different Station/Orb regions, do not destructively split geometry merely to enable future emission. Report that limitation separately. Material restoration comes first.
+13. Retrieval Orb emission/glow behavior is **not** authorized yet unless the source itself already contains a clearly identifiable emissive channel that can be restored non-destructively. Otherwise restore its normal PBR appearance first and defer authored emission control to a later gate.
+14. Do not modify Atlas materials during this pass.
+
+The next screenshots should no longer use the white placeholder material state for these user assets.
+
 ## What must remain unchanged in this pass
 
 Do not change:
 
-- Retrieval Station scale/position/Y=180 orientation;
+- Retrieval Station accepted scale/position/Y=180 orientation;
 - Retrieval Orb current world size/docking;
 - current Retrieval edge-side working direction;
 - protected source FBX files;
 - Atlas baseline;
 - Production Office/N1R authoritative files directly;
-- materials/textures;
 - mesh topology/triangle counts of the user assets;
 - pivots/sockets;
 - gameplay, runtime tether, animation, physics, or Atlas polish.
+
+Material/texture binding is explicitly allowed only to restore the existing user-authored PBR appearance; it is not authorization for a material redesign.
 
 This remains an isolated candidate until Human Visual approval.
 
 ## Required next evidence
 
-After applying Seat x2.0, edge re-snap, and the authorized cleanup, provide:
+After applying Seat x2.0, edge re-snap, authorized cleanup, and material restoration, provide:
 
-1. canonical full-room Day screenshot;
-2. Rest Edge close screenshot showing all four x2.0 seats and the real floor edge;
-3. Retrieval Edge close screenshot showing the unchanged Station + Orb and the real floor edge;
+1. canonical full-room Day screenshot with restored user-asset materials;
+2. Rest Edge close screenshot showing all four x2.0 seats, their real material, and the real floor edge;
+3. Retrieval Edge close screenshot showing the unchanged Station + Orb transforms, restored materials, and the real floor edge;
 4. screenshot/clear evidence showing the left green rug removed;
-5. screenshot/clear evidence showing the right dining table + associated seating removed;
+5. screenshot/clear evidence showing the right dining table + associated seating/props removed;
 6. exact final Seat presentation/root/local scale and world bounds;
 7. Rest seat edge-to-floor-boundary distance after compensation, expected effectively `0 m`;
 8. exact Seat position delta introduced only by edge-snap compensation;
 9. confirmation that Station/Orb transforms and scales are unchanged from the current accepted candidate;
-10. compile / PlayMode / Console blocking status;
-11. protected Office / N1R / Atlas / source FBX hashes unchanged;
-12. if either cleanup target belongs to a merged protected mesh, report ownership and the non-destructive handling choice explicitly.
+10. material inventory per user asset: material name, shader, BaseColor path, Normal path, Metallic path, Roughness/source path, and any generated smoothness/packed map path;
+11. before/after explanation of why the prior import appeared white and how the URP binding was repaired;
+12. compile / PlayMode / Console blocking status;
+13. protected Office / N1R / Atlas / source FBX hashes unchanged;
+14. if either cleanup target belongs to a merged protected mesh, report ownership and the non-destructive handling choice explicitly.
 
 Do not commit or promote this candidate until the user visually reviews the screenshots.
 
-Do not proceed to material binding before this revised Seat-scale-and-cleanup candidate is reviewed.
+Do not proceed to mesh reduction before this material-restored candidate is visually reviewed.
 
 ## Interaction constraint for planning sessions
 
