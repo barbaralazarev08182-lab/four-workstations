@@ -24,7 +24,7 @@ The following presentation state is now the accepted visual reference for the ne
 - instance ordering / X spacing remains unchanged;
 - no platform, railing, or replacement geometry was added.
 
-This scale / edge relation is now the visual reference and must not drift during optimization.
+This scale / edge relation is now the visual reference and must not drift.
 
 ## 3. Accepted Retrieval Station state
 
@@ -34,7 +34,7 @@ This scale / edge relation is now the visual reference and must not drift during
 - reported world bounds: `2.745662 x 2.235772 x 3.281719 m`;
 - Guide Arm remains directed toward Outside;
 - base remains floor-supported / edge-related;
-- current composition is accepted and must not be re-authored during optimization.
+- current composition is accepted and must not be re-authored.
 
 ## 4. Accepted Retrieval Orb state
 
@@ -115,49 +115,100 @@ Protected hashes reported unchanged:
 - Orb source: `621E995604D4724143A6F737BFEA0A830ABDD302AE3925DAE90A469E4A4D38E2`;
 - Returning Piece source: `0CABAD29CA8416B9211F0207413D5526FD0608EE1A14EB44D5F6A73EE9CA9977`.
 
-## 8. Next authorized engineering gate: controlled runtime mesh reduction
+## 8. Latest optimization decision — performance first, no mandatory reduction
 
-Do **not** immediately promote the current high-poly user meshes as final long-term production assets.
+The earlier requirement to perform a controlled mesh-reduction gate before promotion is **superseded**.
 
-The next gate is a controlled reduction / runtime-clean-source comparison against this accepted visual reference.
+The current user decision is:
 
-Priority:
+> Do not reduce the accepted user meshes merely to hit a triangle-count target. Preserve the Human Visual PASS high-quality meshes unless real runtime profiling demonstrates a meaningful performance problem.
 
-1. Retrieval Station: current source is about **816,590 tris**. Produce region-aware reduction candidates. Preserve Guide Arm/Tip, reel silhouette, cradle, base silhouette, mechanical joints, and all visible forms from the canonical camera. Do not use a blind global one-click decimate. A practical exploration range is roughly `120k-220k tris`, but visual fidelity overrides the number.
-2. Rest Seat: current source is about **50,104 tris** and is shared by four instances. Produce a conservative candidate, roughly `15k-30k tris` as an exploration range, while preserving silhouette, cushion/seat edge forms, outward table, and normal/UV/material fidelity.
-3. Retrieval Orb: current source is about **52,691 tris**. Optimization is optional/conservative; do not damage the smooth silhouette or material response merely to hit a target.
-4. Returning Piece: current source is about **49,986 tris**. It is not necessary to reduce it in the same pass unless evidence shows a clear runtime need; preserve its small-object silhouette and future orientation behavior potential.
+Therefore:
 
-For every optimized candidate:
+- Retrieval Station may remain at approximately **816,590 tris**;
+- Rest Seat may remain at approximately **50,104 tris** shared across four instances;
+- Retrieval Orb may remain at approximately **52,691 tris**;
+- Returning Piece may remain at approximately **49,986 tris**;
+- no reduction candidate is required before promotion;
+- triangle count by itself is not a failure criterion.
 
-- preserve original protected FBX/source assets;
-- preserve accepted world scale/position/orientation;
-- preserve PBR materials/UVs/normals/tangents;
-- compare against this PASS candidate using the same canonical full-room and close-up views;
-- report triangles/vertices/memory before and after;
-- reject any candidate with visible silhouette/material degradation.
+The protected source FBX files remain the canonical high-quality sources.
 
-No gameplay, tether, animation, or promotion is authorized during reduction.
+If later profiling identifies a real bottleneck, optimization should be evidence-driven and non-destructive. Possible future strategies include runtime LODs, region-aware reduction, texture/memory optimization, shadow tuning, or renderer/material optimization. Do not assume mesh reduction is the first or only remedy.
 
-## 9. Promotion sequence after reduction PASS
+## 9. Next authorized engineering gate — promotion + performance baseline
 
-Only after the reduced runtime candidates receive Human Visual PASS:
+The next engineering step is to promote the current Human Visual PASS room state into the authoritative Office and N1R scenes while preserving their lighting/state differences, then profile the actual production result.
 
-1. promote the accepted Seat / Station / Orb / room-cleanup state into authoritative Office;
-2. apply the equivalent room-content state to N1R while preserving Night lighting/state differences;
-3. preserve Atlas transform/stages/material baseline unchanged;
-4. run compile / PlayMode / Console validation;
-5. verify protected source hashes remain unchanged;
-6. create a checkpoint commit;
-7. record the promoted Office/N1R hashes and commit in project-memory.
+Promotion must preserve exactly:
 
-That promotion closes the current Gate 3 room/world-readiness work unless a new visual blocker is discovered.
+- Rest Seat x2.0 and its accepted edge relationship;
+- Retrieval Station x3.5, position `(7.784205, 0, 1.625)`, Y=180 degrees;
+- Retrieval Orb accepted size/docking;
+- restored user PBR materials;
+- left green-rug removal through the approved derivative mesh;
+- full dining-set removal;
+- Atlas baseline unchanged;
+- no Retrieval gameplay, tether, animation, or new visual polish.
 
-## 10. After Gate 3 closes
+After promotion, record a performance baseline on the actual authoritative scenes. At minimum capture:
 
-The next product-facing development direction should be the **Retrieval runtime foundation**, starting with the device's physical behavior rather than loot/content complexity:
+- target resolution / graphics quality used for the measurement;
+- average FPS and observed low/slow frame behavior over a repeatable short run;
+- CPU frame time;
+- GPU frame time where available;
+- visible triangle count / vertices or equivalent renderer stats;
+- batches / SetPass / draw calls where available;
+- mesh memory;
+- texture memory or at least imported texture memory totals for the new user assets;
+- renderer count;
+- shadow-casting status/cost notes for Station, Seats, Orb, and Atlas;
+- comparison of Office Day and N1R Night if their costs differ materially.
 
-- Station guide/yaw/elevation mechanical control as needed;
+This is a **baseline measurement**, not a pretext to optimize immediately.
+
+If the promoted production scenes are stable at the project's target performance with reasonable frame-time headroom, the current meshes remain accepted indefinitely and Gate 3 closes without a reduction pass.
+
+If a genuine bottleneck is observed, report the evidence and likely source before changing geometry.
+
+## 10. Promotion / checkpoint requirements
+
+For this promotion:
+
+1. back up / record pre-promotion Office and N1R hashes;
+2. apply only the already Human-Visual-PASS candidate state;
+3. preserve Atlas source/prefab hashes and stage behavior;
+4. preserve all user source FBX hashes;
+5. run Compile;
+6. run PlayMode tests;
+7. verify Console blocking errors = 0;
+8. capture canonical Office Day and N1R Night evidence after promotion;
+9. capture the performance baseline described above;
+10. record new authoritative Office/N1R hashes;
+11. create a checkpoint commit only after the promoted state validates cleanly;
+12. record the commit and promoted hashes in project-memory.
+
+No new Human Visual redesign is required unless the promotion itself produces visible drift from the already accepted candidate.
+
+## 11. Gate 3 close condition
+
+Gate 3 may close when all of the following are true:
+
+- the Human Visual PASS state is promoted to authoritative Office and N1R;
+- Compile and PlayMode remain PASS;
+- Console blocking errors remain 0;
+- source FBX and Atlas protected hashes remain unchanged;
+- canonical screenshots show no visual drift;
+- production performance baseline shows no blocking runtime issue;
+- checkpoint commit is created and recorded.
+
+Mesh reduction is **not** a Gate 3 close condition.
+
+## 12. After Gate 3 closes
+
+The next product-facing development direction is the **Retrieval runtime foundation**, starting with physical device behavior rather than loot/content complexity:
+
+- Station mechanical yaw/elevation/guide behavior as required by the existing design;
 - reel pay-out / retrieval behavior;
 - runtime flexible tether between Station and Orb;
 - Orb deploy / hold / retrieve;
@@ -165,8 +216,8 @@ The next product-facing development direction should be the **Retrieval runtime 
 - controlled sag/tension feedback;
 - no attraction/content table/economy initially.
 
-Returning Piece behavior and actual recovered-content logic should come after the basic Retrieval device can physically send and recover the Orb reliably.
+Returning Piece behavior and actual recovered-content logic come after the basic Retrieval device can physically send and recover the Orb reliably.
 
-## 11. Interaction constraint
+## 13. Interaction constraint
 
 Do not generate or edit images unless the user's current message explicitly contains the exact phrase `生成图片`.
