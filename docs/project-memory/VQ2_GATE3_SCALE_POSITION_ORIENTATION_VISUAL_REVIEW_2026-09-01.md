@@ -8,27 +8,55 @@
 
 The previous recommendation to keep all three presentation scales at x3 is superseded by the user's latest explicit Human Visual direction.
 
-The current candidate positions and orientations are visually useful and should remain unchanged. Only scale is to change as follows:
+The current edge roles and working orientations are correct, but after changing scale the assets must still remain physically snapped to their respective open floor edges.
+
+Current authoritative next-candidate values:
 
 - Rest Edge Seat presentation scale: **3.0 -> 2.5**.
 - Retrieval Station presentation scale: **3.0 -> 3.5**.
 - Retrieval Orb: **reduce its current world size by 50%**.
+- Rest seats must remain **flush with the Rest Edge** after scaling.
+- Retrieval Station must remain **flush with the Retrieval Edge** after scaling.
+- Retrieval Station keeps **Y = 180 degrees** and the guide/working direction toward Outside.
 
-This is the current authoritative visual direction for the next candidate.
+This edge-contact relationship is higher priority than preserving the previous root coordinates byte-for-byte.
+
+## Edge-contact invariant — LOCKED
+
+The intended visual rule is not "keep the exact old coordinates regardless of scale."
+
+The intended rule is:
+
+> Preserve the same designed edge relationship after scale changes.
+
+Therefore Codex may make the **minimum position compensation required by the scale change** so that the visible model boundary remains snapped to the same physical floor edge.
+
+This compensation is not a redesign and must not be used to re-space the composition arbitrarily.
+
+Required geometric relationship:
+
+- Rest Edge: the outward edge of each seat module remains flush with the real open floor boundary; no dead strip of floor may reopen between the row and Outside.
+- Retrieval Edge: the Station base remains floor-supported and its outward/base edge remains flush with the real Retrieval floor boundary; the guide arm continues to reach toward Outside.
+- Edge distance after correction should be effectively zero within normal floating-point / renderer-bounds tolerance.
 
 ## Rest Edge contract
 
-Keep all four seat instance coordinates exactly as they are in the current x3 candidate.
+Keep the current four-seat ordering and overall rhythm from the accepted x3 edge-placement candidate.
 
-Do not re-space or move the four seats during this correction pass.
+Change the shared Rest seat presentation scale from x3 to **x2.5**.
 
-Only change the shared Rest seat presentation scale from x3 to x2.5.
+After shrinking, apply only the minimal positional compensation needed to keep the four seat modules physically snapped to the same Rest Edge.
 
-The four instances must continue to share one mesh/material asset; do not create independent seat copies.
+Do **not**:
 
-Because root coordinates are explicitly locked for this pass, do not automatically re-snap the seats to the floor boundary after scaling unless the user later requests it.
+- move the row inward and leave a new empty strip;
+- redesign the spacing pattern;
+- create independent seat meshes;
+- add railings/platforms/extra geometry.
 
-Approximate expected per-seat world bounds from the current reported x3 candidate, assuming uniform scaling about the current pivot:
+The four instances must continue to share one mesh/material asset.
+
+Approximate expected per-seat world bounds from the current reported x3 candidate, assuming uniform scale:
 
 - current x3: about `2.143233 x 1.118077 x 1.348740 m`;
 - expected x2.5: about `1.786028 x 0.931731 x 1.123950 m`.
@@ -37,20 +65,24 @@ These bounds are an engineering expectation only; actual Unity bounds should be 
 
 ## Retrieval Station contract
 
-Keep the current Retrieval Station position unchanged.
+Keep the current Retrieval Station **Y rotation at 180 degrees**.
 
-Keep its current Y rotation at **180 degrees**.
+Keep the current working direction toward Outside.
 
-Keep its current floor-edge placement/direction unchanged.
+Change Station presentation scale from x3 to **x3.5**.
 
-Only change Station presentation scale from x3 to **x3.5**.
+Because the Station becomes larger, apply only the minimal position compensation needed to preserve:
+
+- base bottom on the floor;
+- Station/base outward edge snapped to the real Retrieval Edge;
+- guide arm still facing/reaching Outside.
+
+Do not preserve the old root position if that would cause the enlarged Station to drift off the edge relationship.
 
 Approximate expected Station world bounds from the current reported x3 candidate:
 
 - current x3: about `2.353425 x 1.916376 x 2.812902 m`;
 - expected x3.5: about `2.745663 x 2.235772 x 3.281719 m`.
-
-The guide arm must continue pointing toward Outside. Do not rotate or reposition the Station during this pass.
 
 ## Retrieval Orb contract
 
@@ -78,8 +110,7 @@ Do not enlarge the Orb together with the Station.
 
 Do not change:
 
-- all current seat coordinates;
-- Retrieval Station position;
+- the four-seat ordering / composition intent except minimum edge-snap compensation caused by scaling;
 - Retrieval Station Y=180 orientation;
 - current edge-side working direction;
 - protected source FBX files;
@@ -90,21 +121,25 @@ Do not change:
 - pivots/sockets unless required only to preserve the same docking transform;
 - gameplay, runtime tether, animation, or physics.
 
+Position changes are allowed **only** to preserve the locked edge-contact invariant after changing scale.
+
 ## Required next evidence
 
-After applying only the scale changes, provide:
+After applying the revised scales and re-snapping to the same physical edges, provide:
 
 1. canonical full-room Day screenshot;
-2. Rest Edge close screenshot showing all four seats;
-3. Retrieval Edge close screenshot showing Station + Orb;
+2. Rest Edge close screenshot showing all four seats **and the real floor edge**;
+3. Retrieval Edge close screenshot showing Station + Orb **and the real floor edge**;
 4. exact final presentation/root/local scales for Seat, Station, and Orb;
 5. exact final world bounds for each;
-6. confirmation that seat coordinates are byte/value-identical to the prior candidate;
-7. confirmation that Station position and Y=180 rotation are unchanged;
-8. Orb world-size ratio versus prior candidate, expected about `0.5` on all axes;
-9. Compile / PlayMode / Console blocking status;
-10. protected Office / N1R / Atlas / source FBX hashes unchanged.
+6. Rest seat edge-to-floor-boundary distance after compensation, expected effectively `0 m`;
+7. Retrieval Station base edge-to-floor-boundary distance after compensation, expected effectively `0 m`;
+8. exact position delta introduced only by edge-snap compensation;
+9. confirmation that Station remains Y=180 degrees;
+10. Orb world-size ratio versus prior candidate, expected about `0.5` on all axes;
+11. Compile / PlayMode / Console blocking status;
+12. protected Office / N1R / Atlas / source FBX hashes unchanged.
 
 Do not commit or promote this spatial candidate until the user visually reviews the new screenshots.
 
-Do not proceed to material binding before this revised scale candidate is reviewed.
+Do not proceed to material binding before this revised scale-and-edge-snap candidate is reviewed.
