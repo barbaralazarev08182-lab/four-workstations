@@ -61,6 +61,46 @@ Therefore:
 - the cable follows and constrains maximum reach but should not force pendulum/bobber behavior;
 - the eventual maximum cable length should allow the Orb to travel beyond the player's visible screen into the Outside space, temporarily referred to as the "universe".
 
+## Long-distance reach — LOCKED
+
+The Retrieval cable is intended to become **very long** during actual use.
+
+The current prototype value of `18 m` is only a test/default value, not a production cap.
+
+The runtime architecture must support a configurable maximum reach large enough for the Orb to leave the current camera frame completely and continue traveling beyond the visible room.
+
+Do not hard-code systems around a short room-scale line. Deployment, retrieval, curve sampling, and state transitions must remain stable at much longer distances.
+
+A final maximum reach is intentionally not fixed yet.
+
+## Future guide-arm movement — DIRECTION LOCKED
+
+The long guide arm may later aim toward the Orb's deployment direction.
+
+Planned mechanical degrees of freedom:
+
+- pitch: raise/lower;
+- yaw: sweep left/right.
+
+`Tether_GuideTip` must follow the terminal head so the cable always exits from the physical end of the moving arm.
+
+Do not destructively alter the Station mesh or force animation around a bad imported pivot. If the source pivot is unsuitable, use a later non-destructive runtime hierarchy/pivot solution after explicit implementation authorization.
+
+## Orb powered-light intent — DIRECTION LOCKED
+
+While energized by the cable, the Orb should read as a powered luminous device.
+
+Target light character:
+
+- warm ivory / beige-yellow / slightly yellow-white;
+- soft and restrained;
+- slow breathing/pulsing intensity;
+- no saturated neon yellow;
+- no strobe;
+- no aggressive cyberpunk emission treatment.
+
+This light reinforces the meaning that the cable supplies energy to the Orb. Exact emission strength, bloom, pulse timing, and optional real-light contribution remain tunable.
+
 ## Stored state — LOCKED
 
 When unused, the Orb is stored in the **front circular basket/cradle on the Station base**.
@@ -87,7 +127,8 @@ Preferred architecture:
 4. slack/tension changes the curve dynamically;
 5. tension straightens the cable;
 6. slack allows a restrained curve, but gravity should not dominate the Orb's motion;
-7. reel-out/reel-in changes permitted cable length rather than scaling a modeled mesh.
+7. reel-out/reel-in changes permitted cable length rather than scaling a modeled mesh;
+8. cable rendering/sampling should adapt safely to much longer deployment distances without requiring a modeled cable asset.
 
 A later physics layer may use lightweight constrained particles / Verlet-style rope if interaction requires it. Full per-segment rigidbody chains are not the default.
 
