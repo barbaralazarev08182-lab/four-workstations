@@ -1,63 +1,110 @@
 # VQ2 Gate 3 — Scale / Position / Orientation Visual Review
 
 > Date: 2026-09-01
-> Status: VISUAL REVIEW IN PROGRESS / USER AUTHORITY NOT YET DECLARED PASS
-> Scope: enlarged Rest Edge seats and Retrieval Station candidate shown in latest screenshots.
+> Status: ACTIVE VISUAL REVISION / LATEST USER DECISION
+> Scope: Rest Edge seats and Retrieval Station/Orb scale refinement after the x3 edge-placement candidate.
 
-## Evidence received
+## Latest user decision — supersedes the earlier x3 recommendation
 
-Two new screenshots were provided after the x3 scale / edge-placement correction:
+The previous recommendation to keep all three presentation scales at x3 is superseded by the user's latest explicit Human Visual direction.
 
-1. Rest Edge close view showing all four enlarged Rest seat modules aligned along the real open floor edge.
-2. Retrieval Edge close view showing the enlarged Retrieval Station after 180-degree yaw correction and edge placement.
+The current candidate positions and orientations are visually useful and should remain unchanged. Only scale is to change as follows:
 
-This review records visual observations only. It does not declare Human Visual PASS on behalf of the user.
+- Rest Edge Seat presentation scale: **3.0 -> 2.5**.
+- Retrieval Station presentation scale: **3.0 -> 3.5**.
+- Retrieval Orb: **reduce its current world size by 50%**.
 
-## Rest Edge visual read
+This is the current authoritative visual direction for the next candidate.
 
-The enlarged seat modules now visibly establish an actual Rest Edge rather than reading as four tiny furniture props floating inside the room.
+## Rest Edge contract
 
-Positive observations:
+Keep all four seat instance coordinates exactly as they are in the current x3 candidate.
 
-- the four modules are now visually significant enough to read at the canonical room scale;
-- they sit directly at the open floor edge instead of leaving a large dead strip of floor between furniture and Outside;
-- the repeated modules still read as four separate one-person positions rather than one continuous sofa;
-- the outward-facing placement is directionally consistent with the Rest Edge concept;
-- the edge now has a recognizable inhabited/domestic identity.
+Do not re-space or move the four seats during this correction pass.
 
-Open observations for user decision:
+Only change the shared Rest seat presentation scale from x3 to x2.5.
 
-- the modules are now large enough that spacing and rhythm matter; if the user feels the row is too compressed or too continuous, increase inter-module breathing room before changing scale;
-- do not shrink them automatically merely because the old Rest reservation was exceeded;
-- final material binding may strongly change perceived weight, so no final material judgment can be made from the current white placeholder view.
+The four instances must continue to share one mesh/material asset; do not create independent seat copies.
 
-## Retrieval Edge visual read
+Because root coordinates are explicitly locked for this pass, do not automatically re-snap the seats to the floor boundary after scaling unless the user later requests it.
 
-The enlarged Station now reads as a real world-defining apparatus rather than a small floor prop.
+Approximate expected per-seat world bounds from the current reported x3 candidate, assuming uniform scaling about the current pivot:
 
-Positive observations:
+- current x3: about `2.143233 x 1.118077 x 1.348740 m`;
+- expected x2.5: about `1.786028 x 0.931731 x 1.123950 m`.
 
-- the 180-degree yaw correction visually fixes the working direction: the arm now points toward Outside rather than into the room;
-- the base is placed at the real floor edge and reads as an edge-mounted retrieval device;
-- the larger scale gives the machine sufficient gameplay/world importance relative to surrounding furniture;
-- the long guide arm visibly crosses/addresses the boundary, making the Retrieval function legible without gameplay UI.
+These bounds are an engineering expectation only; actual Unity bounds should be reported after the change.
 
-Open observations for user decision:
+## Retrieval Station contract
 
-- the Station is now intentionally large and creates strong local visual mass; the user must decide whether this is the desired hero-device weight or slightly too dominant;
-- the nearby dining-area composition is now secondary and may eventually need cleanup/removal, but do not modify it yet without authorization;
-- the Orb is not visually legible enough in the current screenshot to judge its final scale/material relationship to the Station. This remains a separate visual check after material binding or a clearer close view.
+Keep the current Retrieval Station position unchanged.
 
-## Current recommendation
+Keep its current Y rotation at **180 degrees**.
 
-Do not revert the x3 correction.
+Keep its current floor-edge placement/direction unchanged.
 
-The next correction, if any, should be subtle and local:
+Only change Station presentation scale from x3 to **x3.5**.
 
-- Rest Edge: spacing/rhythm only, not an automatic global shrink;
-- Retrieval Station: only a modest scale/position adjustment if the user judges it too dominant, while preserving edge contact and 180-degree working orientation;
-- preserve all protected source FBX files and presentation-wrapper strategy.
+Approximate expected Station world bounds from the current reported x3 candidate:
 
-Do not proceed to gameplay or promotion until the user explicitly declares the current spatial composition acceptable.
+- current x3: about `2.353425 x 1.916376 x 2.812902 m`;
+- expected x3.5: about `2.745663 x 2.235772 x 3.281719 m`.
 
-If the user accepts the current scale/placement/orientation, the next authorized gate should be material/texture binding and visual fidelity restoration, followed by another fixed-camera Human Visual review before controlled mesh reduction.
+The guide arm must continue pointing toward Outside. Do not rotate or reposition the Station during this pass.
+
+## Retrieval Orb contract
+
+The Orb must become **half of its current x3-candidate world size**.
+
+The current reported Orb x3 world bounds are approximately:
+
+`0.810094 x 0.894525 x 0.798053 m`.
+
+The target world bounds are therefore approximately:
+
+`0.405047 x 0.447263 x 0.399027 m`.
+
+Implementation requirement:
+
+- treat this as a final **world-space visual-size target**, not simply 'half the local scale' if the Orb inherits the Station's new x3.5 presentation root;
+- preferred simple implementation is to keep Orb presentation scaling independent from Station and change Orb presentation factor from x3 to **x1.5**;
+- if hierarchy constraints require Orb to inherit Station x3.5, compensate its nested local scale so its final world size is still exactly 50% of the current x3 candidate;
+- preserve `Orb_CradleSocket` docking position/orientation relationship;
+- do not modify the protected Orb source FBX.
+
+Do not enlarge the Orb together with the Station.
+
+## What must remain unchanged in this pass
+
+Do not change:
+
+- all current seat coordinates;
+- Retrieval Station position;
+- Retrieval Station Y=180 orientation;
+- current edge-side working direction;
+- protected source FBX files;
+- Atlas baseline;
+- Production Office/N1R;
+- materials/textures;
+- mesh topology/triangle counts;
+- pivots/sockets unless required only to preserve the same docking transform;
+- gameplay, runtime tether, animation, or physics.
+
+## Required next evidence
+
+After applying only the scale changes, provide:
+
+1. canonical full-room Day screenshot;
+2. Rest Edge close screenshot showing all four seats;
+3. Retrieval Edge close screenshot showing Station + Orb;
+4. exact final presentation/root/local scales for Seat, Station, and Orb;
+5. exact final world bounds for each;
+6. confirmation that seat coordinates are byte/value-identical to the prior candidate;
+7. confirmation that Station position and Y=180 rotation are unchanged;
+8. Orb world-size ratio versus prior candidate, expected about `0.5` on all axes;
+9. Compile / PlayMode / Console blocking status;
+10. protected Office / N1R / Atlas / source FBX hashes unchanged.
+
+Do not commit or promote this spatial candidate until the user visually reviews the new screenshots.
+
+Do not proceed to material binding before this revised scale candidate is reviewed.
