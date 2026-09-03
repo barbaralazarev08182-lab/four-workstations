@@ -1,6 +1,6 @@
 # VQ2 Build Grid & Placement Contract — 2026-09-03
 
-Status: USER BUILD-SYSTEM DIRECTION — FOUNDATION LOCKED / FULL BUILD MODE NOT YET IMPLEMENTED
+Status: USER BUILD-SYSTEM DIRECTION — FOUNDATION LOCKED / PROTOTYPE IMPLEMENTED / HUMAN VISUAL-FEEL REVIEW PENDING
 
 ## 1. Purpose
 
@@ -85,3 +85,68 @@ The user will manually review visual / feel-sensitive checkpoints such as:
 Codex should stop at these checkpoints, provide the candidate scene and concise instructions for how the user can test it, then wait for Human Visual PASS / FAIL before doing cosmetic iteration or promotion.
 
 Automated validation should still cover objective rules such as snapping math, occupancy rejection, floor bounds, rotation, deterministic grid origin, compile status, PlayMode stability, and blocking errors.
+
+## 9. Prototype implementation result — 2026-09-03
+
+Implementation target:
+- `Assets/FourWorkstations/Scenes/Candidates/Office_Open20m_Candidate.unity`
+- production scene was not modified by this task;
+- no commit / push / promotion was performed by the implementation agent.
+
+Implemented building runtime/editor files:
+- `Assets/FourWorkstations/Scripts/Building/BuildGridDefinition.cs`
+- `Assets/FourWorkstations/Scripts/Building/BuildableFootprint.cs`
+- `Assets/FourWorkstations/Scripts/Building/BuildOccupancyGrid.cs`
+- `Assets/FourWorkstations/Scripts/Building/BuildGridOverlay.cs`
+- `Assets/FourWorkstations/Scripts/Building/BuildModePrototypeController.cs`
+- `Assets/FourWorkstations/Scripts/Building/FourWorkstations.Building.asmdef`
+- `Assets/FourWorkstations/Scripts/Editor/OpenOfficeBuildGridPrototype.cs`
+- `Assets/FourWorkstations/Tests/PlayMode/BuildGridPrototypeTests.cs`
+
+Reported prototype constants:
+- build bounds: X `-10 -> 10m`, Z `-10 -> 10m`;
+- Grid Origin: `(-10, -10)`;
+- primary visual grid: `1m`;
+- logical placement step: `0.5m`;
+- overlay elevation: `0.025m` above floor.
+
+Reported test footprints:
+- A `1 x 1m` -> `2 x 2` logical cells — PASS;
+- B `2 x 1m` -> `4 x 2` logical cells — PASS;
+- C `1.5 x 0.5m` -> `3 x 1` logical cells — PASS.
+
+Reported objective validation:
+- empty-space placement — PASS;
+- overlap rejection — PASS;
+- partial out-of-bounds rejection — PASS;
+- 90-degree rotation — PASS;
+- four consecutive rotations with no anchor / coordinate drift — PASS;
+- confirm writes occupancy — PASS;
+- cancel leaves occupancy unchanged — PASS;
+- Unity Compile — PASS;
+- PlayMode tests — 10/10 PASS;
+- blocking errors — 0.
+
+Prototype controls reported for manual review:
+- `B` — toggle Build Mode;
+- `1 / 2 / 3` — select test buildables A/B/C;
+- center-screen pointer / mouse aim to target floor and move snapped Ghost;
+- `R` — rotate 90 degrees;
+- left click or `F` — confirm placement;
+- right click, `X`, or `Esc` — cancel current Ghost;
+- green feedback — valid placement;
+- red feedback — overlap or out-of-bounds.
+
+## 10. Current checkpoint
+
+Technical prototype is considered ready for Human Visual / Feel Review, not production promotion.
+
+The next action is the user's manual review of:
+- 1m visual grid readability;
+- 0.5m snapping feel;
+- overlay intensity / dashed-line quality;
+- Ghost alignment and footprint readability;
+- valid / invalid feedback clarity;
+- 90-degree rotation feel in first-person and optional room view.
+
+Do not extend into inventory, economy, crafting, final build UI, furniture catalog integration, save/load, or production promotion until the user reports Human Visual / Feel PASS or gives specific corrections.
