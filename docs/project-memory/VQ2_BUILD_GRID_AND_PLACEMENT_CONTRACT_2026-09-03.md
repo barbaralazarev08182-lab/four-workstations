@@ -68,4 +68,20 @@ Preferred order:
 4. automated EditMode / PlayMode tests;
 5. automated screenshots or generated evidence where possible.
 
-Use Computer Use only when a genuinely visual/manual Unity action cannot reasonably be completed or validated through code, scripts, batch mode, or automated tests. If Computer Use is required, keep it brief and limited to the minimum necessary visual verification.
+Use Computer Use only when a genuinely visual/manual Unity action cannot reasonably be completed through code, scripts, batch mode, or automated tests. If Computer Use is required, keep it brief and limited to the minimum necessary visual verification.
+
+## 8. Human visual review boundary — USER LOCKED
+
+Do not spend substantial Computer Use quota trying to self-judge subjective visual quality.
+
+The user will manually review visual / feel-sensitive checkpoints such as:
+- whether the dashed grid looks too strong or too weak;
+- whether grid spacing reads correctly in first-person and room view;
+- whether ghost placement feels visually aligned;
+- whether footprint highlighting looks intuitive;
+- whether snapping / rotation feels pleasant;
+- whether the build-mode presentation fits the room aesthetically.
+
+Codex should stop at these checkpoints, provide the candidate scene and concise instructions for how the user can test it, then wait for Human Visual PASS / FAIL before doing cosmetic iteration or promotion.
+
+Automated validation should still cover objective rules such as snapping math, occupancy rejection, floor bounds, rotation, deterministic grid origin, compile status, PlayMode stability, and blocking errors.
