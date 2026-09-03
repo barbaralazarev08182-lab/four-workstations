@@ -1,8 +1,8 @@
 # VQ2 Chapter 1 / First Hour Narrative — 2026-09-03
 
-Status: USER NARRATIVE DIRECTION — FIRST-HOUR CORE BEATS LOCKED / EVENT IDENTITIES STILL OPEN
+Status: USER NARRATIVE DIRECTION — FIRST-HOUR CORE BEATS LOCKED / WAR IDENTITIES MAY REMAIN PERMANENTLY UNKNOWN
 
-This document records the user's latest explicit first-hour narrative structure. It defines the intended opening experience and first major spectacle without locking the identities or motives behind the distant conflict.
+This document records the user's latest explicit first-hour narrative structure. It defines the intended opening experience and first major spectacle. The distant conflict is deliberately not required to resolve into named factions later; its identities may remain unknowable to the player for the entire game.
 
 ## 1. Arrival state
 
@@ -61,7 +61,14 @@ The intended sequence is:
 7. The strike annihilates the fleet with overwhelming speed.
 8. The distant fleet erupts into a large-scale bright explosion / destruction event.
 
-## 6. Audio and physical presentation — LOCKED INTENT
+## 6. Relative power of the two sides — STRONG DIRECTION
+
+- Both sides in the first-hour conflict should read as extremely advanced and powerful civilizations by human standards.
+- The side capable of the annihilating strike is vastly stronger than the arriving fleet; the current user intuition is on the order of tens of times stronger, but the exact measurable ratio is not locked.
+- The purpose of this asymmetry is to show the player that even a fleet that appears incomprehensibly advanced can still be insignificant relative to another civilization.
+- This should expand the perceived scale of the higher-dimensional world without requiring explanatory exposition.
+
+## 7. Audio and physical presentation — LOCKED INTENT
 
 - The distant battle should initially be silent from the player's perspective.
 - There should be no conventional immediate explosion sound traveling across vacuum-like exterior space.
@@ -70,7 +77,7 @@ The intended sequence is:
 - The player should feel the event through the room / structure / Atlas field only after seeing it.
 - The exact fictional transmission mechanism of this delayed vibration is not yet locked; it can later be explained through the refuge field, higher-dimensional substrate, structural coupling, or another original rule rather than ordinary sound propagation.
 
-## 7. Narrative purpose of the event
+## 8. Narrative purpose of the event
 
 This event should establish several things without exposition:
 
@@ -83,23 +90,21 @@ This event should establish several things without exposition:
 
 The event should create questions rather than answer them.
 
-## 8. Information intentionally NOT LOCKED
+## 9. War identities — MAY REMAIN PERMANENTLY UNKNOWN
 
-Do not yet decide:
+The game is not obligated to reveal the identities of the two civilizations involved in this first-hour battle.
 
-- who the arriving fleet belongs to;
-- whether the fleet is related to the civilization that preserved humanity;
-- what the fleet is attacking;
-- who / what fires the annihilating particle beam;
-- whether the destroyed fleet is hostile, defensive, exploratory, or fleeing;
-- whether the event is part of a larger war;
-- whether the refuge was noticed;
-- whether debris later reaches the player's region;
-- whether this event directly triggers the first Retrieval opportunity.
+It is acceptable — and currently preferred as a strong narrative option — for the player to finish the game without ever learning with certainty:
 
-These remain open for later narrative design.
+- who the arriving fleet belonged to;
+- what they were attacking;
+- who or what fired the annihilating strike;
+- whether either side had any relationship to humanity's refuge;
+- whether the engagement was offensive, defensive, preventive, accidental, or part of a larger war.
 
-## 9. Tone
+Later lore may provide context about civilization-scale conflict without retroactively naming this exact battle. The event can remain a piece of witnessed history larger than the player's own story.
+
+## 10. Tone
 
 The first hour should contrast ordinary domestic onboarding with enormous distant events.
 
