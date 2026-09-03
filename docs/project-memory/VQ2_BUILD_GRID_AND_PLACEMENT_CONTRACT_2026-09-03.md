@@ -1,6 +1,6 @@
 # VQ2 Build Grid & Placement Contract — 2026-09-03
 
-Status: USER BUILD-SYSTEM DIRECTION — FOUNDATION LOCKED / PROTOTYPE IMPLEMENTED / HUMAN VISUAL-FEEL REVIEW PENDING
+Status: USER BUILD-SYSTEM DIRECTION — FOUNDATION LOCKED / PROTOTYPE IMPLEMENTED / HUMAN VISUAL-FEEL PASS
 
 ## 1. Purpose
 
@@ -137,16 +137,36 @@ Prototype controls reported for manual review:
 - green feedback — valid placement;
 - red feedback — overlap or out-of-bounds.
 
-## 10. Current checkpoint
+## 10. Human Visual / Feel Review — PASS
 
-Technical prototype is considered ready for Human Visual / Feel Review, not production promotion.
+The user manually tested the build-mode prototype in the candidate scene and reported that the result looks and feels good.
 
-The next action is the user's manual review of:
-- 1m visual grid readability;
-- 0.5m snapping feel;
-- overlay intensity / dashed-line quality;
-- Ghost alignment and footprint readability;
-- valid / invalid feedback clarity;
-- 90-degree rotation feel in first-person and optional room view.
+Human review therefore accepts the current prototype behavior as a valid baseline for future build-system development, including:
+- 1m visual grid presentation;
+- 0.5m snapping behavior;
+- visible build-mode overlay;
+- ghost preview behavior;
+- valid-placement green feedback;
+- occupancy concept and general placement feel.
 
-Do not extend into inventory, economy, crafting, final build UI, furniture catalog integration, save/load, or production promotion until the user reports Human Visual / Feel PASS or gives specific corrections.
+Do not perform cosmetic rework on this accepted prototype unless the user later requests a change.
+
+## 11. Temporary test-object cleanup — REQUIRED BEFORE PRODUCTION USE
+
+During Human Visual / Feel Review, the user manually placed several prototype test blocks / placeholder buildables in the candidate scene.
+
+These are validation-only objects and are not part of the intended room layout.
+
+Before any later promotion, layout pass, production integration, or clean candidate handoff:
+- remove the manually placed prototype test blocks / placeholder objects;
+- do not preserve them as room furniture;
+- do not treat their positions as authored layout decisions;
+- retain the build-grid system itself and its test definitions/scripts unless a later cleanup explicitly removes obsolete prototype-only code.
+
+The user's Human Visual / Feel PASS applies to the build-grid system, not to the temporary test block placements.
+
+## 12. Current checkpoint
+
+The build-grid + footprint placement foundation is accepted at prototype level.
+
+Next work may build on this foundation, but should remain scoped. Do not automatically expand into full inventory, economy, crafting, final build UI, furniture catalog integration, save/load, or production promotion unless explicitly authorized.
