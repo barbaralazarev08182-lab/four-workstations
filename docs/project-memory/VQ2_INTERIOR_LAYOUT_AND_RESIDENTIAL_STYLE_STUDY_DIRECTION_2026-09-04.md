@@ -5,18 +5,21 @@
 > Scope: Open20m domestic interior planning after wall/floor Human Visual PASS.
 >
 > Important: this document records the user's current sketch intent and the next design-study direction. It does not lock exact furniture, exact coordinates, exact partition geometry, or final art references.
+>
+> Correction note: a prior interpretation incorrectly treated the two-wall-corner area as a dining/banquet area. The user explicitly corrected this: that area is the **experiment / workshop area**. Do not reintroduce a dining-area assumption there unless the user later asks for it.
 
-## 1. User sketch intent
+## 1. User sketch intent — corrected
 
 Current hand-drawn plan adds a more residential design layer on top of the prior functional-zone blockout.
 
-- A new entrance-door intention is shown on the west wall, farther toward the lower/southern portion than the previous provisional door marker.
-- A TV/media wall is planned on the north wall, left of the future window.
-- A sofa is intended in front of the TV rather than pushed against a wall.
-- A large window is planned on the north wall toward the right/east side.
-- A bar / counter is intended in front of that window so the player can sit or stand facing the exterior view.
-- A workshop / experiment area should be spatially differentiated from domestic living areas.
-- The workshop boundary does not need to be a full wall. Screen-like, slatted, translucent, low-storage, or other semi-open dividers are preferred candidates for zoning while preserving openness and light.
+- Entrance door: west wall, toward the lower/southern portion.
+- TV/media: west wall, to the right of the entrance door.
+- Sofa: placed in front of the west-wall TV to form the domestic living-room island.
+- Experiment / workshop area: placed toward the corner formed by the two solid walls (north-west / L-corner relationship), using the corner as a natural architectural anchor.
+- The experiment-area boundary does not need to be a full wall. Screen-like, slatted, translucent, low-storage, or other semi-open dividers are preferred candidates for zoning while preserving openness and light.
+- Large window: north wall toward the right/east side.
+- Bar / counter: in front of the north-wall window, with enough clear space for seating and exterior viewing.
+- Retrieval / fishing area: remains toward the east/open side, with direct relationship to the Outside.
 - The user wants the room to learn from real high-end residential interior design rather than remaining a game-dev functional blockout.
 
 ## 2. Style-study direction
@@ -40,13 +43,16 @@ Do not collapse this into a generic "European" mix. Exact style blend remains op
 - Preserve direct logistics between Retrieval and future Matter/Workshop functions.
 - Avoid forcing domestic circulation through the active experiment/workshop area.
 - Use the entrance to create a reveal sequence rather than showing every system equally at once.
-- Let the TV/sofa area feel intimate despite the 20x20m overall footprint and ~6m wall height.
-- Use the window/bar area as a framed domestic relationship to the Outside.
+- Let the west-wall TV/sofa area feel intimate despite the 20x20m overall footprint and ~6m wall height.
+- Use the north-wall window/bar area as a framed domestic relationship to the Outside.
+- Let the two-wall corner give the experiment/workshop area architectural enclosure without turning it into a closed laboratory.
 - Keep the room asymmetrical and composed, not a workstation matrix.
 
 ## 4. Workshop / experiment zoning caution
 
-A decorative screen is suitable for ordinary workshop staging, analysis, tools, and non-hazardous processing.
+The corner zone is the user's intended **experiment / workshop area**.
+
+A decorative or semi-open screen is suitable for ordinary workshop staging, analysis, tools, non-hazardous processing, and visual separation from the living room.
 
 It must not be assumed to provide actual containment for living, anomalous, or hazardous recovered matter. Future Containment remains a separate functional requirement.
 
@@ -55,14 +61,16 @@ It must not be assumed to provide actual containment for living, anomalous, or h
 Still open:
 
 - final door coordinate and size;
-- final TV position and scale;
+- final TV position and scale within the west-wall segment to the right of the door;
 - final sofa type, dimensions, and distance from TV;
+- exact experiment-zone footprint within the two-wall corner;
+- exact screen/partition geometry, material, and height;
 - window size and sill height;
 - bar dimensions and stool count;
-- exact experiment-zone location and shape;
-- screen/partition material and height;
+- exact Retrieval operating footprint;
 - sleep/private area solution;
 - exact storage system;
+- whether any separate dining table is needed at all;
 - final furniture brands/models;
 - exact Italian vs Scandinavian balance;
 - final lighting/furnishing palette.
