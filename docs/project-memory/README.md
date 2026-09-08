@@ -73,3 +73,26 @@ This first consolidation pass deliberately does **not** delete or physically mov
 Do not use remote GitHub alone as proof of the current local Unity candidate. The local Unity worktree may contain newer candidate changes and documentation-only commits that have not been pushed.
 
 Before merging this consolidation branch into the active local history, reconcile it with the user's newer local documentation commits.
+
+## 7. Split-history reconciliation note — 2026-09-08
+
+The local repository currently has **two relevant histories** and they must not be conflated:
+
+- Current checked-out local HEAD: `5b1d9331d8c3e44e5b312930a55002b2c6368aef` on `feat/vq-1c-full-office-visual-polish-2`.
+- Newer VQ2 documentation line: `79baf025633cab9d2d515c50698d2fc4bb719b7e -> c47a865d5ca04dc501115818a1022e1647425043` on local branch `feat/vq2-first-hour-vertical-slice`.
+
+The VQ2 documentation commits above are **not ancestors of the currently checked-out VQ-1C HEAD**.
+
+Remote verification at consolidation time:
+
+- `5b1d9331d8c3e44e5b312930a55002b2c6368aef` exists on GitHub;
+- remote branch `feat/vq-1c-full-office-visual-polish-2` exists;
+- remote branch `feat/vq2-first-hour-vertical-slice` is not present;
+- commits `79baf025...` and `c47a865...` are not available from remote GitHub.
+
+Therefore:
+
+1. **Do not merge this consolidation branch into the currently checked-out VQ-1C branch as if it were the VQ2 source of truth.**
+2. The correct target for VQ2 memory consolidation is the local `feat/vq2-first-hour-vertical-slice` history (or a future branch descended from it).
+3. Physical moving/deleting of legacy Markdown remains deferred until that local VQ2 history is available for reconciliation.
+4. The `current/` files in this consolidation branch are a prepared canonical-memory layer to be applied onto the VQ2 line, not proof that remote `main` already contains the latest VQ2 Unity/project state.
