@@ -2,11 +2,11 @@
 
 > Status: **ACTIVE**  
 > Updated: 2026-09-08  
-> Supersedes as default handoff: older dated Gate / Active Handoff files. Those remain historical references.
+> Purpose: shortest current-state handoff. Read topic files only when needed.
 
 ## Project identity
 
-VQ2 is now a **first-person Persistent Mystery Room Game**.
+VQ2 is a **first-person Persistent Mystery Room Game**.
 
 Core fantasy:
 
@@ -16,7 +16,7 @@ Core loop:
 
 `Inhabit -> Retrieve -> Inspect -> Use/Place -> Observe -> Connect/Reinterpret`
 
-Long-term design principle: **LOW VERB / HIGH DISCOVERY**. The room itself is the interface; logging in should make the player notice what changed in the world, not open a mission-list game.
+Design principle: **LOW VERB / HIGH DISCOVERY**. The room is the main interface. Logging in should make the player notice what changed in the world rather than open a mission-list game.
 
 Emotional line:
 
@@ -27,76 +27,71 @@ Emotional line:
 - Unity: `6000.3.21f1`
 - URP: `17.3.0`
 - primary local candidate: `Assets/FourWorkstations/Scenes/Candidates/Office_Open20m_Candidate.unity`
-- production scenes must not be overwritten/promoted without explicit Human authorization.
-- remote GitHub can lag the local Unity worktree; never claim remote state proves the live candidate.
+- 60 real minutes = 1 in-game day
+- production scenes are not promoted/overwritten without explicit Human authorization
+- remote GitHub can lag the local Unity worktree
 
-## Current work state
+## Current active problem — Outside / Universe
 
-### Outside / Universe — ACTIVE VISUAL PROBLEM
+The current celestial sky architecture has solved player-translation parallax for black-hole and nebula layers.
 
-Current technical sky-lock solution has solved player-translation parallax for black-hole / nebula celestial layers.
-
-Current verdict:
+Verdict:
 
 > **TECHNICAL SKY-LOCK PASS / HUMAN VISUAL FAIL**
 
-Next visual problem is not parallax. It is **celestial scale, color, realism, and gravitational lensing**:
+Preserve zero-parallax celestial anchoring. Rework visual scale and realism:
 
-- black hole is currently too small / icon-like;
-- it does not visibly bend the surrounding star field enough;
+- black hole is too small and icon-like;
+- surrounding space does not show enough visible gravitational lensing;
 - nebula is far too small and too dark;
-- astronomical distance must **not** be communicated by shrinking giant celestial structures;
-- zero-parallax celestial anchoring should be preserved while visual scale is rebuilt.
+- astronomical distance must not be communicated by shrinking giant celestial structures;
+- north-side nearby planet remains an important later/current Outside landmark direction.
 
 See `VQ2_OUTSIDE_CURRENT.md`.
 
-### Refuge architecture — PAUSED AFTER ROLLBACK
+## Refuge architecture
 
 `Architectural Zoning Rework V1` received **HUMAN VISUAL / SPATIAL FAIL** and was rolled back.
 
-Important distinction:
+Reject the failed V1 geometry, not the broader intent. Selected real internal walls, stronger zoning, a better Northwest Experiment room, east Bar/Social area, southeast Retrieval area, southwest entry treatment, and south Garden/Viewing Court remain available for redesign.
 
-- the specific V1 wall geometry/layout is rejected;
-- the broader Human idea of adding selected real walls, a better zoned Refuge, and a south viewing garden remains open for redesign.
-
-Do not resume by repairing the failed V1 geometry. Redesign from the Human spatial intent when this area is reopened.
+Architecture is currently paused while Outside is the active creative focus.
 
 See `VQ2_REFUGE_CURRENT.md`.
 
-### Lighting — DIAGNOSTIC PAUSED
+## Lighting
 
-`Golden Lighting Diagnostic V1` produced useful evidence but did not become a final visual baseline.
+`Golden Lighting Diagnostic V1` produced useful evidence but is not a final baseline.
 
-Current verdict:
+Verdict:
 
 > **PARTIAL SUCCESS / STRUCTURAL LIMIT IDENTIFIED**
 
-Main concern: at noon the west wall becomes a large, flat gray field because the current sun-orbit geometry gives it little/no useful direct shaping light. Do not keep solving this with tiny intensity adjustments.
-
-Lighting should be revisited after architecture is stable enough to judge the new shell. If indirect light / practical lights / new architecture cannot solve the west-wall composition, the old Sun-orbit lock may be formally reopened.
+At/near noon the west wall becomes a large flat gray field because current solar geometry gives it little useful direct shaping. Do not solve this indefinitely with tiny intensity changes. Revisit after architecture is stable; formally reopen the daylight orbit if architecture + controlled bounce + practical lighting still cannot solve the wall.
 
 See `VQ2_LIGHTING_CURRENT.md`.
 
-## Current protected truths
+## Protected current truths
 
-- 60 real minutes = 1 in-game day.
-- Atlas stabilizes the Refuge's 3D domain; walls are not the ultimate physical boundary.
-- Atlas Boundary V2 retains its prior Human Visual PASS unless explicitly reversed.
-- SunVisual retains prior Human Visual PASS unless explicitly reversed.
-- current Far Sky / Milky Way remains a recoverable accepted reference baseline even while Outside enrichment is reopened.
-- furniture runtime placement + persistence baseline remains valid.
-- Outside naturally contains no human ruins, abandoned human infrastructure, human records, or recovered human artifacts.
-- retrieved Outside content should be Outside-native materials, biology, constructs, alien/high-dimensional technology, samples, signals, data carriers, etc.
+- Atlas stabilizes a 3D Refuge domain larger than the visible architecture.
+- Atlas Boundary V2 retains Human Visual PASS unless explicitly reopened.
+- SunVisual still appearance retains Human Visual PASS unless explicitly reopened.
+- current Far Sky / Milky Way remains the safe recoverable reference baseline while Outside enrichment is reopened.
+- Build Grid foundation and furniture runtime placement/persistence remain accepted baselines.
+- Outside naturally contains no human ruins, abandoned human infrastructure, human records, or ordinary human artifacts.
+- Retrieval returns Outside-native matter, biology, constructs/technology, samples, signals, data carriers, or similar phenomena.
+- Machine PASS never substitutes for Human Visual / Feel PASS.
 
-## Collaboration rules
+## First-hour contract
 
-- Human subjective judgement controls visual/feel Gates.
-- Codex should not promote candidates, push, or declare Human PASS unless explicitly authorized.
-- Prefer direct code/files, batch/editor scripts, automated tests, and automated evidence over Computer Use.
-- Only generate/edit images when the current Human message explicitly contains the exact phrase `生成图片`.
+The first hour must give control quickly, establish room ownership, reveal the Atlas boundary through physical evidence, complete the first real Retrieval loop before the distant war dominates, keep the player in control during the war event, and leave the Refuge visibly changed by the end of the hour.
 
-## Next-stage priority
+See `VQ2_GAMEPLAY_CURRENT.md`.
 
-The immediate active creative direction is the **Outside / Universe visual layer**, not the interior.
+## Collaboration / execution rules
 
-Do not automatically reopen interior layout or lighting while the Human is working on Outside unless explicitly requested.
+- Human subjective judgement controls visual, spatial and feel Gates.
+- Candidate-first; no production promotion without explicit Human authorization.
+- Do not declare Human PASS yourself.
+- Prefer targeted implementation, automated validation and focused evidence over broad repository audits or unnecessary Computer Use.
+- Do not automatically reopen interior layout/lighting while the Human is focused on Outside.

@@ -1,33 +1,48 @@
 # VQ2 Refuge — Current Direction
 
-> Status: **ACTIVE**  
+> Status: **ACTIVE / ARCHITECTURE PAUSED**  
 > Updated: 2026-09-08
 
-## 1. Current shell / architecture stance
+## Refuge identity
 
-The Refuge remains a domestic, inhabitable architectural space inside the Atlas-stabilized domain.
+The Refuge is a domestic, inhabitable architectural space inside the Atlas-stabilized domain. It should feel like a real home/work refuge suspended inside an impossible Outside, not a conventional sealed apartment and not a generic sci-fi base.
 
-Latest Human direction allows and likely requires **selected real internal walls** for stronger zoning. This supersedes the older assumption that screens/dividers alone should carry most spatial organization.
+Major openness toward the Outside is important. A conventional ceiling is not required. Atlas remains a central open spatial anchor.
+
+## Envelope / floor baseline
+
+The Open20m candidate established an accepted light, warm architectural envelope before later zoning experiments:
+
+- buildable floor approximately `20 x 20m`;
+- Oak Wood Planks floor family remains Human Visual PASS;
+- accepted oak presentation is lighter/open rather than dark-heavy;
+- candidate oak material used URP/Lit, `10 x 10` tiling over the 20m floor, metallic `0`, roughness packed as smoothness, normal + AO maps;
+- the Build Grid foundation remains independent from the floor material;
+- earlier basic outer wall/floor appearance passed Human review, but that PASS does **not** lock later internal zoning or final room architecture.
+
+If the live local candidate differs, live serialized state + latest Human direction wins.
+
+## Current architectural stance
+
+Latest Human direction allows and likely requires **selected real internal walls** for stronger zoning. This supersedes the older idea that screens/dividers alone should carry most spatial organization.
 
 At the same time:
 
-- the Refuge should not become a conventional closed apartment;
-- it retains major openness toward the Outside;
-- no conventional ceiling is required;
-- Atlas remains a central open spatial anchor;
-- new rooms should form around a breathable central Refuge rather than turning the whole floor into corridors.
+- do not turn the Refuge into a corridor maze;
+- preserve a breathable central spatial field;
+- rooms/zones should form around the Refuge rather than consuming it;
+- sightlines to Atlas and the Outside should remain deliberate;
+- architectural elements should feel designed, not like oversized gray blockout slabs.
 
-## 2. Architectural Zoning Rework V1 verdict
+## Architectural Zoning Rework V1 verdict
 
 `Architectural Zoning Rework V1` = **HUMAN VISUAL / SPATIAL FAIL — ROLLED BACK**.
 
-The failed V1 implementation must not be reused as a visual baseline.
-
-Specific failed characteristics included:
+Rejected characteristics included:
 
 - oversized gray slab walls;
 - maze-like partitioning;
-- weak architectural proportion/language;
+- weak proportion/language;
 - Garden that did not read as the intended viewing courtyard;
 - loss of the previous central-space character.
 
@@ -35,50 +50,63 @@ Important distinction:
 
 > Reject the V1 implementation, not the broader idea of stronger architectural zoning.
 
-Do not repair V1 incrementally. When Refuge architecture is reopened, redesign from the Human spatial intent.
+Do not repair V1 incrementally. When architecture is reopened, redesign from the Human spatial intent.
 
-## 3. Still-open Human architectural intent
+## Still-open Human spatial intent
 
-The broader direction remains available for redesign:
+The following broader direction remains valid for redesign:
 
-- Northwest Experiment should eventually read as a more real architectural room / zone;
-- East / northeast should support a Bar + Social/Dining room or similarly coherent architectural zone;
-- Retrieval/Fishing should live in the southeast open technical area rather than being absorbed into Bar/Social;
-- the south should support a semi-circular Garden / Viewing Court;
-- that Garden should use low, unusual/sculptural curved enclosure, with textured/translucent glass direction rather than ordinary drywall;
-- 1–2 taller trees may rise above the low curved wall;
-- sparse seating should support sitting and looking at the Outside;
-- southwest entry should have a readable entrance and a still-unresolved foyer/filter element.
+- **Northwest Experiment** — should eventually read as a more real architectural room/zone;
+- **East / northeast** — Bar + Social/Dining or similarly coherent social room;
+- social table + four chairs belong inside the social room rather than floating in an undefined open field;
+- **Southeast** — Retrieval/Fishing belongs in an open technical area, separate from Bar/Social;
+- **South** — semi-circular Garden / Viewing Court;
+- **Southwest** — readable entrance plus an unresolved filter/foyer/divider element.
 
-Exact transforms/dimensions are **not locked** by the failed V1.
+Exact transforms and dimensions are not locked by the failed V1.
 
-## 4. Experiment current state
+## Garden / Viewing Court direction
 
-Before the failed full architectural-zoning pass, the Northwest Experiment architectural rework had reached **PASS WITH MINOR FIXES**, and a narrow cleanup was subsequently implemented.
+The Garden is a human/domestic Refuge feature and is allowed even though the Outside itself must not contain human artifacts.
 
-That cleanup reportedly included:
+Desired character:
+
+- low unusual/sculptural curved enclosure rather than tall ordinary drywall;
+- textured/translucent large glass direction rather than fully transparent invisible glass;
+- 1–2 taller trees may rise above the low wall;
+- sparse seating supports sitting and looking at the Outside;
+- the Garden should feel like a viewing court and domestic refuge zone, not a fenced patch of turf.
+
+Human-supplied grass source/reference:
+
+- BlendKit `Proximity Grass Scatter (Geometry Nodes)`
+- `https://www.blendkit.com/asset-gallery-detail/bbf4398f-2eb1-4d1d-8c28-0eddba1e7d2a/`
+
+Unity cannot run Blender Geometry Nodes directly. If used, bake/constrain/optimize the geometry for the actual Garden footprint; do not blindly import a huge procedural scene.
+
+## Northwest Experiment current status
+
+Before the failed full zoning pass, the Northwest Experiment architectural rework reached **PASS WITH MINOR FIXES**, followed by a narrow cleanup.
+
+Reported cleanup included:
 
 - shallower Solid Anchor return;
-- wood inset + shadow reveal;
-- floor field reduced to a thin non-collision overlay;
+- visible wood inset + shadow reveal;
+- very thin non-collision floor field overlay;
 - more continuous low plinth/joint integration.
 
-Because the post-cleanup state has not received a final explicit Human Visual PASS, do not describe it as final/locked.
+The post-cleanup state has not received a final explicit Human Visual PASS. Do not label it final/locked.
 
-## 5. Living / furniture stance
+## Furniture / domestic stance
 
 Do not restart a whole-Refuge furniture shuffle by default.
 
 Future interior work should preferably establish one strong Human-approved view/zone first, then reuse that visual language elsewhere.
 
-Furniture placement/persistence runtime baseline remains a protected system unless explicitly reopened.
+The runtime player-driven furniture placement + persistence system remains a protected baseline. Graybox/reference furniture may remain until the user replaces it through actual placement.
 
-## 6. Garden asset note
+## Current priority
 
-A future grass direction may use the Human-supplied Blendkit `Proximity Grass Scatter (Geometry Nodes)` source as a reference/source asset, but do not import a giant procedural Blender scene blindly into Unity. If used, constrain/bake/optimize it to the actual Garden footprint.
+Refuge architecture is paused while the Human is working on the Outside / Universe visual layer.
 
-## 7. Current priority
-
-Refuge architecture is **paused** while the Human is working on the Outside / Universe visual layer.
-
-Do not automatically resume architecture because a Codex task finishes elsewhere.
+Do not automatically resume interior layout or lighting because another task completes.

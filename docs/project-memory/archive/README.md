@@ -1,15 +1,34 @@
 # Project Memory Archive
 
-> Status: **HISTORICAL / NON-CANONICAL**
+> Status: **HISTORICAL / NON-CANONICAL**  
+> Updated: 2026-09-08
 
-`archive/legacy/` contains the previous flat `docs/project-memory/` document collection exactly as historical reference material.
+This archive is intentionally almost empty.
 
-These files preserve old research, proposals, implementation authorizations, intermediate machine results, Human review checkpoints, accepted baselines that may later have been superseded, failed experiments, asset-selection notes, and older handoffs.
+The former `archive/legacy/` directory contained a large collection of dated research notes, implementation authorizations, intermediate PASS/FAIL checkpoints, old handoffs, asset-selection notes and superseded experiments. After consolidating still-relevant facts into `../current/`, those legacy Markdown files were removed from the working tree to keep project memory readable.
 
-They are retained for traceability; they are not the normal starting point for current work.
+## Nothing was erased from Git history
 
-Use `../README.md` and `../current/` first.
+The complete pre-cleanup legacy tree remains recoverable from commit:
 
-If an archived document conflicts with a newer Human decision or a `current/` document, the newer/current decision wins. A filename containing `PASS`, `FINAL`, `LOCK`, `BASELINE`, or `AUTHORIZATION` does not override current authority.
+`bfc9d7b715674199918fad435c7a18b05e019e62`
 
-No legacy Markdown was deleted during consolidation; the old collection was moved under `archive/legacy/` as one historical tree.
+For a specific historical file, inspect that commit rather than restoring the entire archive into the active tree.
+
+Example pattern:
+
+`git show bfc9d7b715674199918fad435c7a18b05e019e62:docs/project-memory/archive/legacy/<FILE>.md`
+
+## Authority rule
+
+Historical evidence never overrides:
+
+1. latest explicit Human decision / latest Human Visual or Feel PASS/FAIL;
+2. live local project state;
+3. `../current/` canonical documents.
+
+A historical filename containing `PASS`, `FINAL`, `LOCK`, `BASELINE` or `AUTHORIZATION` does not make it current.
+
+## Maintenance rule
+
+Do not recreate a permanent bulk legacy folder. If an old experiment must be consulted, inspect it from Git history and copy only the still-relevant conclusion into the appropriate existing `current/` file when Human confirms it remains authoritative.

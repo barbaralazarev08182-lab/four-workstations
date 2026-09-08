@@ -3,103 +3,176 @@
 > Status: **ACTIVE**  
 > Updated: 2026-09-08
 
-## 1. Engine / candidate context
+## Engine / candidate context
 
 - Unity `6000.3.21f1`
 - URP `17.3.0`
-- current primary local candidate: `Assets/FourWorkstations/Scenes/Candidates/Office_Open20m_Candidate.unity`
-- production scenes must not be overwritten/promoted without explicit Human authorization.
-- remote GitHub may lag the local worktree; verify local serialized state when a decision depends on current implementation.
+- primary local candidate: `Assets/FourWorkstations/Scenes/Candidates/Office_Open20m_Candidate.unity`
+- production scenes must not be overwritten/promoted without explicit Human authorization
+- remote GitHub may lag the local Unity worktree; verify live serialized state when implementation details matter
 
-## 2. Time system
+## Time system
 
 Human lock:
 
 > **60 real minutes = 1 in-game day.**
 
-Do not casually change the day-cycle duration while working on lighting, Outside visuals, or other unrelated systems.
+Do not casually change day-cycle duration while working on lighting, Outside visuals or unrelated systems.
 
 The visible universe does not need to rotate with this day cycle.
 
-## 3. Atlas / Boundary
+## Atlas / Boundary baseline
 
-Atlas is the stabilizing anchor of the Refuge's 3D domain.
+Atlas is the stabilizing anchor of the Refuge's 3D domain. The stabilized domain is larger than the visible architecture.
 
-Current protected visual/system state:
+`Atlas Boundary Membrane V2` retains Human Visual PASS unless explicitly reopened.
 
-- Atlas remains central and important;
-- Atlas Boundary V2 retains prior Human Visual PASS unless explicitly reopened;
-- Boundary effects should remain normally unobtrusive and reveal the stabilized domain through controlled interaction/phenomena rather than behaving like a constant ordinary force-field bubble.
+Accepted reference settings:
 
-The Atlas sphere/domain is larger than the room architecture. Do not infer that room walls are the true system boundary.
+- Atlas Boundary radius: `21m`;
+- center authority: `AtlasAnchor`;
+- boundary normally invisible;
+- contact patch cap: `6°` with inspector range `5–8°`;
+- effect duration: `0.65s`;
+- accepted candidate: B;
+- peak distortion: about `1.5 screen pixels`;
+- behavior: travelling signed compression/expansion wavefront;
+- interior recovery: immediate / near-immediate after passage;
+- visible ring / outline / Fresnel / emission / tint: off;
+- Far Sky Y rotation at that accepted checkpoint: `45°`.
 
-## 4. SunVisual
+The visual should read as a localized bending/compression/expansion of the actual outside background over the curved boundary surface, not as a portal, reticle, combat shield, concentric ripple ring, magnifying lens or glass bubble.
 
-SunVisual retains prior Human Visual PASS unless explicitly reopened.
+Player radial constraint and Orb crossing had passed objective validation at that checkpoint.
 
-Important separation:
+## SunVisual baseline
 
-- SunVisual appearance and lighting contribution are conceptually decouplable;
-- a future Sun-orbit lighting change must be revalidated against SunVisual rather than silently assuming the old geometry is immutable.
+SunVisual still appearance retains Human Visual PASS unless explicitly reopened.
 
-## 5. Retrieval
+Accepted geometry/orbit reference:
 
-Retrieval Station + Orb remains a core protected gameplay system.
+- core diameter: `0.50m`;
+- corona outer diameter: `0.58m`;
+- Atlas Boundary radius: `21.0m`;
+- orbit center radius: `20.70m`;
+- orbit center authority: `AtlasAnchor`;
+- orbit plane: house-center vertical Y-Z great circle in the accepted convention;
+- motion: uniform, counter-clockwise in the approved side-view convention;
+- no Unity Light components under SunVisual;
+- visible SunVisual and primary `SunDirectionalLight` are separate systems;
+- SunVisual appearance remains constant across the daily cycle rather than being recolored by time-of-day.
+
+Important: the accepted SunVisual appearance/orbit is a protected visual baseline, but the **daylight orbit may be formally reopened** later if the Golden west-wall problem requires different lighting geometry. Any such change must revalidate the visible sun/day-cycle relationship rather than silently assuming compatibility.
+
+## Wireless Power Hub
+
+The wall-mounted Power Hub is conceptually distinct from Atlas.
+
+- it creates a smaller local wireless-power sphere/coverage region;
+- ordinary Refuge devices and the guide drone may operate inside that field without conventional plug-to-wall wiring;
+- it is not the true Refuge boundary;
+- exact later power UI/economy can remain open.
+
+## Retrieval
+
+Retrieval Station + Orb is a core protected gameplay system.
 
 Current conceptual rules:
 
-- Retrieval opens a controlled interface through the Atlas boundary;
-- the tether/cable maintains connection/power;
-- interaction with Outside has real Refuge cost/consequence;
-- retrieved content must be Outside-native, never ordinary human relics naturally found outside;
-- the southeast technical-area relocation remains a broader design direction, but exact transforms are not locked by the failed Architectural Zoning V1.
+- Retrieval creates a controlled crossing through the Atlas boundary;
+- tether/cable maintains connection/power;
+- opening the Refuge has real systemic cost/consequence;
+- retrieved content must be Outside-native rather than ordinary human relics;
+- a catch becomes a physical/stabilized Refuge object/sample that can be inspected, processed, preserved, placed or used;
+- the southeast open technical-area relocation remains a broader architectural direction, but exact transforms are not locked by the failed Zoning V1.
 
-Do not break Retrieval hierarchy/scripts/functionality while doing visual dressing.
+Do not break Retrieval hierarchy/scripts/functionality during unrelated visual dressing.
 
-## 6. Furniture placement / persistence
+## Build Grid foundation
 
-The runtime furniture placement + persistence baseline remains valid/protected unless explicitly reopened.
+The Build Grid foundation received Human Visual / Feel PASS at prototype level and should remain protected unless a real blocker is found.
 
-Relevant principles:
+Accepted contract:
 
-- placement uses clear grid/occupancy rules;
-- persistence across save/reload is part of the accepted baseline;
-- new art/layout experiments should not casually rewrite placement/persistence code;
-- furniture catalog historical counts are not proof of the exact current local catalog contents.
+- continuous floor remains one surface; build grid is a separate overlay;
+- primary visual grid cell: `1.0m x 1.0m`;
+- logical placement step: `0.5m`;
+- deterministic grid origin/orientation;
+- explicit authored logical footprint independent from exact mesh silhouette;
+- ghost preview;
+- occupancy/overlap rejection;
+- floor-bound validation;
+- initial rotation rule: `90°` increments;
+- footprint data is authored rather than treating renderer bounds as authority.
 
-## 7. Player / camera
+Historical Open20m prototype reference:
 
-The game is first-person. Player movement/camera systems are protected during unrelated art passes.
+- bounds: X `-10 -> 10m`, Z `-10 -> 10m`;
+- grid origin: `(-10, -10)`;
+- overlay elevation: `0.025m` above floor;
+- Human review accepted the 1m visual grid, 0.5m snapping, ghost behavior, valid/invalid feedback and overall placement feel.
 
-Do not alter player transforms, locomotion, camera feel, or input merely to make a screenshot composition work.
+Temporary prototype test blocks were validation-only and are not authored room furniture.
 
-## 8. Drone
+## Furniture runtime placement + persistence
 
-The drone is a persistent interactive utility/narrative companion.
+Accepted baseline supports:
 
-Long-term direction includes voice control / intent recognition and practical commands such as observation, following/positioning, lighting/scanning/recording assistance.
+- open/access catalog;
+- select registered furniture;
+- spawn/ghost preview;
+- move with `0.5m` grid snap;
+- `90°` rotation;
+- confirm placement;
+- re-select placed furniture;
+- pick up / reposition / rotate / replace;
+- save;
+- reload restore;
+- duplicate prevention;
+- reposition after reload.
 
-When an Outside civilization takes direct control, communicate the change through behavior, movement, timing, gaze/orientation, voice cadence and text/dialogue—not only exposition.
+Persistence preserves furniture catalog/prefab identity and placement transform state sufficiently to restore player-authored layouts. This is a **furniture-layout persistence layer**, not authorization for a complete global save-system redesign.
 
-This is a design/system direction, not a requirement to implement the full voice stack during unrelated visual tasks.
+Medium floor-standing furniture workflow is player-driven: Codex/import pipeline prepares valid catalog prefabs; the user decides final position/rotation in-game.
 
-## 9. Asset acquisition / authoring boundary
+## Player / camera
 
-External assets should be treated through a controlled source -> standardized/adapted -> Unity candidate pipeline rather than blindly dropped into production.
+The game is first-person. Player locomotion, transforms, camera feel and input are protected during unrelated art passes.
 
-BlenderKit asset acquisition is valid through the local Blender + BlenderKit workflow. A past `403` on free assets was traced to an invalid non-UUID `scene_uuid`, not to the assets being paid/unavailable. Correct UUID usage returned HTTP 200 and the requested black-hole, nebula and space HDR assets were downloaded successfully.
+Do not alter player/camera behavior merely to make a screenshot composition work.
 
-Do not create a low-quality procedural substitute merely because an acquisition attempt fails. Diagnose the acquisition path or stop and report the blocker when the Human supplied a specific visual asset.
+## Drone
 
-## 10. Validation / authority
+The drone is a persistent autonomous utility/narrative companion.
 
-Technical checks expected after implementation work include, as relevant:
+Long-term direction includes voice/intent control and practical commands such as observation, following/positioning, lighting/scanning/recording assistance.
 
-- compile PASS;
+When the outside civilization takes direct control, communicate the change through motion, timing, gaze/orientation, voice cadence, text presentation and behavior—not only exposition.
+
+This is design direction, not a requirement to implement the full voice stack during unrelated visual tasks.
+
+## Asset acquisition / Blender boundary
+
+External assets should follow a controlled source -> inspect/standardize/adapt -> Unity candidate pipeline rather than being blindly dropped into production.
+
+BlenderKit acquisition works through the local Blender + BlenderKit workflow. A past `403` on supplied free assets was traced to an invalid non-UUID `scene_uuid`; with a valid UUID, the requested assets downloaded successfully.
+
+Important compatibility rule:
+
+- Unity URP cannot directly run Blender Geometry Nodes, EEVEE world-volume graphs or arbitrary Cycles procedural materials;
+- inspect the actual source graph/geometry/animation first;
+- bake/convert/simplify/recreate deliberately where needed;
+- do not replace a Human-supplied specific asset with a low-quality procedural substitute merely because the first acquisition attempt fails.
+
+## Validation / authority
+
+Technical checks after implementation work may include:
+
+- Compile PASS;
 - shader errors = 0;
 - PlayMode smoke PASS;
 - blocking runtime errors = 0;
-- protected systems/transforms unchanged when outside task scope.
+- protected transforms/systems unchanged when outside task scope.
 
 These are technical Gates only.
 
@@ -107,11 +180,11 @@ These are technical Gates only.
 
 Human subjective review controls visual, spatial and feel acceptance.
 
-## 11. Commit / promotion discipline
+## Commit / promotion discipline
 
 Unless explicitly authorized:
 
-- do not commit/push Unity candidate assets/scenes as if accepted;
-- documentation-only checkpoints may be appropriate for important Human decisions;
 - do not promote candidate -> production;
-- do not declare Human PASS yourself.
+- do not push/commit Unity candidate assets as if they were accepted;
+- do not declare Human PASS yourself;
+- documentation should update the existing canonical current files instead of creating a new dated project-memory document for every experiment.
